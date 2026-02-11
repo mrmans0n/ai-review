@@ -1,0 +1,71 @@
+/* react-diff-view default styles */
+@import 'react-diff-view/style/index.css';
+
+/* Custom dark theme overrides */
+.diff-view {
+  @apply bg-gray-800 text-gray-100;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.diff-gutter {
+  @apply bg-gray-900 text-gray-500;
+  border-right: 1px solid #374151;
+  min-width: 50px;
+  padding: 0 8px;
+  text-align: right;
+  user-select: none;
+}
+
+.diff-gutter-col {
+  @apply bg-gray-900;
+}
+
+.diff-line {
+  @apply bg-gray-800;
+}
+
+.diff-line-insert {
+  @apply bg-green-900/30;
+}
+
+.diff-line-delete {
+  @apply bg-red-900/30;
+}
+
+.diff-code {
+  padding-left: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.diff-code-insert {
+  @apply bg-green-900/40;
+}
+
+.diff-code-delete {
+  @apply bg-red-900/40;
+}
+
+.diff-hunk-header {
+  @apply bg-gray-700 text-gray-300;
+  padding: 4px 12px;
+  font-weight: 600;
+  border-top: 1px solid #4b5563;
+  border-bottom: 1px solid #4b5563;
+}
+
+/* Split view specific */
+.diff-view-split .diff-gutter {
+  min-width: 45px;
+}
+
+.diff-view-split .diff-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.diff-view-split .diff-table td {
+  width: 50%;
+}
