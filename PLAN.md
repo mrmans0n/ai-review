@@ -138,8 +138,13 @@ interface Comment {
 
 ### M1: Basic diff viewer
 - [x] Project scaffold (Tauri + React + Vite)
-- [ ] Paste a diff → render split view with react-diff-view
-- [ ] Syntax highlighting
+- [x] Paste a diff → render split view with react-diff-view
+- [x] Syntax highlighting
+- [ ] **Git repo detection from CWD** (HIGH PRIORITY)
+  - Detect git repo when launched from a directory (`ai-diff` from CLI)
+  - Show diffs from that repo: unstaged, staged, HEAD~1, branch vs branch
+  - CLI args: `ai-diff` (interactive), `ai-diff --staged`, `ai-diff --diff HEAD~1`
+  - List changed files in sidebar
 - [ ] Line numbers
 
 ### M2: Inline comments
