@@ -1,53 +1,42 @@
-# AI Diff - Code Review Tool
+# ai-diff
 
-A standalone desktop app for reviewing AI-generated code diffs.
+AI code review tool with diff UI, inline comments, and prompt generation.
 
-## Tech Stack
+## Prerequisites
 
-- **Frontend**: React + TypeScript + Vite
-- **Diff rendering**: [react-diff-view](https://github.com/nickel-xd/react-diff-view)
-- **Desktop shell**: [Tauri v2](https://v2.tauri.app/)
-- **Styling**: Tailwind CSS
+- [Node.js](https://nodejs.org/) (v20+)
+- [pnpm](https://pnpm.io/) (`npm install -g pnpm`)
+- [Rust](https://rustup.rs/) (for Tauri backend)
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v20+)
-- Rust (for Tauri)
-
-### Development
+## Setup
 
 ```bash
-# Install dependencies
-npm install
-
-# Run web dev server
-npm run dev
-
-# Run Tauri desktop app
-npm run tauri dev
+pnpm install
 ```
 
-### Build
+## Development
+
+### Web only (no Tauri)
+```bash
+pnpm dev
+```
+Opens at http://localhost:1420/
+
+### Desktop app (Tauri)
+```bash
+pnpm tauri dev
+```
+
+## Build
 
 ```bash
-# Build web assets
-npm run build
-
-# Build desktop app
-npm run tauri build
+pnpm tauri build
 ```
 
-## Features (MVP in progress)
+## Stack
 
-- ✅ Paste unified diffs
-- ✅ Split/unified view toggle
-- ✅ Syntax highlighting
-- ✅ Dark theme
-- 🚧 Inline comments (Gerrit-style)
-- 🚧 Prompt generation for AI feedback
-- 🚧 Session management
-- 🚧 Git integration
+- **Frontend**: React + TypeScript + Vite + Tailwind CSS
+- **Diff rendering**: react-diff-view
+- **Desktop**: Tauri v2 (Rust backend)
 
-See [PLAN.md](./PLAN.md) for full roadmap and architecture.
+See [PLAN.md](PLAN.md) for the full roadmap.
