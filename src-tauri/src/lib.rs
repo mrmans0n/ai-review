@@ -11,67 +11,53 @@ struct AppState {
 }
 
 #[tauri::command]
-fn get_working_dir(state: tauri::State<AppState>) -> String {
+fn get_working_directory(state: tauri::State<AppState>) -> String {
     state.working_dir.lock().unwrap().to_string_lossy().to_string()
 }
 
 #[tauri::command]
-fn set_working_dir(state: tauri::State<AppState>, dir: String) -> Result<(), String> {
-    let path = PathBuf::from(dir);
-    if !path.exists() {
-        return Err(format!("Directory does not exist: {}", path.display()));
-    }
-    *state.working_dir.lock().unwrap() = path;
-    Ok(())
-}
-
-#[tauri::command]
-fn is_git_repo(state: tauri::State<AppState>) -> bool {
-    let dir = state.working_dir.lock().unwrap().clone();
+fn is_git_repo(path: String) -> bool {
+    let dir = PathBuf::from(path);
     git::is_git_repo(&dir)
 }
 
 #[tauri::command]
-fn get_git_root(state: tauri::State<AppState>) -> Option<String> {
-    let dir = state.working_dir.lock().unwrap().clone();
-    git::get_git_root(&dir).map(|p| p.to_string_lossy().to_string())
-}
-
-#[tauri::command]
-fn get_unstaged_diff(state: tauri::State<AppState>) -> Result<git::GitDiffResult, String> {
-    let dir = state.working_dir.lock().unwrap().clone();
+fn get_unstaged_diff(path: String) -> Result<git::GitDiffResult, String> {
+    let dir = PathBuf::from(path);
     git::get_unstaged_diff(&dir)
 }
 
 #[tauri::command]
-fn get_staged_diff(state: tauri::State<AppState>) -> Result<git::GitDiffResult, String> {
-    let dir = state.working_dir.lock().unwrap().clone();
+fn get_staged_diff(path: String) -> Result<git::GitDiffResult, String> {
+    let dir = PathBuf::from(path);
     git::get_staged_diff(&dir)
 }
 
 #[tauri::command]
-fn get_head_diff(state: tauri::State<AppState>, n: u32) -> Result<git::GitDiffResult, String> {
-    let dir = state.working_dir.lock().unwrap().clone();
+fn get_commit_diff(path: String, commit: String) -> Result<git::GitDiffResult, String> {
+    let dir = PathBuf::from(path);
+    // Parse commit ref to get the number (e.g., "HEAD~1" -> 1)
+    let n = if commit == "HEAD" {
+        0
+    } else if let Some(num_str) = commit.strip_prefix("HEAD~") {
+        num_str.parse::<u32>().unwrap_or(1)
+    } else {
+        1
+    };
     git::get_head_diff(&dir, n)
 }
 
 #[tauri::command]
-fn get_file_diff(state: tauri::State<AppState>, file_path: String, staged: bool) -> Result<String, String> {
-    let dir = state.working_dir.lock().unwrap().clone();
-    git::get_file_diff(&dir, &file_path, staged)
+fn list_files(path: String) -> Result<Vec<files::FileEntry>, String> {
+    let dir = PathBuf::from(path);
+    files::list_files(&dir, 10)
 }
 
 #[tauri::command]
-fn read_file(state: tauri::State<AppState>, file_path: String) -> Result<String, String> {
-    let dir = state.working_dir.lock().unwrap().clone();
+fn read_file_content(path: String, file_path: String) -> Result<String, String> {
+    let dir = PathBuf::from(path);
     let full_path = dir.join(file_path);
     files::read_file(&full_path.to_string_lossy())
-}
-
-#[tauri::command]
-fn list_files(state: tauri::State<AppState>) -> Result<Vec<files::FileEntry>, String> {
-    let dir = state.working_dir.lock().unwrap().clone();
-    files::list_files(&dir, 10) // max depth 10
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -102,16 +88,13 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            get_working_dir,
-            set_working_dir,
+            get_working_directory,
             is_git_repo,
-            get_git_root,
             get_unstaged_diff,
             get_staged_diff,
-            get_head_diff,
-            get_file_diff,
-            read_file,
+            get_commit_diff,
             list_files,
+            read_file_content,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
