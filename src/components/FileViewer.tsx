@@ -99,7 +99,7 @@ export function FileViewer({
               {/* Code content */}
               <div className="flex-1 px-4 py-1 overflow-x-auto">
                 <code
-                  className="font-mono text-sm text-gray-200"
+                  className="font-mono text-sm text-gray-200 whitespace-pre"
                   dangerouslySetInnerHTML={{
                     __html: highlightedLines[index] || line,
                   }}
