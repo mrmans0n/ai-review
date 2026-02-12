@@ -142,7 +142,58 @@ function App() {
         document.activeElement?.tagName !== "TEXTAREA"
       ) {
         e.preventDefault(); // Prevent 'c' from being typed into the textarea
-        // Prefer hovered line, fallback to last focused line, then default to first file
+
+        // Check if there's a text selection inside a diff area
+        const selection = window.getSelection();
+        if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const startContainer = range.startContainer;
+          const endContainer = range.endContainer;
+
+          // Helper: find the change key and file from a DOM node
+          const getLineInfo = (node: Node) => {
+            let el = node instanceof HTMLElement ? node : node.parentElement;
+            // Walk up to find a td with data-change-key
+            while (el && el.tagName !== "TABLE") {
+              if (el.tagName === "TD" && el.getAttribute("data-change-key")) {
+                const changeKey = el.getAttribute("data-change-key")!;
+                // Format: N21, I5, D10 — letter + line number
+                const lineNum = parseInt(changeKey.slice(1), 10);
+                const type = changeKey[0]; // N=normal, I=insert, D=delete
+                const side: "old" | "new" = type === "D" ? "old" : "new";
+                // Find the file wrapper
+                let fileEl = el.closest("[data-diff-file]");
+                const file = fileEl?.getAttribute("data-diff-file") || "";
+                return { file, line: lineNum, side };
+              }
+              el = el.parentElement;
+            }
+            return null;
+          };
+
+          const startInfo = getLineInfo(startContainer);
+          const endInfo = getLineInfo(endContainer);
+
+          if (startInfo && endInfo && startInfo.file === endInfo.file) {
+            const minLine = Math.min(startInfo.line, endInfo.line);
+            const maxLine = Math.max(startInfo.line, endInfo.line);
+            setLastFocusedLine({ file: startInfo.file, line: minLine, side: startInfo.side });
+            if (minLine !== maxLine) {
+              setAddingCommentAt({
+                file: startInfo.file,
+                startLine: minLine,
+                endLine: maxLine,
+                side: startInfo.side,
+              });
+            } else {
+              handleLineClick(startInfo.file, minLine, startInfo.side);
+            }
+            selection.removeAllRanges();
+            return;
+          }
+        }
+
+        // Fallback: prefer hovered line, then last focused line, then first file
         const targetLine = hoveredLine || lastFocusedLine;
         if (targetLine) {
           handleLineClick(targetLine.file, targetLine.line, targetLine.side);
@@ -341,7 +392,7 @@ function App() {
     });
 
     return (
-      <div key={file.oldPath + file.newPath} className="mb-6">
+      <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={file.newPath || file.oldPath}>
         <div className="bg-gray-700 px-4 py-2 font-semibold border-b border-gray-600 flex justify-between items-center">
           <div>
             {file.type === "delete" && (
