@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use serde::{Deserialize, Serialize};
 
@@ -15,12 +15,13 @@ pub struct GitDiffResult {
 }
 
 /// Check if a directory is a git repository
-pub fn is_git_repo(dir: &PathBuf) -> bool {
+pub fn is_git_repo(dir: &Path) -> bool {
     dir.join(".git").exists()
 }
 
 /// Get the git root directory
-pub fn get_git_root(dir: &PathBuf) -> Option<PathBuf> {
+#[allow(dead_code)]
+pub fn get_git_root(dir: &Path) -> Option<PathBuf> {
     let output = Command::new("git")
         .arg("rev-parse")
         .arg("--show-toplevel")
@@ -37,7 +38,7 @@ pub fn get_git_root(dir: &PathBuf) -> Option<PathBuf> {
 }
 
 /// Get unstaged changes
-pub fn get_unstaged_diff(dir: &PathBuf) -> Result<GitDiffResult, String> {
+pub fn get_unstaged_diff(dir: &Path) -> Result<GitDiffResult, String> {
     let diff_output = Command::new("git")
         .arg("diff")
         .arg("--no-color")
@@ -56,7 +57,7 @@ pub fn get_unstaged_diff(dir: &PathBuf) -> Result<GitDiffResult, String> {
 }
 
 /// Get staged changes
-pub fn get_staged_diff(dir: &PathBuf) -> Result<GitDiffResult, String> {
+pub fn get_staged_diff(dir: &Path) -> Result<GitDiffResult, String> {
     let diff_output = Command::new("git")
         .arg("diff")
         .arg("--staged")
@@ -76,7 +77,7 @@ pub fn get_staged_diff(dir: &PathBuf) -> Result<GitDiffResult, String> {
 }
 
 /// Get diff against HEAD~N
-pub fn get_head_diff(dir: &PathBuf, n: u32) -> Result<GitDiffResult, String> {
+pub fn get_head_diff(dir: &Path, n: u32) -> Result<GitDiffResult, String> {
     let ref_spec = if n == 0 {
         "HEAD".to_string()
     } else {
@@ -114,7 +115,7 @@ pub fn get_head_diff(dir: &PathBuf, n: u32) -> Result<GitDiffResult, String> {
 }
 
 /// Get list of changed files
-fn get_changed_files(dir: &PathBuf, staged: bool) -> Result<Vec<GitFile>, String> {
+fn get_changed_files(dir: &Path, staged: bool) -> Result<Vec<GitFile>, String> {
     let mut args = vec!["status", "--porcelain"];
     if staged {
         args.push("--staged");
@@ -188,8 +189,154 @@ fn parse_file_status(output: &str) -> Vec<GitFile> {
         .collect()
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_porcelain_status_modified() {
+        let output = " M src/main.rs\n";
+        let files = parse_porcelain_status(output);
+        
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "src/main.rs");
+        assert_eq!(files[0].status, "modified");
+    }
+
+    #[test]
+    fn test_parse_porcelain_status_added() {
+        let output = "A  src/new.rs\n";
+        let files = parse_porcelain_status(output);
+        
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "src/new.rs");
+        assert_eq!(files[0].status, "added");
+    }
+
+    #[test]
+    fn test_parse_porcelain_status_deleted() {
+        let output = " D src/old.rs\n";
+        let files = parse_porcelain_status(output);
+        
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "src/old.rs");
+        assert_eq!(files[0].status, "deleted");
+    }
+
+    #[test]
+    fn test_parse_porcelain_status_multiple() {
+        let output = " M src/main.rs\nA  src/new.rs\n D src/old.rs\n";
+        let files = parse_porcelain_status(output);
+        
+        assert_eq!(files.len(), 3);
+        assert_eq!(files[0].status, "modified");
+        assert_eq!(files[1].status, "added");
+        assert_eq!(files[2].status, "deleted");
+    }
+
+    #[test]
+    fn test_parse_porcelain_status_empty() {
+        let output = "";
+        let files = parse_porcelain_status(output);
+        
+        assert_eq!(files.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_porcelain_status_modified_both() {
+        let output = "MM src/file.rs\n";
+        let files = parse_porcelain_status(output);
+        
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].status, "modified");
+    }
+
+    #[test]
+    fn test_parse_file_status_modified() {
+        let output = "M\tsrc/main.rs\n";
+        let files = parse_file_status(output);
+        
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "src/main.rs");
+        assert_eq!(files[0].status, "modified");
+    }
+
+    #[test]
+    fn test_parse_file_status_added() {
+        let output = "A\tsrc/new.rs\n";
+        let files = parse_file_status(output);
+        
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "src/new.rs");
+        assert_eq!(files[0].status, "added");
+    }
+
+    #[test]
+    fn test_parse_file_status_deleted() {
+        let output = "D\tsrc/old.rs\n";
+        let files = parse_file_status(output);
+        
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "src/old.rs");
+        assert_eq!(files[0].status, "deleted");
+    }
+
+    #[test]
+    fn test_parse_file_status_multiple() {
+        let output = "M\tsrc/main.rs\nA\tsrc/new.rs\nD\tsrc/old.rs\n";
+        let files = parse_file_status(output);
+        
+        assert_eq!(files.len(), 3);
+        assert_eq!(files[0].status, "modified");
+        assert_eq!(files[1].status, "added");
+        assert_eq!(files[2].status, "deleted");
+    }
+
+    #[test]
+    fn test_parse_file_status_empty() {
+        let output = "";
+        let files = parse_file_status(output);
+        
+        assert_eq!(files.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_file_status_invalid_line() {
+        let output = "M\n";
+        let files = parse_file_status(output);
+        
+        assert_eq!(files.len(), 0);
+    }
+
+    #[test]
+    fn test_is_git_repo_true() {
+        use std::env;
+        use std::fs;
+        
+        // Create a temporary directory with .git
+        let temp_dir = env::temp_dir().join("test_git_repo");
+        let _ = fs::create_dir_all(&temp_dir);
+        let git_dir = temp_dir.join(".git");
+        let _ = fs::create_dir_all(&git_dir);
+        
+        assert!(is_git_repo(&temp_dir));
+        
+        // Cleanup
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_is_git_repo_false() {
+        use std::env;
+        
+        let temp_dir = env::temp_dir().join("test_not_git_repo");
+        assert!(!is_git_repo(&temp_dir));
+    }
+}
+
 /// Get diff for a specific file
-pub fn get_file_diff(dir: &PathBuf, file_path: &str, staged: bool) -> Result<String, String> {
+#[allow(dead_code)]
+pub fn get_file_diff(dir: &Path, file_path: &str, staged: bool) -> Result<String, String> {
     let mut args = vec!["diff", "--no-color"];
     if staged {
         args.push("--staged");

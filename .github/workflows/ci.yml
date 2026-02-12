@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test:run
+
+      - name: Build
+        run: pnpm build
+
+  backend:
+    name: Rust Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry/index
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo registry cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry/cache
+          key: ${{ runner.os }}-cargo-registry-cache-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo git
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install dependencies (Ubuntu)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Check formatting
+        run: cd src-tauri && cargo fmt -- --check
+
+      - name: Cargo check
+        run: cd src-tauri && cargo check
+
+      - name: Run tests
+        run: cd src-tauri && cargo test
+
+      - name: Run clippy
+        run: cd src-tauri && cargo clippy -- -D warnings
