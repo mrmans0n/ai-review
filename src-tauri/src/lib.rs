@@ -2,8 +2,8 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::Manager;
 
-mod git;
 mod files;
+mod git;
 
 // Global state to store the working directory
 struct AppState {
@@ -12,7 +12,12 @@ struct AppState {
 
 #[tauri::command]
 fn get_working_directory(state: tauri::State<AppState>) -> String {
-    state.working_dir.lock().unwrap().to_string_lossy().to_string()
+    state
+        .working_dir
+        .lock()
+        .unwrap()
+        .to_string_lossy()
+        .to_string()
 }
 
 #[tauri::command]
@@ -67,11 +72,10 @@ pub fn run() {
         .setup(|app| {
             // Get CLI arguments
             let args: Vec<String> = std::env::args().collect();
-            
+
             // Default to current directory
-            let mut working_dir = std::env::current_dir()
-                .unwrap_or_else(|_| PathBuf::from("."));
-            
+            let mut working_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+
             // Check if a directory was passed as argument
             if args.len() > 1 {
                 let arg_path = PathBuf::from(&args[1]);
@@ -79,12 +83,12 @@ pub fn run() {
                     working_dir = arg_path;
                 }
             }
-            
+
             // Initialize app state with working directory
             app.manage(AppState {
                 working_dir: Mutex::new(working_dir),
             });
-            
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
