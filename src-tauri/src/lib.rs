@@ -141,13 +141,14 @@ fn check_cli_installed() -> bool {
             return false;
         }
 
-        // Get current executable path
-        let Ok(current_exe) = std::env::current_exe() else {
+        // Get current executable path, resolving symlinks
+        let Ok(current_exe) = std::env::current_exe().and_then(|p| p.canonicalize()) else {
             return false;
         };
 
-        // Check if the symlink points to the current executable
-        target == current_exe
+        // Canonicalize target too for comparison
+        let target_canonical = target.canonicalize().unwrap_or(target);
+        target_canonical == current_exe
     }
 }
 
@@ -163,9 +164,10 @@ fn install_cli() -> Result<InstallCliResult, String> {
         use std::fs;
         use std::os::unix::fs::symlink;
 
-        // Get the current executable path
-        let exe_path =
-            std::env::current_exe().map_err(|e| format!("Failed to get executable path: {}", e))?;
+        // Get the current executable path, resolving any symlinks
+        let exe_path = std::env::current_exe()
+            .and_then(|p| p.canonicalize())
+            .map_err(|e| format!("Failed to get executable path: {}", e))?;
 
         // Expand home directory
         let home_dir =
