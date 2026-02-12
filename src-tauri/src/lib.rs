@@ -116,7 +116,7 @@ fn install_cli() -> Result<InstallCliResult, String> {
         let in_path = path_env.split(':').any(|p| p == local_bin_str);
 
         let message = if in_path {
-            format!("CLI installed successfully! You can now use 'air' from your terminal.")
+            "CLI installed successfully! You can now use 'air' from your terminal.".to_string()
         } else {
             format!(
                 "CLI installed to {}. Add this directory to your PATH to use 'air' from anywhere.",
