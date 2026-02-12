@@ -462,13 +462,23 @@ function App() {
       commentsByEndLine.get(key)!.push(comment);
     }
 
+    // Wrap widget content with side info for split view alignment
+    const wrapForSide = (content: React.ReactNode, side: "old" | "new") => {
+      if (viewType !== "split") return content;
+      return (
+        <div className={`split-widget-${side}`}>
+          {content}
+        </div>
+      );
+    };
+
     // Map comments to change keys
     for (const [lookupKey, commentsAtLine] of commentsByEndLine) {
       const [side, lineStr] = lookupKey.split("-");
       const lineNum = parseInt(lineStr, 10);
       const changeKey = findChangeKey(file.hunks, lineNum, side as "old" | "new");
       if (changeKey) {
-        widgets[changeKey] = (
+        const commentWidget = wrapForSide(
           <div
             className="px-4 py-2 bg-gray-800 border-t border-b border-gray-700"
             onMouseEnter={() => setHoveredCommentIds(commentsAtLine.map(c => c.id))}
@@ -482,8 +492,10 @@ function App() {
               onStartEdit={startEditing}
               onStopEdit={stopEditing}
             />
-          </div>
+          </div>,
+          side as "old" | "new"
         );
+        widgets[changeKey] = commentWidget;
       }
     }
 
@@ -492,9 +504,8 @@ function App() {
       const formChangeKey = findChangeKey(file.hunks, addingCommentAt.endLine, addingCommentAt.side);
       if (formChangeKey) {
         const existingWidget = widgets[formChangeKey];
-        widgets[formChangeKey] = (
+        const formWidget = wrapForSide(
           <div className="px-4 py-2 bg-gray-800 border-t border-b border-gray-700">
-            {existingWidget}
             <AddCommentForm
               file={addingCommentAt.file}
               startLine={addingCommentAt.startLine}
@@ -503,8 +514,10 @@ function App() {
               onSubmit={handleAddComment}
               onCancel={() => setAddingCommentAt(null)}
             />
-          </div>
+          </div>,
+          addingCommentAt.side
         );
+        widgets[formChangeKey] = <>{existingWidget}{formWidget}</>;
       }
     }
 
