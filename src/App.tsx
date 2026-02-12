@@ -89,6 +89,8 @@ function App() {
     }
   }, [diffResult]);
 
+  const files = diffText ? parseDiff(diffText) : [];
+
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (
@@ -98,15 +100,17 @@ function App() {
         document.activeElement?.tagName !== "INPUT" &&
         document.activeElement?.tagName !== "TEXTAREA"
       ) {
-        console.log("Add comment shortcut pressed - click a line to add a comment");
+        // If there's a file with diff showing, add comment to first visible file at line 1
+        if (files.length > 0) {
+          const fileName = files[0].newPath || files[0].oldPath;
+          handleLineClick(fileName, 1, "new");
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, []);
-
-  const files = diffText ? parseDiff(diffText) : [];
+  }, [files]);
 
   const handleModeChange = (newMode: DiffModeConfig) => {
     setDiffMode(newMode);
@@ -198,6 +202,20 @@ function App() {
           diffType={file.type}
           hunks={file.hunks}
           tokens={tokens}
+          gutterEvents={{
+            onClick: (event: any) => {
+              const { change } = event;
+              if (change && change.lineNumber) {
+                const fileName = file.newPath || file.oldPath;
+                const side = change.isNormal 
+                  ? "new" 
+                  : change.type === "insert" 
+                  ? "new" 
+                  : "old";
+                handleLineClick(fileName, change.lineNumber, side);
+              }
+            },
+          }}
         >
           {(hunks: any[]) =>
             hunks.flatMap((hunk, hunkIndex) => {
