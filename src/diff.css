@@ -1,6 +1,21 @@
 /* react-diff-view default styles */
 @import 'react-diff-view/style/index.css';
 
+/* Override react-diff-view CSS variables for dark theme */
+:root {
+  --diff-background-color: #1f2937;
+  --diff-text-color: #f3f4f6;
+  --diff-selection-background-color: #3b82f6;
+  --diff-gutter-insert-background-color: rgba(22, 101, 52, 0.3);
+  --diff-gutter-delete-background-color: rgba(153, 27, 27, 0.3);
+  --diff-code-insert-background-color: rgba(22, 101, 52, 0.25);
+  --diff-code-delete-background-color: rgba(153, 27, 27, 0.25);
+  --diff-code-insert-edit-background-color: rgba(34, 197, 94, 0.2);
+  --diff-code-delete-edit-background-color: rgba(239, 68, 68, 0.2);
+  --diff-gutter-selected-background-color: rgba(59, 130, 246, 0.2);
+  --diff-code-selected-background-color: rgba(59, 130, 246, 0.15);
+}
+
 /* Custom dark theme overrides */
 .diff-view {
   @apply bg-gray-800 text-gray-100;
