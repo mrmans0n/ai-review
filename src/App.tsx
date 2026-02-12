@@ -12,6 +12,7 @@ import { FileExplorer } from "./components/FileExplorer";
 import { FileList } from "./components/FileList";
 import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
+import { generatePrompt } from "./lib/promptGenerator";
 import type { DiffModeConfig } from "./types";
 
 const EXAMPLE_DIFF = `diff --git a/src/components/Button.tsx b/src/components/Button.tsx
@@ -61,6 +62,7 @@ function App() {
     line: number;
     side: "old" | "new";
   } | null>(null);
+  const [promptCopied, setPromptCopied] = useState(false);
 
   const {
     comments,
@@ -168,6 +170,17 @@ function App() {
         text
       );
       setAddingCommentAt(null);
+    }
+  };
+
+  const handleGeneratePrompt = async () => {
+    const prompt = generatePrompt(comments);
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setPromptCopied(true);
+      setTimeout(() => setPromptCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy to clipboard:", err);
     }
   };
 
@@ -371,11 +384,19 @@ function App() {
           </button>
         )}
 
-        <div className="ml-auto text-sm text-gray-400">
+        <div className="ml-auto flex items-center gap-3">
           {comments.length > 0 && (
-            <span className="px-3 py-1 bg-yellow-600 text-white rounded">
-              {comments.length} comment{comments.length !== 1 ? "s" : ""}
-            </span>
+            <>
+              <span className="px-3 py-1 bg-yellow-600 text-white rounded text-sm">
+                {comments.length} comment{comments.length !== 1 ? "s" : ""}
+              </span>
+              <button
+                onClick={handleGeneratePrompt}
+                className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+              >
+                {promptCopied ? "Copied!" : "Generate Prompt"}
+              </button>
+            </>
           )}
         </div>
       </div>
