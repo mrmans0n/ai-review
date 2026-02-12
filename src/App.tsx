@@ -387,6 +387,19 @@ function App() {
     }
   };
 
+  // Extract side and line number from a change object
+  const getChangeSide = (change: any): "old" | "new" => {
+    if (change.isNormal) return "new";
+    return change.type === "insert" ? "new" : "old";
+  };
+
+  const getChangeLineNumber = (change: any, side: "old" | "new"): number | undefined => {
+    if (change.isNormal) {
+      return side === "new" ? change.newLineNumber : change.oldLineNumber;
+    }
+    return change.lineNumber;
+  };
+
   // Find the change key for a given line number and side in the hunks
   const findChangeKey = (hunks: any[], lineNum: number, side: "old" | "new"): string | null => {
     for (const hunk of hunks) {
@@ -507,7 +520,7 @@ function App() {
     const fileComments = comments.filter((c) => c.file === fileName);
     const fileWidgets = buildFileWidgets(file, fileComments);
 
-    // Build selectedChanges for hover highlighting
+    // Build selectedChanges for hover highlighting and drag selection
     const highlightedChangeKeys: string[] = [];
     if (hoveredCommentIds && hoveredCommentIds.length > 0) {
       for (const comment of fileComments) {
@@ -517,6 +530,12 @@ function App() {
           );
         }
       }
+    }
+    // Highlight drag selection range
+    if (selectedRange && selectedRange.file === fileName) {
+      highlightedChangeKeys.push(
+        ...getChangeKeysForRange(file.hunks, selectedRange.startLine, selectedRange.endLine, selectedRange.side)
+      );
     }
 
     return (
@@ -563,6 +582,44 @@ function App() {
           tokens={tokens}
           widgets={fileWidgets}
           selectedChanges={highlightedChangeKeys}
+          renderGutter={({ change, side, inHoverState, renderDefault }: any) => {
+            if (!change) return renderDefault();
+            const changeSide = getChangeSide(change);
+            const lineNumber = getChangeLineNumber(change, changeSide);
+            // Only show button on the "new" side gutter (or matching side)
+            const showButton = inHoverState && side === changeSide && lineNumber;
+            return (
+              <span className="relative inline-flex items-center w-full">
+                {showButton && (
+                  <span
+                    className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 hover:bg-blue-500 cursor-pointer text-white opacity-80 hover:opacity-100 transition-all"
+                    title="Add comment"
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      if (lineNumber) {
+                        setSelectingRange({
+                          file: fileName,
+                          startLine: lineNumber,
+                          side: changeSide,
+                        });
+                        setSelectedRange({
+                          file: fileName,
+                          startLine: lineNumber,
+                          endLine: lineNumber,
+                          side: changeSide,
+                        });
+                      }
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+                      <path fillRule="evenodd" d="M10 2c-4.418 0-8 2.91-8 6.5S5.582 15 10 15c.382 0 .757-.022 1.124-.063l3.33 2.152a.5.5 0 00.771-.42v-2.97C17.09 12.266 18 10.48 18 8.5 18 4.91 14.418 2 10 2z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                )}
+                <span className="flex-1 text-right">{renderDefault()}</span>
+              </span>
+            );
+          }}
           gutterEvents={{
             onClick: (event: any) => {
               const { change } = event;
@@ -647,15 +704,13 @@ function App() {
             },
             onMouseUp: (_event: any) => {
               if (selectingRange && selectedRange) {
-                // Only open comment form if we dragged across multiple lines
-                if (selectedRange.startLine !== selectedRange.endLine) {
-                  setAddingCommentAt({
-                    file: selectedRange.file,
-                    startLine: selectedRange.startLine,
-                    endLine: selectedRange.endLine,
-                    side: selectedRange.side,
-                  });
-                }
+                // Create comment for the selected range (single or multi-line)
+                setAddingCommentAt({
+                  file: selectedRange.file,
+                  startLine: selectedRange.startLine,
+                  endLine: selectedRange.endLine,
+                  side: selectedRange.side,
+                });
                 setSelectingRange(null);
                 setSelectedRange(null);
               }
