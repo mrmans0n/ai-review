@@ -16,6 +16,7 @@ import { FileViewer } from "./components/FileViewer";
 import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
 import { PromptPreview } from "./components/PromptPreview";
+import { CommentOverview } from "./components/CommentOverview";
 import { generatePrompt } from "./lib/promptGenerator";
 import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry } from "./types";
 
@@ -86,6 +87,7 @@ function App() {
   const [cliInstalled, setCliInstalled] = useState(false);
   const [installMessage, setInstallMessage] = useState<string | null>(null);
   const [hoveredCommentIds, setHoveredCommentIds] = useState<string[] | null>(null);
+  const [showCommentOverview, setShowCommentOverview] = useState(false);
 
   const {
     comments,
@@ -742,24 +744,21 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+      <div className="bg-gray-800 border-b border-gray-700 px-6 py-2">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white">AI Code Review Tool</h1>
-            <p className="text-gray-400 text-sm mt-1">
-              {isGitRepo ? (
-                <span className="text-green-400">
-                  Git repo detected: {workingDir}
-                </span>
-              ) : (
-                "Paste a unified diff or open from a git repository"
-              )}
-            </p>
-          </div>
+          <p className="text-gray-400 text-sm">
+            {isGitRepo ? (
+              <span className="text-green-400">
+                {workingDir}
+              </span>
+            ) : (
+              "Paste a unified diff or open from a git repository"
+            )}
+          </p>
           {isGitRepo && (
             <div className="text-sm text-gray-400">
-              Press <kbd className="px-2 py-1 bg-gray-700 rounded">Shift</kbd>{" "}
-              <kbd className="px-2 py-1 bg-gray-700 rounded">Shift</kbd> to search files
+              Press <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">Shift</kbd>{" "}
+              <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">Shift</kbd> to search files
             </div>
           )}
         </div>
@@ -869,9 +868,13 @@ function App() {
         <div className="ml-auto flex items-center gap-3">
           {comments.length > 0 && (
             <>
-              <span className="px-3 py-1 bg-yellow-600 text-white rounded text-sm">
+              <button
+                onClick={() => setShowCommentOverview(true)}
+                className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500 transition-colors cursor-pointer"
+              >
                 {comments.length} comment{comments.length !== 1 ? "s" : ""}
-              </span>
+                {comments.length > 10 ? " 🫠" : comments.length >= 3 ? " 🔥" : ""}
+              </button>
               <button
                 onClick={handleGeneratePrompt}
                 className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
@@ -1099,6 +1102,25 @@ function App() {
         <PromptPreview
           prompt={generatePrompt(comments)}
           onClose={() => setShowPromptPreview(false)}
+        />
+      )}
+
+      {showCommentOverview && (
+        <CommentOverview
+          comments={comments}
+          onClose={() => setShowCommentOverview(false)}
+          onGoToComment={(comment) => {
+            setShowCommentOverview(false);
+            // Scroll to the comment's file and highlight it
+            setHoveredCommentIds([comment.id]);
+            // Clear highlight after a few seconds
+            setTimeout(() => setHoveredCommentIds(null), 3000);
+            // Scroll to the file element
+            const fileEl = document.querySelector(`[data-diff-file="${comment.file}"]`);
+            if (fileEl) {
+              fileEl.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }}
         />
       )}
 
