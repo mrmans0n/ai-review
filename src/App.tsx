@@ -192,6 +192,14 @@ function App() {
     }
   };
 
+  // Handle Enter key selection in file explorer
+  useEffect(() => {
+    if (fileExplorer.pendingSelection) {
+      handleFileSelect(fileExplorer.pendingSelection);
+      fileExplorer.clearPendingSelection();
+    }
+  }, [fileExplorer.pendingSelection]);
+
   const handleExplorerSelect = async (filePath: string) => {
     const file = await fileExplorer.onSelectFile(filePath);
     await handleFileSelect(file);

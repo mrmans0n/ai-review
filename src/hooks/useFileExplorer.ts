@@ -7,6 +7,7 @@ export function useFileExplorer(workingDir: string | null) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [pendingSelection, setPendingSelection] = useState<string | null>(null);
 
   // Use ref to track filtered files for event handler
   const filteredFilesRef = useRef<string[]>([]);
@@ -64,7 +65,9 @@ export function useFileExplorer(workingDir: string | null) {
       } else if (isOpen && e.key === "Enter") {
         e.preventDefault();
         if (filteredFilesRef.current.length > 0) {
-          onSelectFile(filteredFilesRef.current[selectedIndex]);
+          const file = filteredFilesRef.current[selectedIndex];
+          onSelectFile(file);
+          setPendingSelection(file);
         }
       }
     };
@@ -129,5 +132,7 @@ export function useFileExplorer(workingDir: string | null) {
     loading,
     closeExplorer,
     onSelectFile,
+    pendingSelection,
+    clearPendingSelection: () => setPendingSelection(null),
   };
 }
