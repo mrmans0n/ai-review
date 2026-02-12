@@ -58,3 +58,10 @@ export interface GgStackEntry {
   mr_number: number | null;
   position: number;
 }
+
+export interface PromptContext {
+  mode: DiffMode;
+  commitRef?: string;
+  selectedCommit?: CommitInfo | null;
+  selectedBranch?: BranchInfo | null;
+}

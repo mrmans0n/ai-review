@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { generatePrompt } from "./promptGenerator";
-import type { Comment } from "../types";
+import type { Comment, PromptContext } from "../types";
 
 describe("generatePrompt", () => {
   it("should return empty string for empty comments array", () => {
@@ -170,6 +170,116 @@ describe("generatePrompt", () => {
 - \`src/components/Button.tsx:15\` — Add error handling
 - \`src/components/Button.tsx:30-35\` — Extract to separate function
 - \`src/utils/helpers.ts:10-20\` — Add JSDoc comments`
+    );
+  });
+
+  it("should prepend commit context when selectedCommit is provided", () => {
+    const comments: Comment[] = [
+      {
+        id: "1",
+        file: "src/auth.ts",
+        startLine: 42,
+        endLine: 42,
+        side: "new",
+        text: "Use bcrypt instead of md5",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ];
+    const context: PromptContext = {
+      mode: "commit",
+      selectedCommit: {
+        hash: "abc123def456",
+        short_hash: "abc123d",
+        message: "Fix auth flow",
+        author: "test",
+        date: "2024-01-01",
+        refs: "",
+      },
+      selectedBranch: null,
+    };
+
+    const result = generatePrompt(comments, context);
+    expect(result).toBe(
+      `These comments are from reviewing commit abc123d ("Fix auth flow").\nApply the feedback to the current version of the code.\n\nPlease address these review comments:\n\n- \`src/auth.ts:42\` — Use bcrypt instead of md5`
+    );
+  });
+
+  it("should prepend branch context when selectedBranch is provided", () => {
+    const comments: Comment[] = [
+      {
+        id: "1",
+        file: "src/auth.ts",
+        startLine: 10,
+        endLine: 10,
+        side: "new",
+        text: "Add error handling",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ];
+    const context: PromptContext = {
+      mode: "commit",
+      selectedCommit: null,
+      selectedBranch: {
+        name: "feature/auth",
+        short_hash: "def789a",
+        subject: "Auth feature",
+        author: "test",
+        date: "2024-01-01",
+      },
+    };
+
+    const result = generatePrompt(comments, context);
+    expect(result).toBe(
+      `These comments are from reviewing branch feature/auth (at def789a).\nApply the feedback to the current version of the code.\n\nPlease address these review comments:\n\n- \`src/auth.ts:10\` — Add error handling`
+    );
+  });
+
+  it("should prepend commit ref context when only commitRef is provided", () => {
+    const comments: Comment[] = [
+      {
+        id: "1",
+        file: "src/main.ts",
+        startLine: 5,
+        endLine: 5,
+        side: "new",
+        text: "Rename variable",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ];
+    const context: PromptContext = {
+      mode: "commit",
+      commitRef: "HEAD~3",
+      selectedCommit: null,
+      selectedBranch: null,
+    };
+
+    const result = generatePrompt(comments, context);
+    expect(result).toBe(
+      `These comments are from reviewing changes relative to HEAD~3.\nApply the feedback to the current version of the code.\n\nPlease address these review comments:\n\n- \`src/main.ts:5\` — Rename variable`
+    );
+  });
+
+  it("should not prepend context for unstaged changes", () => {
+    const comments: Comment[] = [
+      {
+        id: "1",
+        file: "src/main.ts",
+        startLine: 1,
+        endLine: 1,
+        side: "new",
+        text: "Fix typo",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ];
+    const context: PromptContext = {
+      mode: "unstaged",
+      selectedCommit: null,
+      selectedBranch: null,
+    };
+
+    const result = generatePrompt(comments, context);
+    expect(result).toBe(
+      `Please address these review comments:\n\n- \`src/main.ts:1\` — Fix typo`
     );
   });
 });
