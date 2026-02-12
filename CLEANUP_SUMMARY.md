@@ -3,7 +3,7 @@
 ## Branch
 **Name**: `feat/core-features`  
 **Status**: Pushed and PR updated  
-**PR**: https://github.com/mrmans0n/ai-diff/pull/1
+**PR**: https://github.com/mrmans0n/ai-review/pull/1
 
 ## What Was Cleaned
 
@@ -59,7 +59,7 @@ pnpm tauri build --debug
 ```
 **Result**: PARTIAL SUCCESS
 - ✅ Rust compilation successful
-- ✅ Binary created at: `src-tauri/target/debug/ai-diff`
+- ✅ Binary created at: `src-tauri/target/debug/ai-review`
 - ✅ .app bundle created successfully
 - ❌ DMG creation failed (non-critical - known macOS issue)
 
@@ -86,7 +86,7 @@ pnpm tauri build --debug
 ## Features Verified
 
 ### ✅ Fully Implemented
-1. **CLI (`aid`/`aidiff`)**
+1. **CLI (`aid`/`air`)**
    - Bash wrapper script
    - Installation script with PATH instructions
    - Passes working directory to Tauri

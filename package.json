@@ -1,11 +1,10 @@
 {
-  "name": "ai-diff",
+  "name": "ai-review",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "aid": "./cli/aid",
-    "aidiff": "./cli/aid"
+    "air": "./cli/air"
   },
   "scripts": {
     "dev": "vite",

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI wrapper for ai-diff
+# CLI wrapper for ai-review
 # This script launches the Tauri app with the current directory as an argument
 
 # Get the directory where this script is located
@@ -8,41 +8,41 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Determine the app location based on platform
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
-    APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/bundle/macos/ai-diff.app/Contents/MacOS/ai-diff"
+    APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/bundle/macos/ai-review.app/Contents/MacOS/ai-review"
     
     # If not found in release, try debug
     if [ ! -f "$APP_PATH" ]; then
-        APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/bundle/macos/ai-diff.app/Contents/MacOS/ai-diff"
+        APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/bundle/macos/ai-review.app/Contents/MacOS/ai-review"
     fi
     
     # If still not found, try the binary directly
     if [ ! -f "$APP_PATH" ]; then
-        APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-diff"
+        APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-review"
     fi
     
     # Last resort: debug binary
     if [ ! -f "$APP_PATH" ]; then
-        APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-diff"
+        APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-review"
     fi
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     # Linux
-    APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-diff"
+    APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-review"
     
     if [ ! -f "$APP_PATH" ]; then
-        APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-diff"
+        APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-review"
     fi
 else
     # Windows (via Git Bash or WSL)
-    APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-diff.exe"
+    APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-review.exe"
     
     if [ ! -f "$APP_PATH" ]; then
-        APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-diff.exe"
+        APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-review.exe"
     fi
 fi
 
 # Check if the app exists
 if [ ! -f "$APP_PATH" ]; then
-    echo "Error: ai-diff executable not found."
+    echo "Error: ai-review executable not found."
     echo "Please build the app first with: pnpm tauri build"
     exit 1
 fi

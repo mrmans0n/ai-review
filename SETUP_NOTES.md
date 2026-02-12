@@ -29,7 +29,7 @@ Key features implemented:
 - **Responsive layout** - Flexbox layout with proper spacing
 
 ✅ **Project Configuration**
-- Updated package.json with correct name (`ai-diff`)
+- Updated package.json with correct name (`ai-review`)
 - Configured Tailwind CSS v3 with dark theme defaults
 - Set up PostCSS for Tailwind processing
 - Updated Tauri config with proper app name and larger window size (1400x900)
@@ -96,5 +96,5 @@ The scaffold is complete. Ready to implement:
 ---
 
 **Commit**: `056b018` - "Initial Tauri v2 + React + TypeScript scaffold"
-**Remote**: mrmans0n/ai-diff (private)
+**Remote**: mrmans0n/ai-review (private)
 **Branch**: main

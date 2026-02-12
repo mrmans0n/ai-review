@@ -1,12 +1,12 @@
 # Complete Core Features Implementation
 
-This PR implements all core features for the ai-diff code review tool, bringing it to PR-ready quality.
+This PR implements all core features for the ai-review code review tool, bringing it to PR-ready quality.
 
 ## 🎯 Implemented Features
 
-### 1. CLI Launcher (`aid` / `aidiff`)
+### 1. CLI Launcher (`air`)
 - ✅ Bash script wrapper that launches Tauri app with current working directory
-- ✅ Supports both `aid` and `aidiff` commands
+- ✅ Supports `air` command
 - ✅ Passes working directory as CLI argument to backend
 - ✅ Install script for `~/.local/bin`
 

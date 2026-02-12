@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ai-diff"
+name = "ai-review"
 version = "0.1.0"
 dependencies = [
  "serde",

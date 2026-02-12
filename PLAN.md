@@ -1,4 +1,4 @@
-# ai-diff — AI Code Review Tool
+# ai-review — AI Code Review Tool
 
 ## Vision
 
@@ -71,7 +71,7 @@ A standalone desktop app for reviewing AI-generated code diffs. Think GitHub PR 
 ## Architecture
 
 ```
-ai-diff/
+ai-review/
 ├── src-tauri/          # Rust backend (Tauri)
 │   ├── src/
 │   │   ├── main.rs
@@ -143,7 +143,7 @@ interface Comment {
 - [ ] **Git repo detection from CWD** (HIGH PRIORITY)
   - Detect git repo when launched from a directory (`ai-diff` from CLI)
   - Show diffs from that repo: unstaged, staged, HEAD~1, branch vs branch
-  - CLI args: `ai-diff` (interactive), `ai-diff --staged`, `ai-diff --diff HEAD~1`
+  - CLI args: `air` (interactive), `air --staged`, `air --diff HEAD~1`
   - List changed files in sidebar
 - [ ] Line numbers
 

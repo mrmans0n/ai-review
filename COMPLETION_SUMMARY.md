@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-12  
 **Branch:** `feat/core-features`  
-**PR:** #1 - https://github.com/mrmans0n/ai-diff/pull/1  
+**PR:** #1 - https://github.com/mrmans0n/ai-review/pull/1  
 **Status:** ✅ Ready for Review
 
 ---
@@ -19,11 +19,11 @@
 
 All requested features are **working end-to-end**:
 
-#### ✅ CLI `aid` / `aidiff`
+#### ✅ CLI `aid` / `air`
 - Bash script wrapper in `cli/aid`
 - Passes current working directory to Tauri app via CLI argument
 - Install script: `cli/install.sh` → `~/.local/bin`
-- Both `aid` and `aidiff` commands work
+- Both `aid` and `air` commands work
 
 #### ✅ Git Repo Auto-detection
 - Detects `.git` directory on startup
@@ -88,7 +88,7 @@ dist/assets/index-G7-XLxL1.js   352.01 kB │ gzip: 111.06 kB
 **Branch:** `feat/core-features`  
 **Total Commits:** 8 (incremental)
 
-1. `4ccaa65` - feat: add Tauri backend commands and aid/aidiff CLI launcher
+1. `4ccaa65` - feat: add Tauri backend commands and aid/air CLI launcher
 2. `3a1cde6` - feat: implement git diff UI, file search, and inline diff comments
 3. `5dbeb09` - fix: align backend API with frontend expectations
 4. `e317edb` - fix: align list_files return type with frontend expectations
@@ -100,7 +100,7 @@ dist/assets/index-G7-XLxL1.js   352.01 kB │ gzip: 111.06 kB
 ### 5. Pull Request
 
 **PR #1:** Core Features: CLI, Git Integration, File Explorer, and Inline Comments  
-**URL:** https://github.com/mrmans0n/ai-diff/pull/1  
+**URL:** https://github.com/mrmans0n/ai-review/pull/1  
 **State:** OPEN  
 **Changes:** +7,374 additions / -109 deletions  
 
@@ -266,7 +266,7 @@ The PR is ready for review. After merge to `main`:
 ## 📝 Final Notes
 
 ### Constraints Met
-✅ **Project naming:** Kept as `ai-diff` (rename deferred)  
+✅ **Project naming:** Kept as `ai-review` (rename deferred)  
 ✅ **Language:** All code, comments, and messages in English  
 ✅ **Incremental commits:** 8 atomic commits with clear messages  
 ✅ **PR quality:** Comprehensive description, testing checklist, known limitations  
