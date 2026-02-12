@@ -124,6 +124,14 @@
   overflow: visible;
 }
 
+/* Constrain text selection to one column in split view */
+table.diff-table.selecting-old td:nth-child(n+3) {
+  user-select: none !important;
+}
+table.diff-table.selecting-new td:nth-child(-n+2) {
+  user-select: none !important;
+}
+
 /* Split view: constrain comment widgets to their respective side */
 .diff-widget-content .split-widget-old {
   width: 50%;
