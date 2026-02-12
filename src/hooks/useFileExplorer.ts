@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 export function useFileExplorer(workingDir: string | null) {
@@ -7,6 +7,39 @@ export function useFileExplorer(workingDir: string | null) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // Use ref to track filtered files for event handler
+  const filteredFilesRef = useRef<string[]>([]);
+
+  const loadFiles = useCallback(async () => {
+    if (!workingDir) return;
+
+    setLoading(true);
+    try {
+      // Backend returns Vec<String>, not Vec<FileEntry>
+      const result = await invoke<string[]>(
+        "list_files",
+        { path: workingDir }
+      );
+      setFiles(result);
+      setSelectedIndex(0);
+    } catch (err) {
+      console.error("Failed to load files:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [workingDir]);
+
+  const closeExplorer = useCallback(() => {
+    setIsOpen(false);
+    setSearchQuery("");
+    setSelectedIndex(0);
+  }, []);
+
+  const onSelectFile = useCallback((filePath: string) => {
+    closeExplorer();
+    return filePath;
+  }, [closeExplorer]);
 
   useEffect(() => {
     let lastShiftTime = 0;
@@ -24,51 +57,21 @@ export function useFileExplorer(workingDir: string | null) {
         closeExplorer();
       } else if (isOpen && e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedIndex((prev) => Math.min(prev + 1, filteredFiles.length - 1));
+        setSelectedIndex((prev) => Math.min(prev + 1, filteredFilesRef.current.length - 1));
       } else if (isOpen && e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedIndex((prev) => Math.max(prev - 1, 0));
       } else if (isOpen && e.key === "Enter") {
         e.preventDefault();
-        if (filteredFiles.length > 0) {
-          onSelectFile(filteredFiles[selectedIndex]);
+        if (filteredFilesRef.current.length > 0) {
+          onSelectFile(filteredFilesRef.current[selectedIndex]);
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  });
-
-  const loadFiles = async () => {
-    if (!workingDir) return;
-
-    setLoading(true);
-    try {
-      const result = await invoke<Array<{ path: string; name: string; is_dir: boolean }>>(
-        "list_files",
-        { path: workingDir }
-      );
-      // Extract just the paths from FileEntry objects
-      setFiles(result.map((entry) => entry.path));
-      setSelectedIndex(0);
-    } catch (err) {
-      console.error("Failed to load files:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const closeExplorer = () => {
-    setIsOpen(false);
-    setSearchQuery("");
-    setSelectedIndex(0);
-  };
-
-  const onSelectFile = (filePath: string) => {
-    closeExplorer();
-    return filePath;
-  };
+  }, [isOpen, selectedIndex, loadFiles, closeExplorer, onSelectFile]);
 
   const filteredFiles = files.filter((file) => {
     const query = searchQuery.toLowerCase();
@@ -82,6 +85,9 @@ export function useFileExplorer(workingDir: string | null) {
     }
     return queryIndex === query.length;
   });
+
+  // Update ref whenever filteredFiles changes
+  filteredFilesRef.current = filteredFiles;
 
   return {
     isOpen,

@@ -56,6 +56,11 @@ function App() {
     endLine: number;
     side: "old" | "new";
   } | null>(null);
+  const [lastFocusedLine, setLastFocusedLine] = useState<{
+    file: string;
+    line: number;
+    side: "old" | "new";
+  } | null>(null);
 
   const {
     comments,
@@ -100,8 +105,10 @@ function App() {
         document.activeElement?.tagName !== "INPUT" &&
         document.activeElement?.tagName !== "TEXTAREA"
       ) {
-        // If there's a file with diff showing, add comment to first visible file at line 1
-        if (files.length > 0) {
+        // Use last focused line if available, otherwise default to first file at line 1
+        if (lastFocusedLine) {
+          handleLineClick(lastFocusedLine.file, lastFocusedLine.line, lastFocusedLine.side);
+        } else if (files.length > 0) {
           const fileName = files[0].newPath || files[0].oldPath;
           handleLineClick(fileName, 1, "new");
         }
@@ -110,7 +117,7 @@ function App() {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [files]);
+  }, [files, lastFocusedLine]);
 
   const handleModeChange = (newMode: DiffModeConfig) => {
     setDiffMode(newMode);
@@ -142,6 +149,7 @@ function App() {
   };
 
   const handleLineClick = (file: string, line: number, side: "old" | "new") => {
+    setLastFocusedLine({ file, line, side });
     setAddingCommentAt({
       file,
       startLine: line,
@@ -190,6 +198,7 @@ function App() {
           <button
             onClick={() => {
               const fileName = file.newPath || file.oldPath;
+              setLastFocusedLine({ file: fileName, line: 1, side: "new" });
               handleLineClick(fileName, 1, "new");
             }}
             className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
