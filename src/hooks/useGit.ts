@@ -42,7 +42,7 @@ export function useGit(workingDir: string | null) {
           path: workingDir,
         });
       } else if (config.mode === "commit" && config.commitRef) {
-        result = await invoke<GitDiffResult>("get_commit_diff", {
+        result = await invoke<GitDiffResult>("get_commit_ref_diff", {
           path: workingDir,
           commit: config.commitRef,
         });

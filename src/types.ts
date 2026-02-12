@@ -24,3 +24,20 @@ export interface DiffModeConfig {
   mode: DiffMode;
   commitRef?: string;
 }
+
+export interface CommitInfo {
+  hash: string;
+  short_hash: string;
+  message: string;
+  author: string;
+  date: string;
+  refs: string;
+}
+
+export interface BranchInfo {
+  name: string;
+  short_hash: string;
+  subject: string;
+  author: string;
+  date: string;
+}
