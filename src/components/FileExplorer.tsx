@@ -105,7 +105,6 @@ export function FileExplorer({
                 </div>
               );
             })
-          }
           )}
         </div>
         <div className="p-3 border-t border-gray-700 bg-gray-900 text-xs text-gray-400">
