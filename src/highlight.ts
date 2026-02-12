@@ -44,19 +44,24 @@ export function highlight(hunks: any[], options: HighlightOptions = {}) {
   }
 
   try {
-    const highlighter = (code: string) => {
-      try {
-        return hljs.highlight(code, { language, ignoreIllegals: true }).value;
-      } catch {
-        return code;
-      }
+    // Create a refractor-like object that returns tokens instead of HTML
+    const refractor = {
+      highlight: (code: string, lang: string) => {
+        try {
+          const result = hljs.highlight(code, { language: lang, ignoreIllegals: true });
+          // Convert highlight.js tokens to refractor-like token structure
+          return convertHljsToTokens(result);
+        } catch {
+          return [{ type: "text", value: code }];
+        }
+      },
     };
 
     const tokens = tokenize(hunks, {
       highlight: true,
       enhancers: enhance ? [markEdits(hunks, { type: "block" })] : [],
       language,
-      refractor: { highlight: highlighter } as any,
+      refractor: refractor as any,
     });
 
     return tokens;
@@ -64,4 +69,35 @@ export function highlight(hunks: any[], options: HighlightOptions = {}) {
     console.error("Syntax highlighting failed:", error);
     return undefined;
   }
+}
+
+// Convert highlight.js result to token structure compatible with react-diff-view
+function convertHljsToTokens(result: any): any[] {
+  const tokens: any[] = [];
+  const parseNode = (node: any) => {
+    if (typeof node === "string") {
+      return { type: "text", value: node };
+    }
+    if (node.children) {
+      const children = node.children.flatMap((child: any) => parseNode(child));
+      return {
+        type: "element",
+        tagName: "span",
+        properties: { className: [node.scope] },
+        children,
+      };
+    }
+    return { type: "text", value: node.value || "" };
+  };
+
+  if (result._emitter && result._emitter.rootNode) {
+    result._emitter.rootNode.children.forEach((child: any) => {
+      tokens.push(parseNode(child));
+    });
+  } else {
+    // Fallback: parse the highlighted HTML
+    tokens.push({ type: "text", value: result.value });
+  }
+
+  return tokens;
 }

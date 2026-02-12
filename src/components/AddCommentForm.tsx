@@ -21,7 +21,10 @@ export function AddCommentForm({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    textareaRef.current?.focus();
+    // Delay focus to prevent key event from being typed into textarea
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 50);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
