@@ -1130,7 +1130,12 @@ function App() {
 
       {showPromptPreview && (
         <PromptPreview
-          prompt={generatePrompt(comments)}
+          prompt={generatePrompt(comments, {
+            mode: diffMode.mode,
+            commitRef: diffMode.commitRef,
+            selectedCommit,
+            selectedBranch,
+          })}
           onClose={() => setShowPromptPreview(false)}
         />
       )}
