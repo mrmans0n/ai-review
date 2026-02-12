@@ -206,6 +206,19 @@ function App() {
             + Add Comment
           </button>
         </div>
+        {addingCommentAt &&
+          addingCommentAt.file === (file.newPath || file.oldPath) && (
+            <div className="px-4 py-2 bg-gray-800">
+              <AddCommentForm
+                file={addingCommentAt.file}
+                startLine={addingCommentAt.startLine}
+                endLine={addingCommentAt.endLine}
+                side={addingCommentAt.side}
+                onSubmit={handleAddComment}
+                onCancel={() => setAddingCommentAt(null)}
+              />
+            </div>
+          )}
         <Diff
           viewType={viewType}
           diffType={file.type}
@@ -216,11 +229,11 @@ function App() {
               const { change } = event;
               if (change && change.lineNumber) {
                 const fileName = file.newPath || file.oldPath;
-                const side = change.isNormal 
-                  ? "new" 
-                  : change.type === "insert" 
-                  ? "new" 
-                  : "old";
+                const side = change.isNormal
+                  ? "new"
+                  : change.type === "insert"
+                    ? "new"
+                    : "old";
                 handleLineClick(fileName, change.lineNumber, side);
               }
             },
@@ -230,25 +243,6 @@ function App() {
             hunks.flatMap((hunk, hunkIndex) => {
               const elements = [];
               const fileName = file.newPath || file.oldPath;
-
-              if (
-                addingCommentAt &&
-                addingCommentAt.file === fileName &&
-                hunkIndex === 0
-              ) {
-                elements.push(
-                  <div key={`add-comment-${hunk.content}`} className="px-4">
-                    <AddCommentForm
-                      file={fileName}
-                      startLine={addingCommentAt.startLine}
-                      endLine={addingCommentAt.endLine}
-                      side={addingCommentAt.side}
-                      onSubmit={handleAddComment}
-                      onCancel={() => setAddingCommentAt(null)}
-                    />
-                  </div>
-                );
-              }
 
               elements.push(<Hunk key={hunk.content} hunk={hunk} />);
 
