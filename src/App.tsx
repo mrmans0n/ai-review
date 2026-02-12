@@ -7,15 +7,17 @@ import "highlight.js/styles/github-dark.css";
 import { highlight } from "./highlight";
 import { useGit } from "./hooks/useGit";
 import { useFileExplorer } from "./hooks/useFileExplorer";
+import { useCommitSelector } from "./hooks/useCommitSelector";
 import { useComments } from "./hooks/useComments";
 import { FileExplorer } from "./components/FileExplorer";
+import { CommitSelector } from "./components/CommitSelector";
 import { FileList } from "./components/FileList";
 import { FileViewer } from "./components/FileViewer";
 import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
 import { PromptPreview } from "./components/PromptPreview";
 import { generatePrompt } from "./lib/promptGenerator";
-import type { DiffModeConfig } from "./types";
+import type { DiffModeConfig, CommitInfo, BranchInfo } from "./types";
 
 const EXAMPLE_DIFF = `diff --git a/src/components/Button.tsx b/src/components/Button.tsx
 index 1234567..abcdefg 100644
@@ -96,6 +98,9 @@ function App() {
 
   const { isGitRepo, diffResult, loading, error, loadDiff } = useGit(workingDir);
   const fileExplorer = useFileExplorer(workingDir);
+  const commitSelector = useCommitSelector(workingDir);
+  const [selectedCommit, setSelectedCommit] = useState<CommitInfo | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<BranchInfo | null>(null);
 
   useEffect(() => {
     invoke<string>("get_working_directory")
@@ -191,6 +196,42 @@ function App() {
     const file = await fileExplorer.onSelectFile(filePath);
     await handleFileSelect(file);
     return file;
+  };
+
+  const handleCommitSelect = async (commit: CommitInfo) => {
+    if (!workingDir) return;
+
+    try {
+      const result = await invoke<string>("get_commit_diff", {
+        path: workingDir,
+        hash: commit.hash,
+      });
+      setDiffText(result || "No changes in this commit");
+      setSelectedCommit(commit);
+      setSelectedBranch(null);
+      setViewMode("diff");
+      commitSelector.closeSelector();
+    } catch (err) {
+      console.error("Failed to load commit diff:", err);
+    }
+  };
+
+  const handleBranchSelect = async (branch: BranchInfo) => {
+    if (!workingDir) return;
+
+    try {
+      const result = await invoke<string>("get_branch_diff", {
+        path: workingDir,
+        branch: branch.name,
+      });
+      setDiffText(result || "No changes in this branch comparison");
+      setSelectedBranch(branch);
+      setSelectedCommit(null);
+      setViewMode("diff");
+      commitSelector.closeSelector();
+    } catch (err) {
+      console.error("Failed to load branch diff:", err);
+    }
   };
 
   const handleLineClick = (file: string, line: number, side: "old" | "new") => {
@@ -524,6 +565,27 @@ function App() {
                 Compare
               </button>
             </div>
+            <button
+              onClick={commitSelector.openSelector}
+              className="px-4 py-2 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center gap-2"
+              title="Browse commits (Ctrl+K)"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+              Browse Commits
+            </button>
           </>
         )}
 
@@ -613,6 +675,28 @@ function App() {
           </div>
         </div>
       </div>
+
+      {selectedCommit && (
+        <div className="bg-blue-900 border-b border-blue-700 px-6 py-2">
+          <div className="flex items-center gap-3 text-sm">
+            <span className="font-mono bg-blue-800 text-blue-100 px-2 py-0.5 rounded">
+              {selectedCommit.short_hash}
+            </span>
+            <span className="font-semibold text-white">{selectedCommit.message}</span>
+          </div>
+        </div>
+      )}
+
+      {selectedBranch && (
+        <div className="bg-purple-900 border-b border-purple-700 px-6 py-2">
+          <div className="flex items-center gap-3 text-sm">
+            <span className="font-mono bg-purple-800 text-purple-100 px-2 py-0.5 rounded">
+              {selectedBranch.short_hash}
+            </span>
+            <span className="font-semibold text-white">Branch: {selectedBranch.name}</span>
+          </div>
+        </div>
+      )}
 
       <div className="flex h-[calc(100vh-140px)]">
         {isGitRepo && diffResult ? (
@@ -749,6 +833,16 @@ function App() {
           onClose={() => setShowPromptPreview(false)}
         />
       )}
+
+      <CommitSelector
+        isOpen={commitSelector.isOpen}
+        commits={commitSelector.commits}
+        branches={commitSelector.branches}
+        loading={commitSelector.loading}
+        onSelectCommit={handleCommitSelect}
+        onSelectBranch={handleBranchSelect}
+        onClose={commitSelector.closeSelector}
+      />
     </div>
   );
 }

@@ -14,6 +14,25 @@ pub struct GitDiffResult {
     pub files: Vec<GitFile>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CommitInfo {
+    pub hash: String,       // full hash
+    pub short_hash: String, // short hash
+    pub message: String,    // commit message
+    pub author: String,     // author name
+    pub date: String,       // relative date
+    pub refs: String,       // branch/tag refs
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BranchInfo {
+    pub name: String,
+    pub short_hash: String,
+    pub subject: String,
+    pub author: String,
+    pub date: String,
+}
+
 /// Check if a directory is a git repository
 pub fn is_git_repo(dir: &Path) -> bool {
     dir.join(".git").exists()
@@ -234,6 +253,158 @@ pub fn get_file_diff(dir: &Path, file_path: &str, staged: bool) -> Result<String
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
 
+/// List recent commits
+pub fn list_commits(dir: &Path, limit: u32) -> Result<Vec<CommitInfo>, String> {
+    let output = Command::new("git")
+        .arg("log")
+        .arg("--oneline")
+        .arg("--format=%H|%h|%s|%an|%ar|%D")
+        .arg(format!("-{}", limit))
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to execute git log: {}", e))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(parse_commit_log(&stdout))
+}
+
+/// Parse git log output with format "%H|%h|%s|%an|%ar|%D"
+fn parse_commit_log(output: &str) -> Vec<CommitInfo> {
+    output
+        .lines()
+        .filter_map(|line| {
+            let parts: Vec<&str> = line.split('|').collect();
+            if parts.len() < 5 {
+                return None;
+            }
+
+            // Format: hash|short_hash|message|author|date|refs
+            // Since message can contain pipes, we need to reconstruct it
+            // from parts[2] to parts[parts.len() - 3]
+            let message = if parts.len() > 5 {
+                parts[2..parts.len() - 3].join("|")
+            } else {
+                parts[2].to_string()
+            };
+
+            Some(CommitInfo {
+                hash: parts[0].to_string(),
+                short_hash: parts[1].to_string(),
+                message,
+                author: parts[parts.len() - 3].to_string(),
+                date: parts[parts.len() - 2].to_string(),
+                refs: parts[parts.len() - 1].to_string(),
+            })
+        })
+        .collect()
+}
+
+/// List local and remote branches
+pub fn list_branches(dir: &Path) -> Result<Vec<BranchInfo>, String> {
+    let output = Command::new("git")
+        .arg("branch")
+        .arg("-a")
+        .arg("--format=%(refname:short)|%(objectname:short)|%(subject)|%(authorname)|%(committerdate:relative)")
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to execute git branch: {}", e))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(parse_branch_list(&stdout))
+}
+
+fn parse_branch_list(output: &str) -> Vec<BranchInfo> {
+    output
+        .lines()
+        .filter_map(|line| {
+            let parts: Vec<&str> = line.split('|').collect();
+            if parts.len() < 5 {
+                return None;
+            }
+
+            Some(BranchInfo {
+                name: parts[0].to_string(),
+                short_hash: parts[1].to_string(),
+                subject: parts[2].to_string(),
+                author: parts[3].to_string(),
+                date: parts[4].to_string(),
+            })
+        })
+        .collect()
+}
+
+/// Get raw diff for a specific commit by hash
+pub fn get_commit_diff(dir: &Path, hash: &str) -> Result<String, String> {
+    let diff_output = Command::new("git")
+        .arg("show")
+        .arg(hash)
+        .arg("--format=")
+        .arg("--no-color")
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to execute git show: {}", e))?;
+
+    if !diff_output.status.success() {
+        return Err(String::from_utf8_lossy(&diff_output.stderr).to_string());
+    }
+
+    Ok(String::from_utf8_lossy(&diff_output.stdout).to_string())
+}
+
+/// Get raw diff comparing base branch and selected branch
+pub fn get_branch_diff(dir: &Path, branch: &str) -> Result<String, String> {
+    // Prefer main if present, otherwise compare against current branch
+    let has_main = Command::new("git")
+        .arg("show-ref")
+        .arg("--verify")
+        .arg("--quiet")
+        .arg("refs/heads/main")
+        .current_dir(dir)
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false);
+
+    let base = if has_main {
+        "main".to_string()
+    } else {
+        let output = Command::new("git")
+            .arg("rev-parse")
+            .arg("--abbrev-ref")
+            .arg("HEAD")
+            .current_dir(dir)
+            .output()
+            .map_err(|e| format!("Failed to resolve current branch: {}", e))?;
+
+        if !output.status.success() {
+            return Err(String::from_utf8_lossy(&output.stderr).to_string());
+        }
+
+        String::from_utf8_lossy(&output.stdout).trim().to_string()
+    };
+
+    let diff_output = Command::new("git")
+        .arg("diff")
+        .arg("--no-color")
+        .arg(format!("{}...{}", base, branch))
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to execute branch diff: {}", e))?;
+
+    if !diff_output.status.success() {
+        return Err(String::from_utf8_lossy(&diff_output.stderr).to_string());
+    }
+
+    Ok(String::from_utf8_lossy(&diff_output.stdout).to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -396,5 +567,106 @@ mod tests {
 
         let temp_dir = env::temp_dir().join("test_not_git_repo");
         assert!(!is_git_repo(&temp_dir));
+    }
+
+    #[test]
+    fn test_parse_commit_log_single() {
+        let output =
+            "abc123def456|abc123d|Initial commit|John Doe|2 days ago|HEAD -> main, origin/main\n";
+        let commits = parse_commit_log(output);
+
+        assert_eq!(commits.len(), 1);
+        assert_eq!(commits[0].hash, "abc123def456");
+        assert_eq!(commits[0].short_hash, "abc123d");
+        assert_eq!(commits[0].message, "Initial commit");
+        assert_eq!(commits[0].author, "John Doe");
+        assert_eq!(commits[0].date, "2 days ago");
+        assert_eq!(commits[0].refs, "HEAD -> main, origin/main");
+    }
+
+    #[test]
+    fn test_parse_commit_log_multiple() {
+        let output = "abc123|abc1|First commit|Alice|1 day ago|HEAD -> main\ndef456|def4|Second commit|Bob|2 days ago|\n";
+        let commits = parse_commit_log(output);
+
+        assert_eq!(commits.len(), 2);
+        assert_eq!(commits[0].hash, "abc123");
+        assert_eq!(commits[0].short_hash, "abc1");
+        assert_eq!(commits[0].message, "First commit");
+        assert_eq!(commits[0].author, "Alice");
+        assert_eq!(commits[1].hash, "def456");
+        assert_eq!(commits[1].author, "Bob");
+    }
+
+    #[test]
+    fn test_parse_commit_log_no_refs() {
+        let output = "abc123|abc1|Commit without refs|Alice|1 day ago|\n";
+        let commits = parse_commit_log(output);
+
+        assert_eq!(commits.len(), 1);
+        assert_eq!(commits[0].refs, "");
+    }
+
+    #[test]
+    fn test_parse_commit_log_empty() {
+        let output = "";
+        let commits = parse_commit_log(output);
+
+        assert_eq!(commits.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_commit_log_invalid_line() {
+        let output = "invalid|line\n";
+        let commits = parse_commit_log(output);
+
+        assert_eq!(commits.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_commit_log_message_with_pipe() {
+        let output = "abc123|abc1|Fix: update config | add tests|Alice|1 day ago|main\n";
+        let commits = parse_commit_log(output);
+
+        assert_eq!(commits.len(), 1);
+        assert_eq!(commits[0].message, "Fix: update config | add tests");
+        assert_eq!(commits[0].author, "Alice");
+        assert_eq!(commits[0].date, "1 day ago");
+        assert_eq!(commits[0].refs, "main");
+    }
+
+    #[test]
+    fn test_parse_branch_list_single() {
+        let output = "main|abc1234|Initial commit|Alice|2 days ago\n";
+        let branches = parse_branch_list(output);
+
+        assert_eq!(branches.len(), 1);
+        assert_eq!(branches[0].name, "main");
+        assert_eq!(branches[0].short_hash, "abc1234");
+        assert_eq!(branches[0].subject, "Initial commit");
+        assert_eq!(branches[0].author, "Alice");
+        assert_eq!(branches[0].date, "2 days ago");
+    }
+
+    #[test]
+    fn test_parse_branch_list_multiple() {
+        let output = "main|abc1234|Main work|Alice|1 day ago\norigin/main|def5678|Remote main|Bob|3 days ago\n";
+        let branches = parse_branch_list(output);
+
+        assert_eq!(branches.len(), 2);
+        assert_eq!(branches[0].name, "main");
+        assert_eq!(branches[1].name, "origin/main");
+    }
+
+    #[test]
+    fn test_parse_branch_list_empty() {
+        let branches = parse_branch_list("");
+        assert_eq!(branches.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_branch_list_invalid_line() {
+        let branches = parse_branch_list("main|abc123\n");
+        assert_eq!(branches.len(), 0);
     }
 }

@@ -39,7 +39,7 @@ fn get_staged_diff(path: String) -> Result<git::GitDiffResult, String> {
 }
 
 #[tauri::command]
-fn get_commit_diff(path: String, commit: String) -> Result<git::GitDiffResult, String> {
+fn get_commit_ref_diff(path: String, commit: String) -> Result<git::GitDiffResult, String> {
     let dir = PathBuf::from(path);
     // Parse commit ref to get the number (e.g., "HEAD~1" -> 1)
     let n = if commit == "HEAD" {
@@ -63,6 +63,30 @@ fn read_file_content(path: String, file_path: String) -> Result<String, String> 
     let dir = PathBuf::from(path);
     let full_path = dir.join(file_path);
     files::read_file(&full_path.to_string_lossy())
+}
+
+#[tauri::command]
+fn list_commits(path: String, limit: u32) -> Result<Vec<git::CommitInfo>, String> {
+    let dir = PathBuf::from(path);
+    git::list_commits(&dir, limit)
+}
+
+#[tauri::command]
+fn get_commit_diff(path: String, hash: String) -> Result<String, String> {
+    let dir = PathBuf::from(path);
+    git::get_commit_diff(&dir, &hash)
+}
+
+#[tauri::command]
+fn list_branches(path: String) -> Result<Vec<git::BranchInfo>, String> {
+    let dir = PathBuf::from(path);
+    git::list_branches(&dir)
+}
+
+#[tauri::command]
+fn get_branch_diff(path: String, branch: String) -> Result<String, String> {
+    let dir = PathBuf::from(path);
+    git::get_branch_diff(&dir, &branch)
 }
 
 #[derive(serde::Serialize)]
@@ -218,9 +242,13 @@ pub fn run() {
             is_git_repo,
             get_unstaged_diff,
             get_staged_diff,
-            get_commit_diff,
+            get_commit_ref_diff,
             list_files,
             read_file_content,
+            list_commits,
+            get_commit_diff,
+            list_branches,
+            get_branch_diff,
             check_cli_installed,
             install_cli,
         ])

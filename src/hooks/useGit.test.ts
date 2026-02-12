@@ -160,7 +160,7 @@ describe("useGit", () => {
     });
 
     expect(result.current.diffResult).toEqual(mockDiffResult);
-    expect(invoke).toHaveBeenCalledWith("get_commit_diff", {
+    expect(invoke).toHaveBeenCalledWith("get_commit_ref_diff", {
       path: "/test/repo",
       commit: "abc123",
     });
