@@ -33,6 +33,25 @@ pub struct BranchInfo {
     pub date: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GgStackInfo {
+    pub name: String,
+    pub base: String,
+    pub commit_count: usize,
+    pub is_current: bool,
+    pub username: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GgStackEntry {
+    pub hash: String,
+    pub short_hash: String,
+    pub title: String,
+    pub gg_id: Option<String>,
+    pub mr_number: Option<u64>,
+    pub position: usize,
+}
+
 /// Check if a directory is a git repository
 pub fn is_git_repo(dir: &Path) -> bool {
     dir.join(".git").exists()
@@ -397,6 +416,346 @@ pub fn get_branch_diff(dir: &Path, branch: &str) -> Result<String, String> {
         .current_dir(dir)
         .output()
         .map_err(|e| format!("Failed to execute branch diff: {}", e))?;
+
+    if !diff_output.status.success() {
+        return Err(String::from_utf8_lossy(&diff_output.stderr).to_string());
+    }
+
+    Ok(String::from_utf8_lossy(&diff_output.stdout).to_string())
+}
+
+// =============================================================================
+// git-gud Stack Support
+// =============================================================================
+
+/// Check if git-gud stacks are available in the repository
+pub fn has_gg_stacks(dir: &Path) -> bool {
+    dir.join(".git/gg/config.json").exists()
+}
+
+/// Read git-gud config file
+fn read_gg_config(dir: &Path) -> Result<serde_json::Value, String> {
+    use std::fs;
+    let config_path = dir.join(".git/gg/config.json");
+    let content = fs::read_to_string(&config_path)
+        .map_err(|e| format!("Failed to read .git/gg/config.json: {}", e))?;
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse git-gud config: {}", e))
+}
+
+/// Get the default base branch from git-gud config
+fn get_default_base(config: &serde_json::Value) -> String {
+    config
+        .get("defaults")
+        .and_then(|d| d.get("base"))
+        .and_then(|b| b.as_str())
+        .unwrap_or("main")
+        .to_string()
+}
+
+/// Get the current stack name from .git/gg/current_stack
+fn get_current_stack(dir: &Path) -> Option<String> {
+    use std::fs;
+    let current_stack_path = dir.join(".git/gg/current_stack");
+    fs::read_to_string(current_stack_path)
+        .ok()
+        .map(|s| s.trim().to_string())
+}
+
+/// Extract GG-ID from commit message body
+fn extract_gg_id(commit_body: &str) -> Option<String> {
+    for line in commit_body.lines() {
+        let trimmed = line.trim();
+        if let Some(gg_id) = trimmed.strip_prefix("GG-ID:") {
+            return Some(gg_id.trim().to_string());
+        }
+    }
+    None
+}
+
+/// Get git config value
+fn get_git_config(dir: &Path, key: &str) -> Option<String> {
+    let output = Command::new("git")
+        .arg("config")
+        .arg(key)
+        .current_dir(dir)
+        .output()
+        .ok()?;
+
+    if output.status.success() {
+        Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    } else {
+        None
+    }
+}
+
+/// Parse username from branch name (e.g., "user/stack" -> "user")
+fn extract_username_from_branch(branch: &str) -> Option<String> {
+    branch.split('/').next().map(|s| s.to_string())
+}
+
+/// Check if a branch name is a stack branch (user/name without --)
+fn is_stack_branch(branch: &str) -> bool {
+    let parts: Vec<&str> = branch.split('/').collect();
+    if parts.len() != 2 {
+        return false;
+    }
+    !parts[1].contains("--")
+}
+
+/// Extract stack name from branch name (e.g., "user/stack" -> "stack")
+fn extract_stack_name(branch: &str) -> Option<String> {
+    let parts: Vec<&str> = branch.split('/').collect();
+    if parts.len() == 2 && !parts[1].contains("--") {
+        Some(parts[1].to_string())
+    } else {
+        None
+    }
+}
+
+/// List all git-gud stacks in the repository
+pub fn list_gg_stacks(dir: &Path) -> Result<Vec<GgStackInfo>, String> {
+    let config = read_gg_config(dir)?;
+    let default_base = get_default_base(&config);
+    let current_stack_branch = get_current_stack(dir);
+
+    // Get all local branches
+    let branches_output = Command::new("git")
+        .arg("for-each-ref")
+        .arg("--format=%(refname:short)")
+        .arg("refs/heads/")
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to list branches: {}", e))?;
+
+    if !branches_output.status.success() {
+        return Err(String::from_utf8_lossy(&branches_output.stderr).to_string());
+    }
+
+    let branches_str = String::from_utf8_lossy(&branches_output.stdout);
+    let mut stacks = Vec::new();
+    let mut seen_stacks = std::collections::HashSet::new();
+
+    // First, get username from git config as fallback
+    let default_username =
+        get_git_config(dir, "user.name").unwrap_or_else(|| "unknown".to_string());
+
+    // Find all stack branches
+    for branch in branches_str.lines() {
+        if !is_stack_branch(branch) {
+            continue;
+        }
+
+        let Some(stack_name) = extract_stack_name(branch) else {
+            continue;
+        };
+
+        if seen_stacks.contains(&stack_name) {
+            continue;
+        }
+        seen_stacks.insert(stack_name.clone());
+
+        let username =
+            extract_username_from_branch(branch).unwrap_or_else(|| default_username.clone());
+
+        // Get base for this stack
+        let base = config
+            .get("stacks")
+            .and_then(|s| s.get(&stack_name))
+            .and_then(|s| s.get("base"))
+            .and_then(|b| b.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| default_base.clone());
+
+        // Count commits in stack
+        let count_output = Command::new("git")
+            .arg("rev-list")
+            .arg("--count")
+            .arg(format!("{}..{}", base, branch))
+            .current_dir(dir)
+            .output()
+            .map_err(|e| format!("Failed to count commits: {}", e))?;
+
+        let commit_count = if count_output.status.success() {
+            String::from_utf8_lossy(&count_output.stdout)
+                .trim()
+                .parse::<usize>()
+                .unwrap_or(0)
+        } else {
+            0
+        };
+
+        let is_current = current_stack_branch
+            .as_ref()
+            .map(|cs| cs == branch)
+            .unwrap_or(false);
+
+        stacks.push(GgStackInfo {
+            name: stack_name,
+            base,
+            commit_count,
+            is_current,
+            username,
+        });
+    }
+
+    // Sort by name
+    stacks.sort_by(|a, b| a.name.cmp(&b.name));
+
+    Ok(stacks)
+}
+
+/// Get entries (commits) for a specific git-gud stack
+pub fn get_gg_stack_entries(dir: &Path, stack_name: &str) -> Result<Vec<GgStackEntry>, String> {
+    let config = read_gg_config(dir)?;
+    let default_base = get_default_base(&config);
+
+    // Get base for this stack
+    let base = config
+        .get("stacks")
+        .and_then(|s| s.get(stack_name))
+        .and_then(|s| s.get("base"))
+        .and_then(|b| b.as_str())
+        .map(|s| s.to_string())
+        .unwrap_or(default_base);
+
+    // Find the stack branch
+    let branches_output = Command::new("git")
+        .arg("for-each-ref")
+        .arg("--format=%(refname:short)")
+        .arg("refs/heads/")
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to list branches: {}", e))?;
+
+    let branches_str = String::from_utf8_lossy(&branches_output.stdout);
+    let stack_branch = branches_str
+        .lines()
+        .find(|b| is_stack_branch(b) && extract_stack_name(b).as_deref() == Some(stack_name))
+        .ok_or_else(|| format!("Stack branch not found for: {}", stack_name))?;
+
+    // Get commits in the stack (from base to HEAD, in order)
+    let log_output = Command::new("git")
+        .arg("log")
+        .arg("--reverse")
+        .arg("--format=%H|%h|%s|%b")
+        .arg(format!("{}..{}", base, stack_branch))
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to get stack commits: {}", e))?;
+
+    if !log_output.status.success() {
+        return Err(String::from_utf8_lossy(&log_output.stderr).to_string());
+    }
+
+    let log_str = String::from_utf8_lossy(&log_output.stdout);
+    let mut entries = Vec::new();
+
+    // Parse commits
+    let commits_raw = log_str.split("\n\n");
+    for (position, commit_block) in commits_raw.enumerate() {
+        if commit_block.trim().is_empty() {
+            continue;
+        }
+
+        let lines: Vec<&str> = commit_block.lines().collect();
+        if lines.is_empty() {
+            continue;
+        }
+
+        let header_parts: Vec<&str> = lines[0].split('|').collect();
+        if header_parts.len() < 3 {
+            continue;
+        }
+
+        let hash = header_parts[0].to_string();
+        let short_hash = header_parts[1].to_string();
+        let title = header_parts[2].to_string();
+
+        // Extract body (everything after the header line)
+        let body = lines[1..].join("\n");
+        let gg_id = extract_gg_id(&body);
+
+        // Get MR number from config
+        let mr_number = if let Some(ref id) = gg_id {
+            config
+                .get("stacks")
+                .and_then(|s| s.get(stack_name))
+                .and_then(|s| s.get("mrs"))
+                .and_then(|mrs| mrs.get(id))
+                .and_then(|n| n.as_u64())
+        } else {
+            None
+        };
+
+        entries.push(GgStackEntry {
+            hash,
+            short_hash,
+            title,
+            gg_id,
+            mr_number,
+            position,
+        });
+    }
+
+    Ok(entries)
+}
+
+/// Get diff for entire git-gud stack (base..stack-head)
+pub fn get_gg_stack_diff(dir: &Path, stack_name: &str) -> Result<String, String> {
+    let config = read_gg_config(dir)?;
+    let default_base = get_default_base(&config);
+
+    // Get base for this stack
+    let base = config
+        .get("stacks")
+        .and_then(|s| s.get(stack_name))
+        .and_then(|s| s.get("base"))
+        .and_then(|b| b.as_str())
+        .map(|s| s.to_string())
+        .unwrap_or(default_base);
+
+    // Find the stack branch
+    let branches_output = Command::new("git")
+        .arg("for-each-ref")
+        .arg("--format=%(refname:short)")
+        .arg("refs/heads/")
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to list branches: {}", e))?;
+
+    let branches_str = String::from_utf8_lossy(&branches_output.stdout);
+    let stack_branch = branches_str
+        .lines()
+        .find(|b| is_stack_branch(b) && extract_stack_name(b).as_deref() == Some(stack_name))
+        .ok_or_else(|| format!("Stack branch not found for: {}", stack_name))?;
+
+    // Get diff
+    let diff_output = Command::new("git")
+        .arg("diff")
+        .arg("--no-color")
+        .arg(format!("{}..{}", base, stack_branch))
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to get stack diff: {}", e))?;
+
+    if !diff_output.status.success() {
+        return Err(String::from_utf8_lossy(&diff_output.stderr).to_string());
+    }
+
+    Ok(String::from_utf8_lossy(&diff_output.stdout).to_string())
+}
+
+/// Get diff for a single commit in a git-gud stack
+pub fn get_gg_entry_diff(dir: &Path, _stack_name: &str, hash: &str) -> Result<String, String> {
+    // Use git show to get the diff for a single commit
+    let diff_output = Command::new("git")
+        .arg("show")
+        .arg(hash)
+        .arg("--format=")
+        .arg("--no-color")
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to get entry diff: {}", e))?;
 
     if !diff_output.status.success() {
         return Err(String::from_utf8_lossy(&diff_output.stderr).to_string());

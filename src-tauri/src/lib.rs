@@ -89,6 +89,39 @@ fn get_branch_diff(path: String, branch: String) -> Result<String, String> {
     git::get_branch_diff(&dir, &branch)
 }
 
+#[tauri::command]
+fn has_gg_stacks(path: String) -> bool {
+    let dir = PathBuf::from(path);
+    git::has_gg_stacks(&dir)
+}
+
+#[tauri::command]
+fn list_gg_stacks(path: String) -> Result<Vec<git::GgStackInfo>, String> {
+    let dir = PathBuf::from(path);
+    git::list_gg_stacks(&dir)
+}
+
+#[tauri::command]
+fn get_gg_stack_entries(
+    path: String,
+    stack_name: String,
+) -> Result<Vec<git::GgStackEntry>, String> {
+    let dir = PathBuf::from(path);
+    git::get_gg_stack_entries(&dir, &stack_name)
+}
+
+#[tauri::command]
+fn get_gg_stack_diff(path: String, stack_name: String) -> Result<String, String> {
+    let dir = PathBuf::from(path);
+    git::get_gg_stack_diff(&dir, &stack_name)
+}
+
+#[tauri::command]
+fn get_gg_entry_diff(path: String, stack_name: String, hash: String) -> Result<String, String> {
+    let dir = PathBuf::from(path);
+    git::get_gg_entry_diff(&dir, &stack_name, &hash)
+}
+
 #[derive(serde::Serialize)]
 struct InstallCliResult {
     success: bool,
@@ -251,6 +284,11 @@ pub fn run() {
             get_commit_diff,
             list_branches,
             get_branch_diff,
+            has_gg_stacks,
+            list_gg_stacks,
+            get_gg_stack_entries,
+            get_gg_stack_diff,
+            get_gg_entry_diff,
             check_cli_installed,
             install_cli,
         ])

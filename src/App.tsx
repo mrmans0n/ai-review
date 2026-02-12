@@ -17,7 +17,7 @@ import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
 import { PromptPreview } from "./components/PromptPreview";
 import { generatePrompt } from "./lib/promptGenerator";
-import type { DiffModeConfig, CommitInfo, BranchInfo } from "./types";
+import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry } from "./types";
 
 const EXAMPLE_DIFF = `diff --git a/src/components/Button.tsx b/src/components/Button.tsx
 index 1234567..abcdefg 100644
@@ -239,6 +239,47 @@ function App() {
       commitSelector.closeSelector();
     } catch (err) {
       console.error("Failed to load branch diff:", err);
+    }
+  };
+
+  const handleStackSelect = async (stack: GgStackInfo) => {
+    await commitSelector.selectStack(stack);
+  };
+
+  const handleStackEntrySelect = async (entry: GgStackEntry) => {
+    if (!workingDir || !commitSelector.selectedStack) return;
+
+    try {
+      const result = await invoke<string>("get_gg_entry_diff", {
+        path: workingDir,
+        stackName: commitSelector.selectedStack,
+        hash: entry.hash,
+      });
+      setDiffText(result || "No changes in this entry");
+      setSelectedCommit(null);
+      setSelectedBranch(null);
+      setViewMode("diff");
+      commitSelector.closeSelector();
+    } catch (err) {
+      console.error("Failed to load entry diff:", err);
+    }
+  };
+
+  const handleStackDiffSelect = async (stack: GgStackInfo) => {
+    if (!workingDir) return;
+
+    try {
+      const result = await invoke<string>("get_gg_stack_diff", {
+        path: workingDir,
+        stackName: stack.name,
+      });
+      setDiffText(result || "No changes in this stack");
+      setSelectedCommit(null);
+      setSelectedBranch(null);
+      setViewMode("diff");
+      commitSelector.closeSelector();
+    } catch (err) {
+      console.error("Failed to load stack diff:", err);
     }
   };
 
@@ -847,8 +888,16 @@ function App() {
         commits={commitSelector.commits}
         branches={commitSelector.branches}
         loading={commitSelector.loading}
+        hasGgStacks={commitSelector.hasGgStacks}
+        ggStacks={commitSelector.ggStacks}
+        ggStackEntries={commitSelector.ggStackEntries}
+        selectedStack={commitSelector.selectedStack}
         onSelectCommit={handleCommitSelect}
         onSelectBranch={handleBranchSelect}
+        onSelectStack={handleStackSelect}
+        onSelectStackEntry={handleStackEntrySelect}
+        onSelectStackDiff={handleStackDiffSelect}
+        onBackToStacks={commitSelector.backToStacks}
         onClose={commitSelector.closeSelector}
       />
     </div>
