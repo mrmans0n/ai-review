@@ -85,19 +85,20 @@ fn install_cli() -> Result<InstallCliResult, String> {
         use std::os::unix::fs::symlink;
 
         // Get the current executable path
-        let exe_path = std::env::current_exe()
-            .map_err(|e| format!("Failed to get executable path: {}", e))?;
+        let exe_path =
+            std::env::current_exe().map_err(|e| format!("Failed to get executable path: {}", e))?;
 
         // Expand home directory
-        let home_dir = std::env::var("HOME")
-            .map_err(|_| "Failed to get HOME directory".to_string())?;
+        let home_dir =
+            std::env::var("HOME").map_err(|_| "Failed to get HOME directory".to_string())?;
         let local_bin = PathBuf::from(&home_dir).join(".local").join("bin");
         let cli_path = local_bin.join("air");
 
         // Create ~/.local/bin if it doesn't exist
         if !local_bin.exists() {
-            fs::create_dir_all(&local_bin)
-                .map_err(|e| format!("Failed to create directory {}: {}", local_bin.display(), e))?;
+            fs::create_dir_all(&local_bin).map_err(|e| {
+                format!("Failed to create directory {}: {}", local_bin.display(), e)
+            })?;
         }
 
         // Remove existing symlink if it exists
@@ -107,8 +108,7 @@ fn install_cli() -> Result<InstallCliResult, String> {
         }
 
         // Create symlink
-        symlink(&exe_path, &cli_path)
-            .map_err(|e| format!("Failed to create symlink: {}", e))?;
+        symlink(&exe_path, &cli_path).map_err(|e| format!("Failed to create symlink: {}", e))?;
 
         // Check if ~/.local/bin is in PATH
         let path_env = std::env::var("PATH").unwrap_or_default();
