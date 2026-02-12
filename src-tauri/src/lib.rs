@@ -65,6 +65,73 @@ fn read_file_content(path: String, file_path: String) -> Result<String, String> 
     files::read_file(&full_path.to_string_lossy())
 }
 
+#[derive(serde::Serialize)]
+struct InstallCliResult {
+    success: bool,
+    message: String,
+    path_warning: bool,
+}
+
+#[tauri::command]
+fn install_cli() -> Result<InstallCliResult, String> {
+    #[cfg(not(target_family = "unix"))]
+    {
+        return Err("CLI installation is only supported on macOS and Linux".to_string());
+    }
+
+    #[cfg(target_family = "unix")]
+    {
+        use std::fs;
+        use std::os::unix::fs::symlink;
+
+        // Get the current executable path
+        let exe_path =
+            std::env::current_exe().map_err(|e| format!("Failed to get executable path: {}", e))?;
+
+        // Expand home directory
+        let home_dir =
+            std::env::var("HOME").map_err(|_| "Failed to get HOME directory".to_string())?;
+        let local_bin = PathBuf::from(&home_dir).join(".local").join("bin");
+        let cli_path = local_bin.join("air");
+
+        // Create ~/.local/bin if it doesn't exist
+        if !local_bin.exists() {
+            fs::create_dir_all(&local_bin).map_err(|e| {
+                format!("Failed to create directory {}: {}", local_bin.display(), e)
+            })?;
+        }
+
+        // Remove existing symlink if it exists
+        if cli_path.exists() {
+            fs::remove_file(&cli_path)
+                .map_err(|e| format!("Failed to remove existing CLI: {}", e))?;
+        }
+
+        // Create symlink
+        symlink(&exe_path, &cli_path).map_err(|e| format!("Failed to create symlink: {}", e))?;
+
+        // Check if ~/.local/bin is in PATH
+        let path_env = std::env::var("PATH").unwrap_or_default();
+        let local_bin_str = local_bin.to_string_lossy();
+        let in_path = path_env.split(':').any(|p| p == local_bin_str);
+
+        let message = if in_path {
+            "CLI installed successfully! You can now use 'air' from your terminal.".to_string()
+        } else {
+            format!(
+                "CLI installed to {}. Add this directory to your PATH to use 'air' from anywhere.",
+                local_bin.display()
+            )
+        };
+
+        Ok(InstallCliResult {
+            success: true,
+            message,
+            path_warning: !in_path,
+        })
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -99,6 +166,7 @@ pub fn run() {
             get_commit_diff,
             list_files,
             read_file_content,
+            install_cli,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
