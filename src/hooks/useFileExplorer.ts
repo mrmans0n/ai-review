@@ -73,18 +73,48 @@ export function useFileExplorer(workingDir: string | null) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, selectedIndex, loadFiles, closeExplorer, onSelectFile]);
 
-  const filteredFiles = files.filter((file) => {
-    const query = searchQuery.toLowerCase();
-    const fileName = file.toLowerCase();
-    
-    let queryIndex = 0;
-    for (let i = 0; i < fileName.length && queryIndex < query.length; i++) {
-      if (fileName[i] === query[queryIndex]) {
-        queryIndex++;
+  // Fuzzy search with scoring: prioritize filename matches over full path matches
+  const scoredFiles = files
+    .map((file) => {
+      const query = searchQuery.toLowerCase();
+      const fullPath = file.toLowerCase();
+      const fileName = file.split("/").pop()?.toLowerCase() || "";
+
+      // Check if query matches filename
+      let fileNameIndex = 0;
+      for (let i = 0; i < fileName.length && fileNameIndex < query.length; i++) {
+        if (fileName[i] === query[fileNameIndex]) {
+          fileNameIndex++;
+        }
       }
-    }
-    return queryIndex === query.length;
-  });
+      const fileNameMatches = fileNameIndex === query.length;
+
+      // Check if query matches full path
+      let fullPathIndex = 0;
+      for (let i = 0; i < fullPath.length && fullPathIndex < query.length; i++) {
+        if (fullPath[i] === query[fullPathIndex]) {
+          fullPathIndex++;
+        }
+      }
+      const fullPathMatches = fullPathIndex === query.length;
+
+      // Calculate score: filename matches get higher scores
+      let score = 0;
+      if (fileNameMatches) {
+        // Higher score for filename matches, bonus for exact prefix
+        score = 100 + (fileName.startsWith(query) ? 50 : 0);
+      } else if (fullPathMatches) {
+        // Lower score for path matches
+        score = 50;
+      }
+
+      return { file, score };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((item) => item.file);
+
+  const filteredFiles = scoredFiles;
 
   // Update ref whenever filteredFiles changes
   filteredFilesRef.current = filteredFiles;

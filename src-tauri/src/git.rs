@@ -116,13 +116,8 @@ pub fn get_head_diff(dir: &Path, n: u32) -> Result<GitDiffResult, String> {
 
 /// Get list of changed files
 fn get_changed_files(dir: &Path, staged: bool) -> Result<Vec<GitFile>, String> {
-    let mut args = vec!["status", "--porcelain"];
-    if staged {
-        args.push("--staged");
-    }
-
     let output = Command::new("git")
-        .args(&args)
+        .args(["status", "--porcelain"])
         .current_dir(dir)
         .output()
         .map_err(|e| format!("Failed to get changed files: {}", e))?;
@@ -132,11 +127,14 @@ fn get_changed_files(dir: &Path, staged: bool) -> Result<Vec<GitFile>, String> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    Ok(parse_porcelain_status(&stdout))
+    Ok(parse_porcelain_status(&stdout, staged))
 }
 
 /// Parse git status --porcelain output
-fn parse_porcelain_status(output: &str) -> Vec<GitFile> {
+/// Format: XY filename where X=index status, Y=working tree status
+/// If staged=true, only return files with X in {M, A, D, R, C} (not ' ' or '?')
+/// If staged=false, return all changed files
+fn parse_porcelain_status(output: &str, staged: bool) -> Vec<GitFile> {
     output
         .lines()
         .filter_map(|line| {
@@ -144,15 +142,40 @@ fn parse_porcelain_status(output: &str) -> Vec<GitFile> {
                 return None;
             }
 
-            let status_code = &line[0..2];
+            let index_status = line.chars().next().unwrap_or(' ');
+            let worktree_status = line.chars().nth(1).unwrap_or(' ');
             let path = line[3..].trim().to_string();
 
-            let status = match status_code.trim() {
-                "M" | " M" | "MM" => "modified",
-                "A" | "AM" => "added",
-                "D" | " D" => "deleted",
-                "R" => "renamed",
-                _ => "modified",
+            // Filter based on staged flag
+            if staged {
+                // For staged files, index status must not be ' ' or '?'
+                if index_status == ' ' || index_status == '?' {
+                    return None;
+                }
+            }
+
+            // Determine file status based on index and worktree status
+            let status = if staged {
+                // Use index status for staged files
+                match index_status {
+                    'M' => "modified",
+                    'A' => "added",
+                    'D' => "deleted",
+                    'R' => "renamed",
+                    'C' => "modified", // copied
+                    _ => "modified",
+                }
+            } else {
+                // Use both statuses for unstaged (prioritize worktree)
+                match (index_status, worktree_status) {
+                    (_, 'M') => "modified",
+                    ('M', _) => "modified",
+                    ('A', _) => "added",
+                    (_, 'D') => "deleted",
+                    ('D', _) => "deleted",
+                    ('R', _) => "renamed",
+                    _ => "modified",
+                }
             };
 
             Some(GitFile {
@@ -196,7 +219,7 @@ mod tests {
     #[test]
     fn test_parse_porcelain_status_modified() {
         let output = " M src/main.rs\n";
-        let files = parse_porcelain_status(output);
+        let files = parse_porcelain_status(output, false);
 
         assert_eq!(files.len(), 1);
         assert_eq!(files[0].path, "src/main.rs");
@@ -206,7 +229,7 @@ mod tests {
     #[test]
     fn test_parse_porcelain_status_added() {
         let output = "A  src/new.rs\n";
-        let files = parse_porcelain_status(output);
+        let files = parse_porcelain_status(output, false);
 
         assert_eq!(files.len(), 1);
         assert_eq!(files[0].path, "src/new.rs");
@@ -216,7 +239,7 @@ mod tests {
     #[test]
     fn test_parse_porcelain_status_deleted() {
         let output = " D src/old.rs\n";
-        let files = parse_porcelain_status(output);
+        let files = parse_porcelain_status(output, false);
 
         assert_eq!(files.len(), 1);
         assert_eq!(files[0].path, "src/old.rs");
@@ -226,7 +249,7 @@ mod tests {
     #[test]
     fn test_parse_porcelain_status_multiple() {
         let output = " M src/main.rs\nA  src/new.rs\n D src/old.rs\n";
-        let files = parse_porcelain_status(output);
+        let files = parse_porcelain_status(output, false);
 
         assert_eq!(files.len(), 3);
         assert_eq!(files[0].status, "modified");
@@ -237,7 +260,7 @@ mod tests {
     #[test]
     fn test_parse_porcelain_status_empty() {
         let output = "";
-        let files = parse_porcelain_status(output);
+        let files = parse_porcelain_status(output, false);
 
         assert_eq!(files.len(), 0);
     }
@@ -245,10 +268,30 @@ mod tests {
     #[test]
     fn test_parse_porcelain_status_modified_both() {
         let output = "MM src/file.rs\n";
-        let files = parse_porcelain_status(output);
+        let files = parse_porcelain_status(output, false);
 
         assert_eq!(files.len(), 1);
         assert_eq!(files[0].status, "modified");
+    }
+
+    #[test]
+    fn test_parse_porcelain_status_staged_only() {
+        let output = "M  src/staged.rs\n M src/unstaged.rs\n";
+        let files = parse_porcelain_status(output, true);
+
+        // Only the staged file (M with space after) should be returned
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "src/staged.rs");
+        assert_eq!(files[0].status, "modified");
+    }
+
+    #[test]
+    fn test_parse_porcelain_status_unstaged_all() {
+        let output = "M  src/staged.rs\n M src/unstaged.rs\n";
+        let files = parse_porcelain_status(output, false);
+
+        // Both files should be returned for unstaged
+        assert_eq!(files.len(), 2);
     }
 
     #[test]

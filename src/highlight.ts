@@ -83,7 +83,7 @@ function convertHljsToTokens(result: any): any[] {
       return {
         type: "element",
         tagName: "span",
-        properties: { className: [node.scope] },
+        properties: { className: [`hljs-${node.scope}`] },
         children,
       };
     }

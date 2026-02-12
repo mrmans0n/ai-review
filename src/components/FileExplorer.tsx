@@ -72,20 +72,39 @@ export function FileExplorer({
               {searchQuery ? "No matching files" : "No files found"}
             </div>
           ) : (
-            files.map((file, index) => (
-              <div
-                key={file}
-                ref={index === selectedIndex ? selectedRef : null}
-                onClick={() => onSelect(file)}
-                className={`px-4 py-2 cursor-pointer transition-colors ${
-                  index === selectedIndex
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-300 hover:bg-gray-700"
-                }`}
-              >
-                <div className="font-mono text-sm">{file}</div>
-              </div>
-            ))
+            files.map((file, index) => {
+              const parts = file.split("/");
+              const fileName = parts.pop() || file;
+              const directory = parts.join("/");
+
+              return (
+                <div
+                  key={file}
+                  ref={index === selectedIndex ? selectedRef : null}
+                  onClick={() => onSelect(file)}
+                  className={`px-4 py-2 cursor-pointer transition-colors ${
+                    index === selectedIndex
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-300 hover:bg-gray-700"
+                  }`}
+                >
+                  <div className="font-mono text-sm">
+                    <div className="font-semibold">{fileName}</div>
+                    {directory && (
+                      <div
+                        className={`text-xs mt-0.5 ${
+                          index === selectedIndex
+                            ? "text-blue-100"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {directory}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
         <div className="p-3 border-t border-gray-700 bg-gray-900 text-xs text-gray-400">
