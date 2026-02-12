@@ -75,3 +75,16 @@
 .diff-view-split .diff-table td {
   width: 50%;
 }
+
+/* Fix split view text selection - prevent cross-column selection */
+.diff-split {
+  table-layout: fixed;
+}
+
+.diff-split td.diff-code {
+  user-select: text;
+}
+
+.diff-split td.diff-gutter {
+  user-select: none;
+}

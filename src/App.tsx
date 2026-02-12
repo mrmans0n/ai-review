@@ -107,6 +107,7 @@ function App() {
         document.activeElement?.tagName !== "INPUT" &&
         document.activeElement?.tagName !== "TEXTAREA"
       ) {
+        e.preventDefault(); // Prevent 'c' from being typed into the textarea
         // Use last focused line if available, otherwise default to first file at line 1
         if (lastFocusedLine) {
           handleLineClick(lastFocusedLine.file, lastFocusedLine.line, lastFocusedLine.side);
@@ -240,14 +241,18 @@ function App() {
           gutterEvents={{
             onClick: (event: any) => {
               const { change } = event;
-              if (change && change.lineNumber) {
+              if (change) {
                 const fileName = file.newPath || file.oldPath;
+                // react-diff-view uses newLineNumber and oldLineNumber, not lineNumber
                 const side = change.isNormal
                   ? "new"
                   : change.type === "insert"
                     ? "new"
                     : "old";
-                handleLineClick(fileName, change.lineNumber, side);
+                const lineNumber = side === "new" ? change.newLineNumber : change.oldLineNumber;
+                if (lineNumber) {
+                  handleLineClick(fileName, lineNumber, side);
+                }
               }
             },
           }}
