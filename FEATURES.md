@@ -1,15 +1,14 @@
-# AI-Diff Features
+# AI-Review Features
 
 ## Implemented Features
 
-### 1. CLI Commands (`aid` / `aidiff`)
-- **Location**: `cli/aid` (bash script)
+### 1. CLI Commands (`air`)
+- **Location**: `cli/air` (bash script)
 - **Installation**: Run `cli/install.sh` to install to `~/.local/bin`
 - **Usage**:
   ```bash
-  aid              # Open ai-diff in current directory
-  aid /path/to/dir # Open ai-diff in specified directory
-  aidiff           # Alias for aid
+  air              # Open ai-review in current directory
+  air /path/to/dir # Open ai-review in specified directory
   ```
 - The CLI passes the working directory as a command-line argument to the Tauri app
 - The Tauri backend reads this on startup and uses it as the base directory
@@ -95,7 +94,7 @@
 3. **Range selection**: Can only comment on single lines, not line ranges yet
 4. **Prompt generation**: Not implemented (planned for future)
 5. **Session persistence**: Comments are not saved to disk yet (in-memory only)
-6. **CLI binary path**: The `aid` script looks for the built binary in specific locations - may need adjustment based on build type
+6. **CLI binary path**: The `air` script looks for the built binary in specific locations - may need adjustment based on build type
 7. **Windows support**: CLI script is bash-based, may need adaptation for Windows
 
 ## Building
@@ -129,5 +128,5 @@ cd ..
 pnpm tauri build
 
 # Then use the CLI
-aid
+air
 ```

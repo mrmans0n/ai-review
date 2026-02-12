@@ -1,10 +1,10 @@
-# ai-diff
+# ai-review
 
 AI code review tool with Git integration, diff UI, inline comments, and fuzzy file search.
 
 ## Features
 
-✅ **CLI launcher** (`aid` / `aidiff`) - Open from any directory  
+✅ **CLI launcher** (`air`) - Open from any directory  
 ✅ **Git integration** - Auto-detect repos, show unstaged/staged/commit diffs  
 ✅ **Sidebar** - Changed files with status indicators (M/A/D/R)  
 ✅ **Fuzzy file search** - Press Shift+Shift to search all files  
@@ -67,9 +67,8 @@ pnpm tauri build --debug
 
 ### CLI Commands
 ```bash
-aid              # Open ai-diff in current directory
-aid /path/to/dir # Open ai-diff in specified directory
-aidiff           # Alias for aid
+air              # Open ai-review in current directory
+air /path/to/dir # Open ai-review in specified directory
 ```
 
 ### Keyboard Shortcuts
@@ -94,7 +93,7 @@ aidiff           # Alias for aid
 ## Project Structure
 
 ```
-ai-diff/
+ai-review/
 ├── cli/              # CLI launcher scripts
 ├── src/              # React frontend
 │   ├── components/   # UI components

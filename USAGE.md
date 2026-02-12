@@ -24,21 +24,18 @@ source ~/.zshrc  # or ~/.bashrc
 # Navigate to any Git repository
 cd /path/to/your/project
 
-# Launch ai-diff in the current directory
-aid
+# Launch ai-review in the current directory
+air
 
 # Or specify a directory
-aid /path/to/another/project
-
-# aidiff is an alias
-aidiff
+air /path/to/another/project
 ```
 
 ## Features
 
 ### Viewing Git Diffs
 
-When you open ai-diff in a Git repository:
+When you open ai-review in a Git repository:
 
 1. **Auto-load**: Unstaged changes load automatically
 2. **Switch modes**: Use the buttons at the top to switch between:
@@ -112,12 +109,12 @@ source ~/.zshrc
 
 ```bash
 # Make sure you built the app
-cd /path/to/ai-diff
+cd /path/to/ai-review
 pnpm tauri build
 
 # Check if the binary exists
-ls -la src-tauri/target/release/ai-diff  # macOS/Linux
-ls -la src-tauri/target/release/ai-diff.exe  # Windows
+ls -la src-tauri/target/release/ai-review  # macOS/Linux
+ls -la src-tauri/target/release/ai-review.exe  # Windows
 ```
 
 ### No diffs showing
@@ -137,7 +134,7 @@ ls -la src-tauri/target/release/ai-diff.exe  # Windows
 
 ```bash
 cd ~/projects/my-app
-aid
+air
 
 # Review changes, add comments
 # Switch between files
@@ -150,7 +147,7 @@ aid
 cd ~/projects/my-app
 git fetch origin pull/123/head:pr-123
 git checkout pr-123
-aid
+air
 
 # Review all changes in the PR
 # Add comments to discuss with the author
@@ -160,7 +157,7 @@ aid
 
 ```bash
 cd ~/projects/my-app
-aid
+air
 
 # Click "HEAD~1" button to see last commit
 # Or create a custom commit diff in the future
