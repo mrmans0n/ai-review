@@ -102,9 +102,3 @@
 .diff-widget {
   background-color: transparent;
 }
-
-/* Highlight for hovered comments (selectedChanges) */
-.diff-code-selected,
-.diff-gutter-selected {
-  background-color: rgba(59, 130, 246, 0.15) !important;
-}
