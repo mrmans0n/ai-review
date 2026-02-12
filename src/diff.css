@@ -102,3 +102,9 @@
 .diff-widget {
   background-color: transparent;
 }
+
+/* Gutter needs relative positioning for the comment button */
+.diff-gutter {
+  position: relative;
+  overflow: visible;
+}
