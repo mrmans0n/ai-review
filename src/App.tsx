@@ -13,6 +13,7 @@ import { FileList } from "./components/FileList";
 import { FileViewer } from "./components/FileViewer";
 import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
+import { PromptPreview } from "./components/PromptPreview";
 import { generatePrompt } from "./lib/promptGenerator";
 import type { DiffModeConfig } from "./types";
 
@@ -63,7 +64,23 @@ function App() {
     line: number;
     side: "old" | "new";
   } | null>(null);
-  const [promptCopied, setPromptCopied] = useState(false);
+  const [hoveredLine, setHoveredLine] = useState<{
+    file: string;
+    line: number;
+    side: "old" | "new";
+  } | null>(null);
+  const [selectingRange, setSelectingRange] = useState<{
+    file: string;
+    startLine: number;
+    side: "old" | "new";
+  } | null>(null);
+  const [selectedRange, setSelectedRange] = useState<{
+    file: string;
+    startLine: number;
+    endLine: number;
+    side: "old" | "new";
+  } | null>(null);
+  const [showPromptPreview, setShowPromptPreview] = useState(false);
   const [cliInstalled, setCliInstalled] = useState(false);
   const [installMessage, setInstallMessage] = useState<string | null>(null);
 
@@ -120,9 +137,10 @@ function App() {
         document.activeElement?.tagName !== "TEXTAREA"
       ) {
         e.preventDefault(); // Prevent 'c' from being typed into the textarea
-        // Use last focused line if available, otherwise default to first file at line 1
-        if (lastFocusedLine) {
-          handleLineClick(lastFocusedLine.file, lastFocusedLine.line, lastFocusedLine.side);
+        // Prefer hovered line, fallback to last focused line, then default to first file
+        const targetLine = hoveredLine || lastFocusedLine;
+        if (targetLine) {
+          handleLineClick(targetLine.file, targetLine.line, targetLine.side);
         } else if (files.length > 0) {
           const fileName = files[0].newPath || files[0].oldPath;
           handleLineClick(fileName, 1, "new");
@@ -132,7 +150,19 @@ function App() {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [files, lastFocusedLine]);
+  }, [files, lastFocusedLine, hoveredLine]);
+
+  // Global mouseup to clear selection
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (selectingRange) {
+        setSelectingRange(null);
+      }
+    };
+
+    window.addEventListener("mouseup", handleGlobalMouseUp);
+    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
+  }, [selectingRange]);
 
   const handleModeChange = (newMode: DiffModeConfig) => {
     setDiffMode(newMode);
@@ -186,15 +216,8 @@ function App() {
     }
   };
 
-  const handleGeneratePrompt = async () => {
-    const prompt = generatePrompt(comments);
-    try {
-      await navigator.clipboard.writeText(prompt);
-      setPromptCopied(true);
-      setTimeout(() => setPromptCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy to clipboard:", err);
-    }
+  const handleGeneratePrompt = () => {
+    setShowPromptPreview(true);
   };
 
   const handleInstallCli = async () => {
@@ -287,7 +310,6 @@ function App() {
               const { change } = event;
               if (change) {
                 const fileName = file.newPath || file.oldPath;
-                // react-diff-view uses newLineNumber and oldLineNumber, not lineNumber
                 const side = change.isNormal
                   ? "new"
                   : change.type === "insert"
@@ -295,8 +317,89 @@ function App() {
                     : "old";
                 const lineNumber = side === "new" ? change.newLineNumber : change.oldLineNumber;
                 if (lineNumber) {
-                  handleLineClick(fileName, lineNumber, side);
+                  // Handle shift+click for range selection
+                  if (event.nativeEvent.shiftKey && lastFocusedLine && lastFocusedLine.file === fileName && lastFocusedLine.side === side) {
+                    const startLine = Math.min(lastFocusedLine.line, lineNumber);
+                    const endLine = Math.max(lastFocusedLine.line, lineNumber);
+                    setAddingCommentAt({
+                      file: fileName,
+                      startLine,
+                      endLine,
+                      side,
+                    });
+                    setSelectedRange(null);
+                  } else {
+                    handleLineClick(fileName, lineNumber, side);
+                  }
                 }
+              }
+            },
+            onMouseDown: (event: any) => {
+              const { change } = event;
+              if (change) {
+                const fileName = file.newPath || file.oldPath;
+                const side = change.isNormal
+                  ? "new"
+                  : change.type === "insert"
+                    ? "new"
+                    : "old";
+                const lineNumber = side === "new" ? change.newLineNumber : change.oldLineNumber;
+                if (lineNumber) {
+                  setSelectingRange({
+                    file: fileName,
+                    startLine: lineNumber,
+                    side,
+                  });
+                  setSelectedRange({
+                    file: fileName,
+                    startLine: lineNumber,
+                    endLine: lineNumber,
+                    side,
+                  });
+                }
+              }
+            },
+            onMouseEnter: (event: any) => {
+              const { change } = event;
+              if (change) {
+                const fileName = file.newPath || file.oldPath;
+                const side = change.isNormal
+                  ? "new"
+                  : change.type === "insert"
+                    ? "new"
+                    : "old";
+                const lineNumber = side === "new" ? change.newLineNumber : change.oldLineNumber;
+                if (lineNumber) {
+                  // Update hovered line for "C" key shortcut
+                  setHoveredLine({ file: fileName, line: lineNumber, side });
+                  
+                  // Extend selection range if dragging
+                  if (selectingRange && selectingRange.file === fileName && selectingRange.side === side) {
+                    const startLine = Math.min(selectingRange.startLine, lineNumber);
+                    const endLine = Math.max(selectingRange.startLine, lineNumber);
+                    setSelectedRange({
+                      file: fileName,
+                      startLine,
+                      endLine,
+                      side,
+                    });
+                  }
+                }
+              }
+            },
+            onMouseUp: (_event: any) => {
+              if (selectingRange && selectedRange) {
+                // Only open comment form if we dragged across multiple lines
+                if (selectedRange.startLine !== selectedRange.endLine) {
+                  setAddingCommentAt({
+                    file: selectedRange.file,
+                    startLine: selectedRange.startLine,
+                    endLine: selectedRange.endLine,
+                    side: selectedRange.side,
+                  });
+                }
+                setSelectingRange(null);
+                setSelectedRange(null);
               }
             },
           }}
@@ -443,7 +546,7 @@ function App() {
                 onClick={handleGeneratePrompt}
                 className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
               >
-                {promptCopied ? "Copied!" : "Generate Prompt"}
+                Generate Prompt
               </button>
             </>
           )}
@@ -523,6 +626,41 @@ function App() {
                 selectedFile={selectedFile}
                 onSelectFile={handleFileSelect}
               />
+              {(() => {
+                // Get unique files with comments
+                const filesWithComments = Array.from(
+                  new Set(comments.map((c) => c.file))
+                ).sort();
+                
+                if (filesWithComments.length > 0) {
+                  return (
+                    <>
+                      <div className="px-4 py-2 border-t border-gray-700 font-semibold bg-gray-800 sticky top-0">
+                        Files with Comments ({filesWithComments.length})
+                      </div>
+                      <div className="space-y-1">
+                        {filesWithComments.map((file) => (
+                          <button
+                            key={file}
+                            onClick={() => handleFileSelect(file)}
+                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-700 transition-colors ${
+                              selectedFile === file
+                                ? "bg-blue-600 text-white"
+                                : "text-gray-300"
+                            }`}
+                          >
+                            {file.split("/").pop()}
+                            <div className="text-xs opacity-70 truncate">
+                              {file}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
         ) : (
@@ -604,6 +742,13 @@ function App() {
         onSelect={handleExplorerSelect}
         onClose={fileExplorer.closeExplorer}
       />
+
+      {showPromptPreview && (
+        <PromptPreview
+          prompt={generatePrompt(comments)}
+          onClose={() => setShowPromptPreview(false)}
+        />
+      )}
     </div>
   );
 }
