@@ -108,3 +108,13 @@
   position: relative;
   overflow: visible;
 }
+
+/* Split view: constrain comment widgets to their respective side */
+.diff-widget-content .split-widget-old {
+  width: 50%;
+}
+
+.diff-widget-content .split-widget-new {
+  width: 50%;
+  margin-left: 50%;
+}
