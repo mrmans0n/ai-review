@@ -88,3 +88,17 @@
 .diff-split td.diff-gutter {
   user-select: none;
 }
+
+/* Highlight lines when hovering over their associated comment */
+.diff-gutter-selected {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.diff-code-selected {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}
+
+/* Inline comment/form widget rows */
+.diff-widget {
+  background-color: transparent;
+}
