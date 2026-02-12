@@ -73,6 +73,61 @@ struct InstallCliResult {
 }
 
 #[tauri::command]
+fn check_cli_installed() -> bool {
+    #[cfg(not(target_family = "unix"))]
+    {
+        return false;
+    }
+
+    #[cfg(target_family = "unix")]
+    {
+        use std::fs;
+
+        // Get the home directory
+        let Ok(home_dir) = std::env::var("HOME") else {
+            return false;
+        };
+
+        let cli_path = PathBuf::from(&home_dir)
+            .join(".local")
+            .join("bin")
+            .join("air");
+
+        // Check if the file exists
+        if !cli_path.exists() {
+            return false;
+        }
+
+        // Check if it's a symlink
+        let Ok(metadata) = fs::symlink_metadata(&cli_path) else {
+            return false;
+        };
+
+        if !metadata.file_type().is_symlink() {
+            return false;
+        }
+
+        // Check if the symlink points to a valid executable
+        let Ok(target) = fs::read_link(&cli_path) else {
+            return false;
+        };
+
+        // Verify the target exists and is executable
+        if !target.exists() {
+            return false;
+        }
+
+        // Get current executable path
+        let Ok(current_exe) = std::env::current_exe() else {
+            return false;
+        };
+
+        // Check if the symlink points to the current executable
+        target == current_exe
+    }
+}
+
+#[tauri::command]
 fn install_cli() -> Result<InstallCliResult, String> {
     #[cfg(not(target_family = "unix"))]
     {
@@ -166,6 +221,7 @@ pub fn run() {
             get_commit_diff,
             list_files,
             read_file_content,
+            check_cli_installed,
             install_cli,
         ])
         .run(tauri::generate_context!())
