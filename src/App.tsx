@@ -870,7 +870,7 @@ function App() {
             <>
               <button
                 onClick={() => setShowCommentOverview(true)}
-                className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500 transition-colors cursor-pointer"
+                className="px-4 py-2 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500 transition-colors cursor-pointer"
               >
                 {comments.length} comment{comments.length !== 1 ? "s" : ""}
                 {comments.length > 10 ? " 🫠" : comments.length >= 3 ? " 🔥" : ""}
