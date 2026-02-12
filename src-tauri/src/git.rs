@@ -428,17 +428,61 @@ pub fn get_branch_diff(dir: &Path, branch: &str) -> Result<String, String> {
 // git-gud Stack Support
 // =============================================================================
 
+/// Resolve the git directory for gg state files.
+///
+/// In a normal repo: `.git/gg/`
+/// In a worktree: `.git/worktrees/<name>/gg/` (where `.git` is a file
+/// containing `gitdir: /path/to/main/.git/worktrees/<name>`)
+fn resolve_gg_dir(dir: &Path) -> Option<PathBuf> {
+    use std::fs;
+
+    let dot_git = dir.join(".git");
+
+    if dot_git.is_dir() {
+        // Normal repo: .git is a directory
+        let gg_dir = dot_git.join("gg");
+        if gg_dir.exists() {
+            return Some(gg_dir);
+        }
+        return Some(gg_dir); // Return even if not exists (for has_gg_stacks check)
+    }
+
+    if dot_git.is_file() {
+        // Worktree: .git is a file with "gitdir: <path>"
+        if let Ok(content) = fs::read_to_string(&dot_git) {
+            if let Some(gitdir_str) = content.trim().strip_prefix("gitdir:") {
+                let gitdir = PathBuf::from(gitdir_str.trim());
+                // Resolve relative paths against the working dir
+                let gitdir = if gitdir.is_relative() {
+                    dir.join(&gitdir)
+                } else {
+                    gitdir
+                };
+                // Worktree git dir: e.g. /repo/.git/worktrees/<name>
+                // gg state lives at /repo/.git/worktrees/<name>/gg/
+                let gg_dir = gitdir.join("gg");
+                return Some(gg_dir);
+            }
+        }
+    }
+
+    None
+}
+
 /// Check if git-gud stacks are available in the repository
 pub fn has_gg_stacks(dir: &Path) -> bool {
-    dir.join(".git/gg/config.json").exists()
+    resolve_gg_dir(dir)
+        .map(|gg_dir| gg_dir.join("config.json").exists())
+        .unwrap_or(false)
 }
 
 /// Read git-gud config file
 fn read_gg_config(dir: &Path) -> Result<serde_json::Value, String> {
     use std::fs;
-    let config_path = dir.join(".git/gg/config.json");
-    let content = fs::read_to_string(&config_path)
-        .map_err(|e| format!("Failed to read .git/gg/config.json: {}", e))?;
+    let gg_dir = resolve_gg_dir(dir).ok_or("Not a git repository")?;
+    let config_path = gg_dir.join("config.json");
+    let content =
+        fs::read_to_string(&config_path).map_err(|e| format!("Failed to read gg config: {}", e))?;
     serde_json::from_str(&content).map_err(|e| format!("Failed to parse git-gud config: {}", e))
 }
 
@@ -455,7 +499,8 @@ fn get_default_base(config: &serde_json::Value) -> String {
 /// Get the current stack name from .git/gg/current_stack
 fn get_current_stack(dir: &Path) -> Option<String> {
     use std::fs;
-    let current_stack_path = dir.join(".git/gg/current_stack");
+    let gg_dir = resolve_gg_dir(dir)?;
+    let current_stack_path = gg_dir.join("current_stack");
     fs::read_to_string(current_stack_path)
         .ok()
         .map(|s| s.trim().to_string())
