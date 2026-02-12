@@ -16,6 +16,12 @@
   padding: 0 8px;
   text-align: right;
   user-select: none;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.diff-gutter:hover {
+  @apply bg-blue-900/30 text-blue-400;
 }
 
 .diff-gutter-col {
