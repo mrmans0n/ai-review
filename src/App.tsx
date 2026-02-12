@@ -747,20 +747,6 @@ function App() {
         </div>
       )}
 
-      {selectedStackInfo && (
-        <div className="bg-green-900 border-b border-green-700 px-6 py-2">
-          <div className="flex items-center gap-3 text-sm">
-            <span className="font-mono bg-green-800 text-green-100 px-2 py-0.5 rounded">
-              gg
-            </span>
-            <span className="font-semibold text-white">
-              Stack: {selectedStackInfo.name}
-              {selectedStackInfo.entry && ` → ${selectedStackInfo.entry}`}
-            </span>
-          </div>
-        </div>
-      )}
-
       <div className="flex h-[calc(100vh-140px)]">
         {isGitRepo && diffResult ? (
           <div className="w-64 border-r border-gray-700 flex flex-col bg-gray-800">
