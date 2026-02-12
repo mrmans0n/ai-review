@@ -236,8 +236,15 @@ function App() {
           <button
             onClick={() => {
               const fileName = file.newPath || file.oldPath;
-              setLastFocusedLine({ file: fileName, line: 1, side: "new" });
-              handleLineClick(fileName, 1, "new");
+              // Find the first changed line in this file's hunks
+              let firstLine = 1;
+              if (file.hunks && file.hunks.length > 0) {
+                const firstHunk = file.hunks[0];
+                // Use the first new line number from the hunk
+                firstLine = firstHunk.newStart || 1;
+              }
+              setLastFocusedLine({ file: fileName, line: firstLine, side: "new" });
+              handleLineClick(fileName, firstLine, "new");
             }}
             className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
           >
