@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# CLI wrapper for ai-diff
+# This script launches the Tauri app with the current directory as an argument
+
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Determine the app location based on platform
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/bundle/macos/ai-diff.app/Contents/MacOS/ai-diff"
+    
+    # If not found in release, try debug
+    if [ ! -f "$APP_PATH" ]; then
+        APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/bundle/macos/ai-diff.app/Contents/MacOS/ai-diff"
+    fi
+    
+    # If still not found, try the binary directly
+    if [ ! -f "$APP_PATH" ]; then
+        APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-diff"
+    fi
+    
+    # Last resort: debug binary
+    if [ ! -f "$APP_PATH" ]; then
+        APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-diff"
+    fi
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Linux
+    APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-diff"
+    
+    if [ ! -f "$APP_PATH" ]; then
+        APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-diff"
+    fi
+else
+    # Windows (via Git Bash or WSL)
+    APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-diff.exe"
+    
+    if [ ! -f "$APP_PATH" ]; then
+        APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-diff.exe"
+    fi
+fi
+
+# Check if the app exists
+if [ ! -f "$APP_PATH" ]; then
+    echo "Error: ai-diff executable not found."
+    echo "Please build the app first with: pnpm tauri build"
+    exit 1
+fi
+
+# Get the working directory (use argument if provided, otherwise current dir)
+WORKING_DIR="${1:-.}"
+WORKING_DIR="$(cd "$WORKING_DIR" && pwd)"
+
+# Launch the app with the working directory
+"$APP_PATH" "$WORKING_DIR" &

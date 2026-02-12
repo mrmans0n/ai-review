@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    ai_diff_temp_lib::run()
+    ai_diff_lib::run()
 }
