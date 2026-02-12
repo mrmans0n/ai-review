@@ -126,12 +126,19 @@ table.diff-split[data-selecting="new"] td:nth-child(-n+2) {
   overflow: visible;
 }
 
-/* Split view: constrain comment widgets to their respective side */
-.diff-widget-content .split-widget-old {
+/* Split view: constrain comment widgets to their respective side.
+   In colspan=2 cells (insert/delete lines), the td already covers one side — fill it.
+   In colspan=4 cells (normal lines), we need to position within the full-width cell. */
+.diff-widget-content .split-widget-old,
+.diff-widget-content .split-widget-new {
+  width: 100%;
+}
+
+td[colspan="4"].diff-widget-content .split-widget-old {
   width: 50%;
 }
 
-.diff-widget-content .split-widget-new {
+td[colspan="4"].diff-widget-content .split-widget-new {
   width: 50%;
   margin-left: 50%;
 }
