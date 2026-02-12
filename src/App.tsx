@@ -10,6 +10,7 @@ import { useFileExplorer } from "./hooks/useFileExplorer";
 import { useComments } from "./hooks/useComments";
 import { FileExplorer } from "./components/FileExplorer";
 import { FileList } from "./components/FileList";
+import { FileViewer } from "./components/FileViewer";
 import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
 import { generatePrompt } from "./lib/promptGenerator";
@@ -512,9 +513,21 @@ function App() {
                 </button>
                 <h2 className="text-xl font-semibold mt-2">{currentFile}</h2>
               </div>
-              <pre className="bg-gray-800 p-4 rounded font-mono text-sm overflow-x-auto">
-                {fileContent}
-              </pre>
+              <FileViewer
+                fileName={currentFile}
+                content={fileContent}
+                language={detectLanguage(currentFile)}
+                onLineClick={handleLineClick}
+                addingCommentAt={addingCommentAt}
+                onAddComment={handleAddComment}
+                onCancelComment={() => setAddingCommentAt(null)}
+                comments={comments}
+                onEditComment={updateComment}
+                onDeleteComment={deleteComment}
+                editingCommentId={editingCommentId}
+                onStartEditComment={startEditing}
+                onStopEditComment={stopEditing}
+              />
             </div>
           ) : (
             <div className="p-6">
