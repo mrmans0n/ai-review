@@ -45,8 +45,12 @@ export function useFileExplorer(workingDir: string | null) {
 
     setLoading(true);
     try {
-      const result = await invoke<string[]>("list_files", { path: workingDir });
-      setFiles(result);
+      const result = await invoke<Array<{ path: string; name: string; is_dir: boolean }>>(
+        "list_files",
+        { path: workingDir }
+      );
+      // Extract just the paths from FileEntry objects
+      setFiles(result.map((entry) => entry.path));
       setSelectedIndex(0);
     } catch (err) {
       console.error("Failed to load files:", err);

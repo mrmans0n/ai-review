@@ -17,7 +17,7 @@ pub fn read_file(path: &str) -> Result<String, String> {
 }
 
 /// List files in a directory (recursive, respecting .gitignore if in git repo)
-pub fn list_files(dir: &PathBuf, max_depth: usize) -> Result<Vec<FileEntry>, String> {
+pub fn list_files(dir: &PathBuf, max_depth: usize) -> Result<Vec<String>, String> {
     let mut files = Vec::new();
     
     // Try to use git ls-files for better performance and .gitignore support
@@ -34,17 +34,7 @@ pub fn list_files(dir: &PathBuf, max_depth: usize) -> Result<Vec<FileEntry>, Str
                 for line in stdout.lines() {
                     let path = line.trim();
                     if !path.is_empty() {
-                        let name = Path::new(path)
-                            .file_name()
-                            .and_then(|n| n.to_str())
-                            .unwrap_or(path)
-                            .to_string();
-                        
-                        files.push(FileEntry {
-                            path: path.to_string(),
-                            name,
-                            is_dir: false,
-                        });
+                        files.push(path.to_string());
                     }
                 }
                 return Ok(files);
@@ -53,9 +43,11 @@ pub fn list_files(dir: &PathBuf, max_depth: usize) -> Result<Vec<FileEntry>, Str
     }
     
     // Fallback to recursive directory walk
-    walk_dir(dir, dir, &mut files, 0, max_depth)?;
+    let mut file_entries = Vec::new();
+    walk_dir(dir, dir, &mut file_entries, 0, max_depth)?;
     
-    Ok(files)
+    // Extract just the paths
+    Ok(file_entries.iter().map(|f| f.path.clone()).collect())
 }
 
 /// Recursive directory walker (fallback when git is not available)

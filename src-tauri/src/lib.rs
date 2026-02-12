@@ -48,7 +48,7 @@ fn get_commit_diff(path: String, commit: String) -> Result<git::GitDiffResult, S
 }
 
 #[tauri::command]
-fn list_files(path: String) -> Result<Vec<files::FileEntry>, String> {
+fn list_files(path: String) -> Result<Vec<String>, String> {
     let dir = PathBuf::from(path);
     files::list_files(&dir, 10)
 }
