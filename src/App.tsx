@@ -240,35 +240,28 @@ function App() {
           }}
         >
           {(hunks: any[]) =>
-            hunks.flatMap((hunk, hunkIndex) => {
-              const elements = [];
-              const fileName = file.newPath || file.oldPath;
-
-              elements.push(<Hunk key={hunk.content} hunk={hunk} />);
-
-              const hunkComments = comments.filter(
-                (c) => c.file === fileName
-              );
-
-              if (hunkComments.length > 0 && hunkIndex === hunks.length - 1) {
-                elements.push(
-                  <div key={`comments-${hunk.content}`} className="px-4">
-                    <CommentWidget
-                      comments={hunkComments}
-                      onEdit={updateComment}
-                      onDelete={deleteComment}
-                      editingId={editingCommentId}
-                      onStartEdit={startEditing}
-                      onStopEdit={stopEditing}
-                    />
-                  </div>
-                );
-              }
-
-              return elements;
-            })
+            hunks.map((hunk) => (
+              <Hunk key={hunk.content} hunk={hunk} />
+            ))
           }
         </Diff>
+        {(() => {
+          const fileName = file.newPath || file.oldPath;
+          const fileComments = comments.filter((c) => c.file === fileName);
+          if (fileComments.length === 0) return null;
+          return (
+            <div className="px-4 py-2 bg-gray-800">
+              <CommentWidget
+                comments={fileComments}
+                onEdit={updateComment}
+                onDelete={deleteComment}
+                editingId={editingCommentId}
+                onStartEdit={startEditing}
+                onStopEdit={stopEditing}
+              />
+            </div>
+          );
+        })()}
       </div>
     );
   };
