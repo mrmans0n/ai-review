@@ -41,3 +41,20 @@ export interface BranchInfo {
   author: string;
   date: string;
 }
+
+export interface GgStackInfo {
+  name: string;
+  base: string;
+  commit_count: number;
+  is_current: boolean;
+  username: string;
+}
+
+export interface GgStackEntry {
+  hash: string;
+  short_hash: string;
+  title: string;
+  gg_id: string | null;
+  mr_number: number | null;
+  position: number;
+}
