@@ -91,17 +91,19 @@
   width: 50%;
 }
 
-/* Fix split view text selection - prevent cross-column selection */
+/* Split view layout */
 .diff-split {
   table-layout: fixed;
 }
 
-.diff-split td.diff-code {
-  user-select: text;
+/* Constrain text selection to one column in split view */
+table.diff-split[data-selecting="old"] td:nth-child(n+3) {
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
-
-.diff-split td.diff-gutter {
-  user-select: none;
+table.diff-split[data-selecting="new"] td:nth-child(-n+2) {
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 
 /* Highlight lines when hovering over their associated comment */

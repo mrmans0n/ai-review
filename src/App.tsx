@@ -223,6 +223,36 @@ function App() {
     return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
   }, [selectingRange]);
 
+  // Constrain text selection to one column in split view
+  useEffect(() => {
+    if (viewType !== "split") return;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      let el = e.target as HTMLElement | null;
+      while (el && !el.classList.contains("diff-code")) {
+        if (el.classList.contains("diff")) break;
+        el = el.parentElement;
+      }
+      if (!el || !el.classList.contains("diff-code") || !el.parentElement) return;
+
+      const table = el.closest("table.diff-split") as HTMLElement | null;
+      if (!table) return;
+
+      const index = [...el.parentElement.children].indexOf(el);
+      if (index === 1) {
+        table.setAttribute("data-selecting", "old");
+      } else if (index === 3) {
+        table.setAttribute("data-selecting", "new");
+      }
+    };
+
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+    };
+  }, [viewType]);
+
   const handleModeChange = (newMode: DiffModeConfig) => {
     setDiffMode(newMode);
     loadDiff(newMode);
@@ -596,7 +626,6 @@ function App() {
           hunks={file.hunks}
           tokens={tokens}
           widgets={fileWidgets}
-          optimizeSelection
           selectedChanges={highlightedChangeKeys}
           renderGutter={({ change, side, inHoverState, renderDefault }: any) => {
             if (!change) return renderDefault();
