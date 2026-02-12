@@ -212,6 +212,28 @@ fn parse_file_status(output: &str) -> Vec<GitFile> {
         .collect()
 }
 
+/// Get diff for a specific file
+#[allow(dead_code)]
+pub fn get_file_diff(dir: &Path, file_path: &str, staged: bool) -> Result<String, String> {
+    let mut args = vec!["diff", "--no-color"];
+    if staged {
+        args.push("--staged");
+    }
+    args.push(file_path);
+
+    let output = Command::new("git")
+        .args(&args)
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to get file diff: {}", e))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -375,26 +397,4 @@ mod tests {
         let temp_dir = env::temp_dir().join("test_not_git_repo");
         assert!(!is_git_repo(&temp_dir));
     }
-}
-
-/// Get diff for a specific file
-#[allow(dead_code)]
-pub fn get_file_diff(dir: &Path, file_path: &str, staged: bool) -> Result<String, String> {
-    let mut args = vec!["diff", "--no-color"];
-    if staged {
-        args.push("--staged");
-    }
-    args.push(file_path);
-
-    let output = Command::new("git")
-        .args(&args)
-        .current_dir(dir)
-        .output()
-        .map_err(|e| format!("Failed to get file diff: {}", e))?;
-
-    if !output.status.success() {
-        return Err(String::from_utf8_lossy(&output.stderr).to_string());
-    }
-
-    Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }

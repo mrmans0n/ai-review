@@ -63,6 +63,8 @@ function App() {
     side: "old" | "new";
   } | null>(null);
   const [promptCopied, setPromptCopied] = useState(false);
+  const [cliInstalled, setCliInstalled] = useState(false);
+  const [installMessage, setInstallMessage] = useState<string | null>(null);
 
   const {
     comments,
@@ -86,6 +88,15 @@ function App() {
       .catch((err) => {
         console.error("Failed to get working directory:", err);
         setDiffText(EXAMPLE_DIFF);
+      });
+
+    // Check if CLI is already installed
+    invoke<boolean>("check_cli_installed")
+      .then((installed) => {
+        setCliInstalled(installed);
+      })
+      .catch((err) => {
+        console.error("Failed to check CLI installation:", err);
       });
   }, []);
 
@@ -194,18 +205,19 @@ function App() {
       }>("install_cli");
       
       if (result.success) {
+        setCliInstalled(true);
         if (result.path_warning) {
-          alert(
-            `✅ ${result.message}\n\n` +
-            `To add ~/.local/bin to your PATH, add this line to your shell config:\n` +
-            `export PATH="$HOME/.local/bin:$PATH"`
+          setInstallMessage(
+            `${result.message}\n\nTo add ~/.local/bin to your PATH, add this line to your shell config:\nexport PATH="$HOME/.local/bin:$PATH"`
           );
         } else {
-          alert(`✅ ${result.message}`);
+          setInstallMessage(result.message);
         }
+        setTimeout(() => setInstallMessage(null), 5000);
       }
     } catch (err) {
-      alert(`❌ Failed to install CLI: ${err}`);
+      setInstallMessage(`Failed to install CLI: ${err}`);
+      setTimeout(() => setInstallMessage(null), 5000);
     }
   };
 
@@ -434,33 +446,67 @@ function App() {
               </button>
             </>
           )}
-          <button
-            onClick={handleInstallCli}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded text-sm hover:bg-gray-600 transition-colors flex items-center gap-2"
-            title="Install CLI command"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          <div className="relative">
+            <button
+              onClick={handleInstallCli}
+              disabled={cliInstalled}
+              className={`px-4 py-2 rounded text-sm transition-colors flex items-center gap-2 ${
+                cliInstalled
+                  ? "bg-green-700 text-white cursor-not-allowed"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              }`}
+              title={cliInstalled ? "CLI is already installed" : "Install CLI command"}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-            Install CLI
-          </button>
+              {cliInstalled ? (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  CLI Installed ✓
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  Install CLI
+                </>
+              )}
+            </button>
+            {installMessage && (
+              <div className="absolute top-full mt-2 right-0 bg-gray-800 border border-gray-600 rounded px-4 py-2 text-sm whitespace-pre-wrap max-w-md shadow-lg z-50">
+                {installMessage}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
