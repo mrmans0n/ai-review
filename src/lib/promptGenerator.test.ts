@@ -282,4 +282,64 @@ describe("generatePrompt", () => {
       `Please address these review comments:\n\n- \`src/main.ts:1\` — Fix typo`
     );
   });
+
+  it("should not prepend context for staged changes", () => {
+    const comments: Comment[] = [
+      {
+        id: "1",
+        file: "src/main.ts",
+        startLine: 1,
+        endLine: 1,
+        side: "new",
+        text: "Fix typo",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ];
+    const context: PromptContext = {
+      mode: "staged",
+      selectedCommit: null,
+      selectedBranch: null,
+    };
+
+    const result = generatePrompt(comments, context);
+    expect(result).toBe(
+      `Please address these review comments:\n\n- \`src/main.ts:1\` — Fix typo`
+    );
+  });
+
+  it("should prioritize selectedCommit over selectedBranch when both provided", () => {
+    const comments: Comment[] = [
+      {
+        id: "1",
+        file: "src/auth.ts",
+        startLine: 42,
+        endLine: 42,
+        side: "new",
+        text: "Fix issue",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ];
+    const context: PromptContext = {
+      mode: "commit",
+      selectedCommit: {
+        hash: "abc123def456",
+        short_hash: "abc123d",
+        message: "Fix auth flow",
+        author: "test",
+        date: "2024-01-01",
+        refs: "",
+      },
+      selectedBranch: {
+        name: "feature/auth",
+        short_hash: "def789a",
+        subject: "Auth feature",
+        author: "test",
+        date: "2024-01-01",
+      },
+    };
+
+    const result = generatePrompt(comments, context);
+    expect(result).toContain("commit abc123d");
+    expect(result).not.toContain("branch feature/auth");
+  });
 });
