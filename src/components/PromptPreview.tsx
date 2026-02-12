@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface PromptPreviewProps {
   prompt: string;
@@ -8,6 +8,13 @@ interface PromptPreviewProps {
 export function PromptPreview({ prompt, onClose }: PromptPreviewProps) {
   const [editablePrompt, setEditablePrompt] = useState(prompt);
   const [copied, setCopied] = useState(false);
+
+  // Restore focus to body when modal unmounts so keyboard shortcuts work again
+  useEffect(() => {
+    return () => {
+      document.body.focus();
+    };
+  }, []);
 
   const handleCopy = async () => {
     try {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { parseDiff, Diff, Hunk } from "react-diff-view";
+import { parseDiff, Diff, Hunk, getChangeKey } from "react-diff-view";
 import { invoke } from "@tauri-apps/api/core";
 import "react-diff-view/style/index.css";
 import "./diff.css";
@@ -85,6 +85,7 @@ function App() {
   const [showPromptPreview, setShowPromptPreview] = useState(false);
   const [cliInstalled, setCliInstalled] = useState(false);
   const [installMessage, setInstallMessage] = useState<string | null>(null);
+  const [hoveredCommentIds, setHoveredCommentIds] = useState<string[] | null>(null);
 
   const {
     comments,
@@ -386,10 +387,137 @@ function App() {
     }
   };
 
+  // Find the change key for a given line number and side in the hunks
+  const findChangeKey = (hunks: any[], lineNum: number, side: "old" | "new"): string | null => {
+    for (const hunk of hunks) {
+      for (const change of hunk.changes) {
+        if (change.isNormal) {
+          if ((side === "new" && change.newLineNumber === lineNum) ||
+              (side === "old" && change.oldLineNumber === lineNum)) {
+            return getChangeKey(change);
+          }
+        } else if (change.type === "insert" && side === "new" && change.lineNumber === lineNum) {
+          return getChangeKey(change);
+        } else if (change.type === "delete" && side === "old" && change.lineNumber === lineNum) {
+          return getChangeKey(change);
+        }
+      }
+    }
+    return null;
+  };
+
+  // Get all change keys for a line range (for highlighting)
+  const getChangeKeysForRange = (hunks: any[], startLine: number, endLine: number, side: "old" | "new"): string[] => {
+    const keys: string[] = [];
+    for (const hunk of hunks) {
+      for (const change of hunk.changes) {
+        let lineNum: number | undefined;
+        let changeSide: "old" | "new";
+
+        if (change.isNormal) {
+          lineNum = side === "new" ? change.newLineNumber : change.oldLineNumber;
+          changeSide = side;
+        } else if (change.type === "insert") {
+          lineNum = change.lineNumber;
+          changeSide = "new";
+        } else {
+          lineNum = change.lineNumber;
+          changeSide = "old";
+        }
+
+        if (changeSide === side && lineNum !== undefined && lineNum >= startLine && lineNum <= endLine) {
+          keys.push(getChangeKey(change));
+        }
+      }
+    }
+    return keys;
+  };
+
+  // Build widgets map for inline comments and add-comment form
+  const buildFileWidgets = (
+    file: any,
+    fileComments: import("./types").Comment[],
+  ): Record<string, React.ReactNode> => {
+    const widgets: Record<string, React.ReactNode> = {};
+    const fileName = file.newPath || file.oldPath;
+
+    // Group comments by endLine + side
+    const commentsByEndLine = new Map<string, import("./types").Comment[]>();
+    for (const comment of fileComments) {
+      const key = `${comment.side}-${comment.endLine}`;
+      if (!commentsByEndLine.has(key)) commentsByEndLine.set(key, []);
+      commentsByEndLine.get(key)!.push(comment);
+    }
+
+    // Map comments to change keys
+    for (const [lookupKey, commentsAtLine] of commentsByEndLine) {
+      const [side, lineStr] = lookupKey.split("-");
+      const lineNum = parseInt(lineStr, 10);
+      const changeKey = findChangeKey(file.hunks, lineNum, side as "old" | "new");
+      if (changeKey) {
+        widgets[changeKey] = (
+          <div
+            className="px-4 py-2 bg-gray-800 border-t border-b border-gray-700"
+            onMouseEnter={() => setHoveredCommentIds(commentsAtLine.map(c => c.id))}
+            onMouseLeave={() => setHoveredCommentIds(null)}
+          >
+            <CommentWidget
+              comments={commentsAtLine}
+              onEdit={updateComment}
+              onDelete={deleteComment}
+              editingId={editingCommentId}
+              onStartEdit={startEditing}
+              onStopEdit={stopEditing}
+            />
+          </div>
+        );
+      }
+    }
+
+    // Add comment form as inline widget
+    if (addingCommentAt && addingCommentAt.file === fileName) {
+      const formChangeKey = findChangeKey(file.hunks, addingCommentAt.endLine, addingCommentAt.side);
+      if (formChangeKey) {
+        const existingWidget = widgets[formChangeKey];
+        widgets[formChangeKey] = (
+          <div className="px-4 py-2 bg-gray-800 border-t border-b border-gray-700">
+            {existingWidget}
+            <AddCommentForm
+              file={addingCommentAt.file}
+              startLine={addingCommentAt.startLine}
+              endLine={addingCommentAt.endLine}
+              side={addingCommentAt.side}
+              onSubmit={handleAddComment}
+              onCancel={() => setAddingCommentAt(null)}
+            />
+          </div>
+        );
+      }
+    }
+
+    return widgets;
+  };
+
   const renderFile = (file: any) => {
     const tokens = highlight(file.hunks, {
       language: detectLanguage(file.newPath || file.oldPath),
     });
+
+    const fileName = file.newPath || file.oldPath;
+    const fileComments = comments.filter((c) => c.file === fileName);
+    const fileWidgets = buildFileWidgets(file, fileComments);
+
+    // Build selectedChanges for hover highlighting
+    const highlightedChangeKeys: string[] = [];
+    if (hoveredCommentIds && hoveredCommentIds.length > 0) {
+      for (const comment of fileComments) {
+        if (hoveredCommentIds.includes(comment.id)) {
+          highlightedChangeKeys.push(
+            ...getChangeKeysForRange(file.hunks, comment.startLine, comment.endLine, comment.side)
+          );
+        }
+      }
+    }
 
     return (
       <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={file.newPath || file.oldPath}>
@@ -428,24 +556,13 @@ function App() {
             + Add Comment
           </button>
         </div>
-        {addingCommentAt &&
-          addingCommentAt.file === (file.newPath || file.oldPath) && (
-            <div className="px-4 py-2 bg-gray-800">
-              <AddCommentForm
-                file={addingCommentAt.file}
-                startLine={addingCommentAt.startLine}
-                endLine={addingCommentAt.endLine}
-                side={addingCommentAt.side}
-                onSubmit={handleAddComment}
-                onCancel={() => setAddingCommentAt(null)}
-              />
-            </div>
-          )}
         <Diff
           viewType={viewType}
           diffType={file.type}
           hunks={file.hunks}
           tokens={tokens}
+          widgets={fileWidgets}
+          selectedChanges={highlightedChangeKeys}
           gutterEvents={{
             onClick: (event: any) => {
               const { change } = event;
@@ -551,23 +668,6 @@ function App() {
             ))
           }
         </Diff>
-        {(() => {
-          const fileName = file.newPath || file.oldPath;
-          const fileComments = comments.filter((c) => c.file === fileName);
-          if (fileComments.length === 0) return null;
-          return (
-            <div className="px-4 py-2 bg-gray-800">
-              <CommentWidget
-                comments={fileComments}
-                onEdit={updateComment}
-                onDelete={deleteComment}
-                editingId={editingCommentId}
-                onStartEdit={startEditing}
-                onStopEdit={stopEditing}
-              />
-            </div>
-          );
-        })()}
       </div>
     );
   };
