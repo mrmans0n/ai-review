@@ -272,6 +272,24 @@ pub fn get_file_diff(dir: &Path, file_path: &str, staged: bool) -> Result<String
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
 
+/// Get file content at a specific git ref (commit, branch, index, etc.)
+/// Uses `git show <ref>:<file_path>` to retrieve the content.
+pub fn get_file_at_ref(dir: &Path, git_ref: &str, file_path: &str) -> Result<String, String> {
+    let ref_path = format!("{}:{}", git_ref, file_path);
+    let output = Command::new("git")
+        .arg("show")
+        .arg(&ref_path)
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to execute git show: {}", e))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
 /// List recent commits
 pub fn list_commits(dir: &Path, limit: u32) -> Result<Vec<CommitInfo>, String> {
     let output = Command::new("git")
