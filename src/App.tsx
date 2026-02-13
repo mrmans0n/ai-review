@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { parseDiff, Diff, Hunk, getChangeKey } from "react-diff-view";
+import { parseDiff, Diff, Hunk, Decoration, getChangeKey, getCollapsedLinesCountBetween, expandFromRawCode } from "react-diff-view";
 import { invoke } from "@tauri-apps/api/core";
 import "react-diff-view/style/index.css";
 import "./diff.css";
@@ -18,6 +18,7 @@ import { CommentWidget } from "./components/CommentWidget";
 import { PromptPreview } from "./components/PromptPreview";
 import { CommentOverview } from "./components/CommentOverview";
 import { generatePrompt } from "./lib/promptGenerator";
+import { HunkExpandControl } from "./components/HunkExpandControl";
 import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry } from "./types";
 
 const EXAMPLE_DIFF = `diff --git a/src/components/Button.tsx b/src/components/Button.tsx
@@ -51,7 +52,6 @@ function App() {
   const [diffText, setDiffText] = useState("");
   const [viewType, setViewType] = useState<"split" | "unified">("split");
   const [diffMode, setDiffMode] = useState<DiffModeConfig>({ mode: "unstaged" });
-  const [commitRef, setCommitRef] = useState("HEAD~1");
   const [viewMode, setViewMode] = useState<"diff" | "file">("diff");
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState("");
@@ -89,6 +89,8 @@ function App() {
   const [hoveredCommentIds, setHoveredCommentIds] = useState<string[] | null>(null);
   const [showCommentOverview, setShowCommentOverview] = useState(false);
   const suppressNextClickRef = useRef(false);
+  const [expandedHunksMap, setExpandedHunksMap] = useState<Record<string, any[]>>({});
+  const sourceCache = useRef<Record<string, string[]>>({});
 
   const {
     comments,
@@ -325,6 +327,57 @@ function App() {
     loadDiff(newMode);
   };
 
+  // Clear expansion state when diff changes
+  useEffect(() => {
+    setExpandedHunksMap({});
+    sourceCache.current = {};
+  }, [diffMode, selectedCommit, selectedBranch]);
+
+  const fetchFileSource = async (filePath: string): Promise<string[]> => {
+    if (sourceCache.current[filePath]) {
+      return sourceCache.current[filePath];
+    }
+
+    if (!workingDir) throw new Error("No working directory");
+
+    let content: string;
+
+    if (diffMode.mode === "unstaged") {
+      content = await invoke<string>("read_file_content", {
+        path: workingDir,
+        filePath,
+      });
+    } else if (diffMode.mode === "staged") {
+      content = await invoke<string>("get_file_at_ref", {
+        path: workingDir,
+        gitRef: ":0",
+        filePath,
+      });
+    } else {
+      const ref = diffMode.commitRef || "HEAD";
+      content = await invoke<string>("get_file_at_ref", {
+        path: workingDir,
+        gitRef: ref,
+        filePath,
+      });
+    }
+
+    const lines = content.split("\n");
+    sourceCache.current[filePath] = lines;
+    return lines;
+  };
+
+  const handleExpandRange = async (filePath: string, originalHunks: any[], start: number, end: number) => {
+    try {
+      const source = await fetchFileSource(filePath);
+      const currentHunks = expandedHunksMap[filePath] || originalHunks;
+      const expanded = expandFromRawCode(currentHunks, source, start, end);
+      setExpandedHunksMap((prev) => ({ ...prev, [filePath]: expanded }));
+    } catch (err) {
+      console.error("Failed to expand context:", err);
+    }
+  };
+
   const handleFileSelect = async (filePath: string) => {
     setSelectedFile(filePath);
     
@@ -431,6 +484,25 @@ function App() {
       commitSelector.closeSelector();
     } catch (err) {
       console.error("Failed to load stack diff:", err);
+    }
+  };
+
+  const handleRefSelect = async (ref: string) => {
+    if (!workingDir) return;
+
+    try {
+      const result = await invoke<string>("get_commit_diff", {
+        path: workingDir,
+        hash: ref,
+      });
+      setDiffText(result || "No changes for this ref");
+      setDiffMode({ mode: "commit", commitRef: ref });
+      setSelectedCommit(null);
+      setSelectedBranch(null);
+      setViewMode("diff");
+      commitSelector.closeSelector();
+    } catch (err) {
+      console.error("Failed to load ref diff:", err);
     }
   };
 
@@ -624,11 +696,11 @@ function App() {
   };
 
   const renderFile = (file: any) => {
-    const tokens = highlight(file.hunks, {
-      language: detectLanguage(file.newPath || file.oldPath),
-    });
-
     const fileName = file.newPath || file.oldPath;
+    const fileHunks = expandedHunksMap[fileName] || file.hunks;
+    const tokens = highlight(fileHunks, {
+      language: detectLanguage(fileName),
+    });
     const fileComments = comments.filter((c) => c.file === fileName);
     const fileWidgets = buildFileWidgets(file, fileComments);
 
@@ -638,7 +710,7 @@ function App() {
       for (const comment of fileComments) {
         if (hoveredCommentIds.includes(comment.id)) {
           highlightedChangeKeys.push(
-            ...getChangeKeysForRange(file.hunks, comment.startLine, comment.endLine, comment.side)
+            ...getChangeKeysForRange(fileHunks, comment.startLine, comment.endLine, comment.side)
           );
         }
       }
@@ -646,7 +718,7 @@ function App() {
     // Highlight drag selection range
     if (selectedRange && selectedRange.file === fileName) {
       highlightedChangeKeys.push(
-        ...getChangeKeysForRange(file.hunks, selectedRange.startLine, selectedRange.endLine, selectedRange.side)
+        ...getChangeKeysForRange(fileHunks, selectedRange.startLine, selectedRange.endLine, selectedRange.side)
       );
     }
 
@@ -690,7 +762,7 @@ function App() {
         <Diff
           viewType={viewType}
           diffType={file.type}
-          hunks={file.hunks}
+          hunks={fileHunks}
           tokens={tokens}
           widgets={fileWidgets}
           selectedChanges={highlightedChangeKeys}
@@ -821,11 +893,66 @@ function App() {
             },
           }}
         >
-          {(hunks: any[]) =>
-            hunks.map((hunk) => (
-              <Hunk key={hunk.content} hunk={hunk} />
-            ))
-          }
+          {(hunks: any[]) => {
+            const elements: React.ReactElement[] = [];
+            const cachedSource = sourceCache.current[fileName];
+            const lastHunk = hunks[hunks.length - 1];
+            const estimatedTotalLines = cachedSource?.length
+              ?? (lastHunk ? lastHunk.oldStart + lastHunk.oldLines + 20 : 0);
+
+            // Top-of-file expand control
+            if (hunks.length > 0 && hunks[0].oldStart > 1) {
+              elements.push(
+                <Decoration key="expand-top">
+                  <HunkExpandControl
+                    previousHunk={null}
+                    nextHunk={hunks[0]}
+                    totalLines={estimatedTotalLines}
+                    onExpand={(start, end) => handleExpandRange(fileName, file.hunks, start, end)}
+                  />
+                </Decoration>
+              );
+            }
+
+            hunks.forEach((hunk, i) => {
+              // Between-hunk expand control
+              if (i > 0) {
+                const collapsed = getCollapsedLinesCountBetween(hunks[i - 1], hunk);
+                if (collapsed > 0) {
+                  elements.push(
+                    <Decoration key={`expand-${i}`}>
+                      <HunkExpandControl
+                        previousHunk={hunks[i - 1]}
+                        nextHunk={hunk}
+                        totalLines={estimatedTotalLines}
+                        onExpand={(start, end) => handleExpandRange(fileName, file.hunks, start, end)}
+                      />
+                    </Decoration>
+                  );
+                }
+              }
+              elements.push(<Hunk key={hunk.content} hunk={hunk} />);
+            });
+
+            // Bottom-of-file expand control
+            if (hunks.length > 0 && estimatedTotalLines > 0) {
+              const lastHunkEnd = lastHunk.oldStart + lastHunk.oldLines - 1;
+              if (lastHunkEnd < estimatedTotalLines) {
+                elements.push(
+                  <Decoration key="expand-bottom">
+                    <HunkExpandControl
+                      previousHunk={lastHunk}
+                      nextHunk={null}
+                      totalLines={estimatedTotalLines}
+                      onExpand={(start, end) => handleExpandRange(fileName, file.hunks, start, end)}
+                    />
+                  </Decoration>
+                );
+              }
+            }
+
+            return elements;
+          }}
         </Diff>
       </div>
     );
@@ -900,25 +1027,6 @@ function App() {
                 }`}
               >
                 Staged
-              </button>
-              <input
-                type="text"
-                value={commitRef}
-                onChange={(e) => setCommitRef(e.target.value)}
-                placeholder="HEAD~1"
-                className="px-3 py-2 bg-gray-900 text-white rounded text-sm w-32"
-              />
-              <button
-                onClick={() =>
-                  handleModeChange({ mode: "commit", commitRef })
-                }
-                className={`px-4 py-2 rounded transition-colors ${
-                  diffMode.mode === "commit"
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                }`}
-              >
-                Compare
               </button>
             </div>
             <button
@@ -1232,6 +1340,7 @@ function App() {
         onSelectStack={handleStackSelect}
         onSelectStackEntry={handleStackEntrySelect}
         onSelectStackDiff={handleStackDiffSelect}
+        onSelectRef={handleRefSelect}
         onBackToStacks={commitSelector.backToStacks}
         onClose={commitSelector.closeSelector}
       />
