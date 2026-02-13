@@ -65,3 +65,8 @@ export interface PromptContext {
   selectedCommit?: CommitInfo | null;
   selectedBranch?: BranchInfo | null;
 }
+
+export interface RepoInfo {
+  name: string;
+  path: string;
+}
