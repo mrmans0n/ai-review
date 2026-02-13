@@ -4,6 +4,7 @@ use tauri::Manager;
 
 mod files;
 mod git;
+mod config;
 
 // Global state to store the working directory
 struct AppState {
