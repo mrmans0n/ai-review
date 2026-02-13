@@ -136,6 +136,12 @@ struct InstallCliResult {
     path_warning: bool,
 }
 
+#[derive(serde::Serialize)]
+struct RepoInfo {
+    name: String,
+    path: String,
+}
+
 #[tauri::command]
 fn check_cli_installed() -> bool {
     #[cfg(not(target_family = "unix"))]
@@ -253,6 +259,47 @@ fn install_cli() -> Result<InstallCliResult, String> {
     }
 }
 
+#[tauri::command]
+fn list_repos() -> Result<Vec<RepoInfo>, String> {
+    let repos = config::list_repos()?;
+    Ok(repos
+        .into_iter()
+        .map(|(name, path)| RepoInfo { name, path })
+        .collect())
+}
+
+#[tauri::command]
+fn add_repo(path: String) -> Result<RepoInfo, String> {
+    let dir = PathBuf::from(&path);
+    if !git::is_git_repo(&dir) {
+        return Err("Not a git repository".to_string());
+    }
+    config::add_repo(&path)?;
+    let name = dir
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| path.clone());
+    Ok(RepoInfo { name, path })
+}
+
+#[tauri::command]
+fn remove_repo(path: String) -> Result<(), String> {
+    config::remove_repo(&path)?;
+    Ok(())
+}
+
+#[tauri::command]
+fn switch_repo(path: String, state: tauri::State<AppState>) -> Result<git::GitDiffResult, String> {
+    let dir = PathBuf::from(&path);
+    if !git::is_git_repo(&dir) {
+        return Err("Not a git repository".to_string());
+    }
+    let mut wd = state.working_dir.lock().unwrap();
+    *wd = dir.clone();
+    drop(wd);
+    git::get_unstaged_diff(&dir)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -271,6 +318,12 @@ pub fn run() {
                 if arg_path.exists() && arg_path.is_dir() {
                     working_dir = arg_path;
                 }
+            }
+
+            // Auto-add current repo to config if it's a git repo
+            let wd = working_dir.clone();
+            if git::is_git_repo(&wd) {
+                let _ = config::add_repo(&wd.to_string_lossy());
             }
 
             // Initialize app state with working directory
@@ -300,6 +353,10 @@ pub fn run() {
             get_gg_entry_diff,
             check_cli_installed,
             install_cli,
+            list_repos,
+            add_repo,
+            remove_repo,
+            switch_repo,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
