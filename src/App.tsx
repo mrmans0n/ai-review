@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { parseDiff, Diff, Hunk, getChangeKey } from "react-diff-view";
 import { invoke } from "@tauri-apps/api/core";
 import "react-diff-view/style/index.css";
@@ -88,6 +88,7 @@ function App() {
   const [installMessage, setInstallMessage] = useState<string | null>(null);
   const [hoveredCommentIds, setHoveredCommentIds] = useState<string[] | null>(null);
   const [showCommentOverview, setShowCommentOverview] = useState(false);
+  const suppressNextClickRef = useRef(false);
 
   const {
     comments,
@@ -211,17 +212,83 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [files, lastFocusedLine, hoveredLine]);
 
-  // Global mouseup to clear selection
+  const getLineInfoFromNode = (node: Node | null) => {
+    if (!node) return null;
+
+    let el = node instanceof HTMLElement ? node : node.parentElement;
+    while (el && el.tagName !== "TABLE") {
+      if (el.tagName === "TD" && el.getAttribute("data-change-key")) {
+        const changeKey = el.getAttribute("data-change-key")!;
+        const lineNum = Number.parseInt(changeKey.slice(1), 10);
+        if (Number.isNaN(lineNum)) return null;
+
+        const type = changeKey[0];
+        const side: "old" | "new" = type === "D" ? "old" : "new";
+        const fileEl = el.closest("[data-diff-file]");
+        const file = fileEl?.getAttribute("data-diff-file") || "";
+
+        return { file, line: lineNum, side };
+      }
+      el = el.parentElement;
+    }
+
+    return null;
+  };
+
+  // Keep drag selection working even when gutter mouseenter events do not fire
   useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      if (selectingRange) {
-        setSelectingRange(null);
+    if (!selectingRange) return;
+
+    const handleDocumentMouseMove = (event: MouseEvent) => {
+      const target = document.elementFromPoint(event.clientX, event.clientY);
+      const lineInfo = getLineInfoFromNode(target);
+
+      if (!lineInfo) return;
+
+      setHoveredLine({
+        file: lineInfo.file,
+        line: lineInfo.line,
+        side: lineInfo.side,
+      });
+
+      if (
+        lineInfo.file === selectingRange.file &&
+        lineInfo.side === selectingRange.side
+      ) {
+        const startLine = Math.min(selectingRange.startLine, lineInfo.line);
+        const endLine = Math.max(selectingRange.startLine, lineInfo.line);
+        setSelectedRange({
+          file: lineInfo.file,
+          startLine,
+          endLine,
+          side: lineInfo.side,
+        });
       }
     };
 
-    window.addEventListener("mouseup", handleGlobalMouseUp);
-    return () => window.removeEventListener("mouseup", handleGlobalMouseUp);
-  }, [selectingRange]);
+    const handleDocumentMouseUp = () => {
+      if (selectedRange) {
+        setAddingCommentAt({
+          file: selectedRange.file,
+          startLine: selectedRange.startLine,
+          endLine: selectedRange.endLine,
+          side: selectedRange.side,
+        });
+        suppressNextClickRef.current = true;
+      }
+
+      setSelectingRange(null);
+      setSelectedRange(null);
+    };
+
+    document.addEventListener("mousemove", handleDocumentMouseMove);
+    document.addEventListener("mouseup", handleDocumentMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleDocumentMouseMove);
+      document.removeEventListener("mouseup", handleDocumentMouseUp);
+    };
+  }, [selectingRange, selectedRange]);
 
   const handleModeChange = (newMode: DiffModeConfig) => {
     setDiffMode(newMode);
@@ -637,6 +704,11 @@ function App() {
           }}
           gutterEvents={{
             onClick: (event: any) => {
+              if (suppressNextClickRef.current) {
+                suppressNextClickRef.current = false;
+                return;
+              }
+
               const { change } = event;
               if (change) {
                 const fileName = file.newPath || file.oldPath;
@@ -715,19 +787,6 @@ function App() {
                     });
                   }
                 }
-              }
-            },
-            onMouseUp: (_event: any) => {
-              if (selectingRange && selectedRange) {
-                // Create comment for the selected range (single or multi-line)
-                setAddingCommentAt({
-                  file: selectedRange.file,
-                  startLine: selectedRange.startLine,
-                  endLine: selectedRange.endLine,
-                  side: selectedRange.side,
-                });
-                setSelectingRange(null);
-                setSelectedRange(null);
               }
             },
           }}
