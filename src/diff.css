@@ -142,3 +142,17 @@ td[colspan="4"].diff-widget-content .split-widget-new {
   width: 50%;
   margin-left: 50%;
 }
+
+/* Expand context decoration rows */
+.diff-decoration {
+  background-color: transparent;
+}
+
+.diff-decoration-gutter {
+  @apply bg-gray-900;
+  border-right: 1px solid #374151;
+}
+
+.diff-decoration-content {
+  background-color: transparent;
+}
