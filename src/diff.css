@@ -106,13 +106,13 @@ table.diff-split[data-selecting="new"] td:nth-child(-n+2) {
   -webkit-user-select: none !important;
 }
 
-/* Highlight lines when hovering over their associated comment */
-.diff-gutter-selected {
-  background-color: rgba(59, 130, 246, 0.2) !important;
+/* Highlight lines when hovering or selecting a range */
+.diff td.diff-gutter-selected {
+  background-color: rgba(59, 130, 246, 0.28) !important;
 }
 
-.diff-code-selected {
-  background-color: rgba(59, 130, 246, 0.15) !important;
+.diff td.diff-code-selected {
+  background-color: rgba(59, 130, 246, 0.2) !important;
 }
 
 /* Inline comment/form widget rows */
