@@ -380,14 +380,37 @@ function App() {
 
   const handleFileSelect = async (filePath: string) => {
     setSelectedFile(filePath);
-    
+
     if (!workingDir) return;
-    
+
     try {
-      const content = await invoke<string>("read_file_content", {
-        path: workingDir,
-        filePath,
-      });
+      let content: string;
+
+      if (selectedCommit) {
+        content = await invoke<string>("get_file_at_ref", {
+          path: workingDir,
+          gitRef: selectedCommit.hash,
+          filePath,
+        });
+      } else if (selectedBranch) {
+        content = await invoke<string>("get_file_at_ref", {
+          path: workingDir,
+          gitRef: selectedBranch.name,
+          filePath,
+        });
+      } else if (diffMode.mode === "staged") {
+        content = await invoke<string>("get_file_at_ref", {
+          path: workingDir,
+          gitRef: ":0",
+          filePath,
+        });
+      } else {
+        content = await invoke<string>("read_file_content", {
+          path: workingDir,
+          filePath,
+        });
+      }
+
       setFileContent(content);
       setCurrentFile(filePath);
       setViewMode("file");
