@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { BranchInfo, CommitInfo, GgStackInfo, GgStackEntry } from "../types";
 
-type SelectorTab = "commits" | "branches" | "stacks";
+type SelectorTab = "commits" | "branches" | "stacks" | "ref";
 type StackView = "list" | "entries";
 
 interface CommitSelectorProps {
@@ -18,6 +18,7 @@ interface CommitSelectorProps {
   onSelectStack: (stack: GgStackInfo) => void;
   onSelectStackEntry: (entry: GgStackEntry) => void;
   onSelectStackDiff: (stack: GgStackInfo) => void;
+  onSelectRef: (ref: string) => void;
   onBackToStacks: () => void;
   onClose: () => void;
 }
@@ -52,6 +53,7 @@ export function CommitSelector({
   onSelectStack,
   onSelectStackEntry,
   onSelectStackDiff,
+  onSelectRef,
   onBackToStacks,
   onClose,
 }: CommitSelectorProps) {
@@ -59,7 +61,9 @@ export function CommitSelector({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [stackView, setStackView] = useState<StackView>("list");
+  const [refValue, setRefValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const refInputRef = useRef<HTMLInputElement>(null);
   const selectedRef = useRef<HTMLDivElement>(null);
 
   const filteredCommits = useMemo(() => {
@@ -129,16 +133,16 @@ export function CommitSelector({
         e.preventDefault();
         if (tab === "commits" && filteredCommits[selectedIndex]) {
           onSelectCommit(filteredCommits[selectedIndex]);
-        }
-        if (tab === "branches" && filteredBranches[selectedIndex]) {
+        } else if (tab === "branches" && filteredBranches[selectedIndex]) {
           onSelectBranch(filteredBranches[selectedIndex]);
-        }
-        if (tab === "stacks") {
+        } else if (tab === "stacks") {
           if (stackView === "list" && filteredStacks[selectedIndex]) {
             onSelectStack(filteredStacks[selectedIndex] as GgStackInfo);
           } else if (stackView === "entries" && filteredStacks[selectedIndex]) {
             onSelectStackEntry(filteredStacks[selectedIndex] as GgStackEntry);
           }
+        } else if (tab === "ref" && refValue.trim()) {
+          onSelectRef(refValue.trim());
         }
       }
     };
@@ -158,6 +162,8 @@ export function CommitSelector({
     onSelectBranch,
     onSelectStack,
     onSelectStackEntry,
+    onSelectRef,
+    refValue,
     onBackToStacks,
     onClose,
   ]);
@@ -168,8 +174,15 @@ export function CommitSelector({
       setSearchQuery("");
       setTab("commits");
       setStackView("list");
+      setRefValue("");
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (tab === "ref" && refInputRef.current) {
+      refInputRef.current.focus();
+    }
+  }, [tab]);
 
   useEffect(() => {
     if (selectedRef.current) {
@@ -210,24 +223,34 @@ export function CommitSelector({
                 Stacks
               </button>
             )}
+            <button
+              onClick={() => setTab("ref")}
+              className={`px-3 py-1.5 rounded text-sm ${
+                tab === "ref" ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-700"
+              }`}
+            >
+              Ref
+            </button>
           </div>
 
-          <input
-            ref={inputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={
-              tab === "commits"
-                ? "Search commits... (message, hash, author, refs)"
-                : tab === "branches"
-                  ? "Search branches... (name, hash, subject, author)"
-                  : stackView === "list"
-                    ? "Search stacks... (name, base, username)"
-                    : "Search entries... (title, hash, gg-id)"
-            }
-            className="w-full bg-gray-900 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          {tab !== "ref" && (
+            <input
+              ref={inputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={
+                tab === "commits"
+                  ? "Search commits... (message, hash, author, refs)"
+                  : tab === "branches"
+                    ? "Search branches... (name, hash, subject, author)"
+                    : stackView === "list"
+                      ? "Search stacks... (name, base, username)"
+                      : "Search entries... (title, hash, gg-id)"
+              }
+              className="w-full bg-gray-900 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          )}
         </div>
 
         <div className="max-h-96 overflow-y-auto">
@@ -327,7 +350,8 @@ export function CommitSelector({
                 );
               })
             )
-          ) : stackView === "list" ? (
+          ) : tab === "stacks" ? (
+            stackView === "list" ? (
             <>
               {filteredStacks.length === 0 ? (
                 <div className="p-8 text-center text-gray-400">
@@ -447,13 +471,50 @@ export function CommitSelector({
                 })
               )}
             </>
-          )}
+          )
+          ) : tab === "ref" ? (
+            <div className="p-6">
+              <div className="text-gray-300 text-sm mb-4">
+                Enter a git ref to compare against (e.g., HEAD~1, main~3, abc1234, feature-branch)
+              </div>
+              <div className="flex gap-2">
+                <input
+                  ref={refInputRef}
+                  type="text"
+                  value={refValue}
+                  onChange={(e) => setRefValue(e.target.value)}
+                  placeholder="HEAD~1"
+                  className="flex-1 bg-gray-900 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                />
+                <button
+                  onClick={() => refValue.trim() && onSelectRef(refValue.trim())}
+                  disabled={!refValue.trim()}
+                  className={`px-4 py-2 rounded transition-colors ${
+                    refValue.trim()
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      : "bg-gray-700 text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  Compare
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="p-3 border-t border-gray-700 bg-gray-900 text-xs text-gray-400">
-          <span className="mr-4">↑↓ Navigate</span>
-          <span className="mr-4">Enter Select</span>
-          <span>Esc {tab === "stacks" && stackView === "entries" ? "Back" : "Close"}</span>
+          {tab === "ref" ? (
+            <>
+              <span className="mr-4">Enter Compare</span>
+              <span>Esc Close</span>
+            </>
+          ) : (
+            <>
+              <span className="mr-4">↑↓ Navigate</span>
+              <span className="mr-4">Enter Select</span>
+              <span>Esc {tab === "stacks" && stackView === "entries" ? "Back" : "Close"}</span>
+            </>
+          )}
         </div>
       </div>
     </div>
