@@ -9,6 +9,7 @@ import { useGit } from "./hooks/useGit";
 import { useFileExplorer } from "./hooks/useFileExplorer";
 import { useCommitSelector } from "./hooks/useCommitSelector";
 import { useComments } from "./hooks/useComments";
+import { useRepoManager } from "./hooks/useRepoManager";
 import { FileExplorer } from "./components/FileExplorer";
 import { CommitSelector } from "./components/CommitSelector";
 import { FileList } from "./components/FileList";
@@ -17,35 +18,12 @@ import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
 import { PromptPreview } from "./components/PromptPreview";
 import { CommentOverview } from "./components/CommentOverview";
+import { RepoLandingPage } from "./components/RepoLandingPage";
+import { RepoSwitcher } from "./components/RepoSwitcher";
+import { ConfirmModal } from "./components/ConfirmModal";
 import { generatePrompt } from "./lib/promptGenerator";
 import { HunkExpandControl } from "./components/HunkExpandControl";
-import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry } from "./types";
-
-const EXAMPLE_DIFF = `diff --git a/src/components/Button.tsx b/src/components/Button.tsx
-index 1234567..abcdefg 100644
---- a/src/components/Button.tsx
-+++ b/src/components/Button.tsx
-@@ -1,10 +1,15 @@
- import React from 'react';
- 
--interface ButtonProps {
-+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-   label: string;
--  onClick: () => void;
-+  variant?: 'primary' | 'secondary';
-+  size?: 'sm' | 'md' | 'lg';
- }
- 
--export const Button: React.FC<ButtonProps> = ({ label, onClick }) => {
--  return <button onClick={onClick}>{label}</button>;
-+export const Button: React.FC<ButtonProps> = ({ 
-+  label, 
-+  variant = 'primary',
-+  size = 'md',
-+  ...props 
-+}) => {
-+  return <button className={\`btn btn-\${variant} btn-\${size}\`} {...props}>{label}</button>;
- };`;
+import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, GitDiffResult } from "./types";
 
 function App() {
   const [workingDir, setWorkingDir] = useState<string | null>(null);
@@ -92,6 +70,9 @@ function App() {
   const [expandedHunksMap, setExpandedHunksMap] = useState<Record<string, any[]>>({});
   const sourceCache = useRef<Record<string, string[]>>({});
 
+  const repoManager = useRepoManager();
+  const [pendingSwitchPath, setPendingSwitchPath] = useState<string | null>(null);
+
   const {
     comments,
     addComment,
@@ -100,6 +81,7 @@ function App() {
     editingCommentId,
     startEditing,
     stopEditing,
+    clearAll,
   } = useComments();
 
   const { isGitRepo, diffResult, loading, error, loadDiff } = useGit(workingDir);
@@ -116,7 +98,6 @@ function App() {
       })
       .catch((err) => {
         console.error("Failed to get working directory:", err);
-        setDiffText(EXAMPLE_DIFF);
       });
 
     // Check if CLI is already installed
@@ -325,6 +306,64 @@ function App() {
   const handleModeChange = (newMode: DiffModeConfig) => {
     setDiffMode(newMode);
     loadDiff(newMode);
+  };
+
+  const handleSwitchRepo = async (path: string) => {
+    if (path === workingDir) return;
+    if (comments.length > 0) {
+      setPendingSwitchPath(path);
+      return;
+    }
+    await performSwitch(path);
+  };
+
+  const performSwitch = async (path: string) => {
+    try {
+      const result = await invoke<GitDiffResult>("switch_repo", { path });
+      setWorkingDir(path);
+      setDiffText(result.diff || "No changes");
+      setDiffMode({ mode: "unstaged" });
+      setSelectedCommit(null);
+      setSelectedBranch(null);
+      setExpandedHunksMap({});
+      sourceCache.current = {};
+      setViewMode("diff");
+      setSelectedFile(undefined);
+      setCurrentFile(null);
+      setAddingCommentAt(null);
+      setSelectingRange(null);
+      setSelectedRange(null);
+      setLastFocusedLine(null);
+      clearAll();
+      setPendingSwitchPath(null);
+    } catch (err) {
+      console.error("Failed to switch repo:", err);
+    }
+  };
+
+  const handleConfirmSwitch = async () => {
+    if (pendingSwitchPath) {
+      await performSwitch(pendingSwitchPath);
+    }
+  };
+
+  const handleCancelSwitch = () => {
+    setPendingSwitchPath(null);
+  };
+
+  const handleAddRepo = async () => {
+    const repo = await repoManager.addRepoViaDialog();
+    if (repo) {
+      await handleSwitchRepo(repo.path);
+    }
+  };
+
+  const handleRemoveRepo = async (path: string) => {
+    await repoManager.removeRepo(path);
+    if (path === workingDir) {
+      setWorkingDir(null);
+      setDiffText("");
+    }
   };
 
   // Clear expansion state when diff changes
@@ -981,25 +1020,39 @@ function App() {
     );
   };
 
+  if (!workingDir || !isGitRepo) {
+    if (repoManager.loading) {
+      return (
+        <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+          <div className="text-gray-400 text-lg">Loading...</div>
+        </div>
+      );
+    }
+    return (
+      <RepoLandingPage
+        repos={repoManager.repos}
+        onSelectRepo={handleSwitchRepo}
+        onAddRepo={handleAddRepo}
+        onRemoveRepo={handleRemoveRepo}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
       <div className="bg-gray-800 border-b border-gray-700 px-6 py-2">
         <div className="flex items-center justify-between">
-          <p className="text-gray-400 text-sm">
-            {isGitRepo ? (
-              <span className="text-green-400">
-                {workingDir}
-              </span>
-            ) : (
-              "Paste a unified diff or open from a git repository"
-            )}
-          </p>
-          {isGitRepo && (
-            <div className="text-sm text-gray-400">
-              Press <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">Shift</kbd>{" "}
-              <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">Shift</kbd> to search files
-            </div>
-          )}
+          <RepoSwitcher
+            currentPath={workingDir}
+            repos={repoManager.repos}
+            onSwitchRepo={handleSwitchRepo}
+            onAddRepo={handleAddRepo}
+            onRemoveRepo={handleRemoveRepo}
+          />
+          <div className="text-sm text-gray-400">
+            Press <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">Shift</kbd>{" "}
+            <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">Shift</kbd> to search files
+          </div>
         </div>
       </div>
 
@@ -1074,15 +1127,6 @@ function App() {
               Browse Commits
             </button>
           </>
-        )}
-
-        {!isGitRepo && (
-          <button
-            onClick={() => setDiffText(EXAMPLE_DIFF)}
-            className="px-4 py-2 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors ml-auto"
-          >
-            Load Example
-          </button>
         )}
 
         <div className="ml-auto flex items-center gap-3">
@@ -1190,7 +1234,7 @@ function App() {
       )}
 
       <div className="flex h-[calc(100vh-140px)]">
-        {isGitRepo && diffResult ? (
+        {diffResult && (
           <div className="w-64 border-r border-gray-700 flex flex-col bg-gray-800">
             <div className="px-4 py-2 border-b border-gray-700 font-semibold">
               Changed Files ({diffResult.files.length})
@@ -1206,7 +1250,7 @@ function App() {
                 const filesWithComments = Array.from(
                   new Set(comments.map((c) => c.file))
                 ).sort();
-                
+
                 if (filesWithComments.length > 0) {
                   return (
                     <>
@@ -1237,18 +1281,6 @@ function App() {
                 return null;
               })()}
             </div>
-          </div>
-        ) : (
-          <div className="w-1/3 border-r border-gray-700 flex flex-col">
-            <div className="bg-gray-800 px-4 py-2 border-b border-gray-700 font-semibold">
-              Paste Diff
-            </div>
-            <textarea
-              value={diffText}
-              onChange={(e) => setDiffText(e.target.value)}
-              className="flex-1 p-4 bg-gray-900 text-gray-100 font-mono text-sm resize-none focus:outline-none"
-              placeholder="Paste your unified diff here..."
-            />
           </div>
         )}
 
@@ -1294,9 +1326,7 @@ function App() {
                 <div className="text-center text-gray-500 mt-20">
                   <p className="text-lg">No diff to display</p>
                   <p className="text-sm mt-2">
-                    {isGitRepo
-                      ? "No changes detected in this mode"
-                      : "Paste a unified diff in the left panel"}
+                    No changes detected in this mode
                   </p>
                 </div>
               ) : (
@@ -1367,6 +1397,17 @@ function App() {
         onBackToStacks={commitSelector.backToStacks}
         onClose={commitSelector.closeSelector}
       />
+
+      {pendingSwitchPath && (
+        <ConfirmModal
+          title="Unsaved Comments"
+          message={`You have ${comments.length} comment${comments.length !== 1 ? "s" : ""} that will be lost. Switch anyway?`}
+          confirmLabel="Discard & Switch"
+          destructive
+          onConfirm={handleConfirmSwitch}
+          onCancel={handleCancelSwitch}
+        />
+      )}
     </div>
   );
 }

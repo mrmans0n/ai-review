@@ -46,6 +46,8 @@ export function useComments() {
     setEditingCommentId(null);
   };
 
+  const clearAll = () => setComments([]);
+
   return {
     comments,
     addComment,
@@ -54,5 +56,6 @@ export function useComments() {
     editingCommentId,
     startEditing,
     stopEditing,
+    clearAll,
   };
 }
