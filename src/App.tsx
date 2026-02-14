@@ -22,6 +22,7 @@ import { RepoLandingPage } from "./components/RepoLandingPage";
 import { RepoSwitcher } from "./components/RepoSwitcher";
 import { ConfirmModal } from "./components/ConfirmModal";
 import { generatePrompt } from "./lib/promptGenerator";
+import { resolveLineFromNode } from "./lib/resolveLineFromNode";
 import { HunkExpandControl } from "./components/HunkExpandControl";
 import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, GitDiffResult, ChangedFile } from "./types";
 
@@ -141,29 +142,8 @@ function App() {
           const startContainer = range.startContainer;
           const endContainer = range.endContainer;
 
-          // Helper: find the change key and file from a DOM node
-          const getLineInfo = (node: Node) => {
-            let el = node instanceof HTMLElement ? node : node.parentElement;
-            // Walk up to find a td with data-change-key
-            while (el && el.tagName !== "TABLE") {
-              if (el.tagName === "TD" && el.getAttribute("data-change-key")) {
-                const changeKey = el.getAttribute("data-change-key")!;
-                // Format: N21, I5, D10 — letter + line number
-                const lineNum = parseInt(changeKey.slice(1), 10);
-                const type = changeKey[0]; // N=normal, I=insert, D=delete
-                const side: "old" | "new" = type === "D" ? "old" : "new";
-                // Find the file wrapper
-                let fileEl = el.closest("[data-diff-file]");
-                const file = fileEl?.getAttribute("data-diff-file") || "";
-                return { file, line: lineNum, side };
-              }
-              el = el.parentElement;
-            }
-            return null;
-          };
-
-          const startInfo = getLineInfo(startContainer);
-          const endInfo = getLineInfo(endContainer);
+          const startInfo = resolveLineFromNode(startContainer);
+          const endInfo = resolveLineFromNode(endContainer);
 
           if (startInfo && endInfo && startInfo.file === endInfo.file) {
             const minLine = Math.min(startInfo.line, endInfo.line);
@@ -199,36 +179,13 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [files, lastFocusedLine, hoveredLine]);
 
-  const getLineInfoFromNode = (node: Node | null) => {
-    if (!node) return null;
-
-    let el = node instanceof HTMLElement ? node : node.parentElement;
-    while (el && el.tagName !== "TABLE") {
-      if (el.tagName === "TD" && el.getAttribute("data-change-key")) {
-        const changeKey = el.getAttribute("data-change-key")!;
-        const lineNum = Number.parseInt(changeKey.slice(1), 10);
-        if (Number.isNaN(lineNum)) return null;
-
-        const type = changeKey[0];
-        const side: "old" | "new" = type === "D" ? "old" : "new";
-        const fileEl = el.closest("[data-diff-file]");
-        const file = fileEl?.getAttribute("data-diff-file") || "";
-
-        return { file, line: lineNum, side };
-      }
-      el = el.parentElement;
-    }
-
-    return null;
-  };
-
   // Keep drag selection working even when gutter mouseenter events do not fire
   useEffect(() => {
     if (!selectingRange) return;
 
     const handleDocumentMouseMove = (event: MouseEvent) => {
       const target = document.elementFromPoint(event.clientX, event.clientY);
-      const lineInfo = getLineInfoFromNode(target);
+      const lineInfo = resolveLineFromNode(target);
 
       if (!lineInfo) return;
 
@@ -1325,6 +1282,19 @@ function App() {
                 editingCommentId={editingCommentId}
                 onStartEditComment={startEditing}
                 onStopEditComment={stopEditing}
+                hoveredLine={hoveredLine}
+                onHoverLine={setHoveredLine}
+                lastFocusedLine={lastFocusedLine}
+                selectingRange={selectingRange}
+                onStartSelectingRange={setSelectingRange}
+                selectedRange={selectedRange}
+                onSelectedRangeChange={setSelectedRange}
+                hoveredCommentIds={hoveredCommentIds}
+                onHoverCommentIds={setHoveredCommentIds}
+                onShiftClickLine={(file, startLine, endLine, side) => {
+                  setAddingCommentAt({ file, startLine, endLine, side });
+                }}
+                suppressNextClick={suppressNextClickRef}
               />
             </div>
           ) : (
@@ -1377,8 +1347,10 @@ function App() {
             setHoveredCommentIds([comment.id]);
             // Clear highlight after a few seconds
             setTimeout(() => setHoveredCommentIds(null), 3000);
-            // Scroll to the file element
-            const fileEl = document.querySelector(`[data-diff-file="${comment.file}"]`);
+            // Scroll to the file element (diff view or file viewer)
+            const fileEl =
+              document.querySelector(`[data-diff-file="${comment.file}"]`) ||
+              document.querySelector(`[data-file-viewer="${comment.file}"]`);
             if (fileEl) {
               fileEl.scrollIntoView({ behavior: "smooth", block: "start" });
             }
