@@ -9,17 +9,17 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
     APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/bundle/macos/ai-review.app/Contents/MacOS/ai-review"
-    
+
     # If not found in release, try debug
     if [ ! -f "$APP_PATH" ]; then
         APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/bundle/macos/ai-review.app/Contents/MacOS/ai-review"
     fi
-    
+
     # If still not found, try the binary directly
     if [ ! -f "$APP_PATH" ]; then
         APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-review"
     fi
-    
+
     # Last resort: debug binary
     if [ ! -f "$APP_PATH" ]; then
         APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-review"
@@ -27,14 +27,14 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     # Linux
     APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-review"
-    
+
     if [ ! -f "$APP_PATH" ]; then
         APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-review"
     fi
 else
     # Windows (via Git Bash or WSL)
     APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-review.exe"
-    
+
     if [ ! -f "$APP_PATH" ]; then
         APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-review.exe"
     fi
@@ -47,9 +47,56 @@ if [ ! -f "$APP_PATH" ]; then
     exit 1
 fi
 
-# Get the working directory (use argument if provided, otherwise current dir)
-WORKING_DIR="${1:-.}"
+WAIT_MODE=false
+WORKING_DIR="."
+DIFF_ARGS=()
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --wait)
+            WAIT_MODE=true
+            shift
+            ;;
+        --commit)
+            if [ -z "$2" ]; then
+                echo "Error: --commit requires a value"
+                exit 1
+            fi
+            DIFF_ARGS=("--diff-commit" "$2")
+            shift 2
+            ;;
+        --commits)
+            if [ -z "$2" ]; then
+                echo "Error: --commits requires a value"
+                exit 1
+            fi
+            DIFF_ARGS=("--diff-range" "$2")
+            shift 2
+            ;;
+        --branch)
+            if [ -z "$2" ]; then
+                echo "Error: --branch requires a value"
+                exit 1
+            fi
+            DIFF_ARGS=("--diff-branch" "$2")
+            shift 2
+            ;;
+        --*)
+            echo "Error: unknown option '$1'"
+            exit 1
+            ;;
+        *)
+            WORKING_DIR="$1"
+            shift
+            ;;
+    esac
+done
+
 WORKING_DIR="$(cd "$WORKING_DIR" && pwd)"
 
 # Launch the app with the working directory
-"$APP_PATH" "$WORKING_DIR" &
+if [ "$WAIT_MODE" = true ]; then
+    "$APP_PATH" "$WORKING_DIR" "${DIFF_ARGS[@]}" "--wait-mode"
+else
+    "$APP_PATH" "$WORKING_DIR" "${DIFF_ARGS[@]}" &
+fi

@@ -9,6 +9,7 @@ mod git;
 // Global state to store the working directory
 struct AppState {
     working_dir: Mutex<PathBuf>,
+    wait_mode: Mutex<bool>,
 }
 
 #[tauri::command]
@@ -19,6 +20,17 @@ fn get_working_directory(state: tauri::State<AppState>) -> String {
         .unwrap()
         .to_string_lossy()
         .to_string()
+}
+
+#[tauri::command]
+fn is_wait_mode(state: tauri::State<AppState>) -> bool {
+    *state.wait_mode.lock().unwrap()
+}
+
+#[tauri::command]
+fn submit_feedback(feedback: String) {
+    println!("{}", feedback);
+    std::process::exit(0);
 }
 
 #[tauri::command]
@@ -308,19 +320,61 @@ fn switch_repo(path: String, state: tauri::State<AppState>) -> Result<git::GitDi
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let args: Vec<String> = std::env::args().collect();
+    let mut wait_mode = false;
+    let mut initial_diff_mode: Option<InitialDiffMode> = None;
+    let mut dir_arg: Option<String> = None;
+
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--wait-mode" => {
+                wait_mode = true;
+                i += 1;
+            }
+            "--diff-commit" => {
+                if let Some(value) = args.get(i + 1) {
+                    initial_diff_mode = Some(InitialDiffMode::Commit(value.clone()));
+                    i += 2;
+                } else {
+                    i += 1;
+                }
+            }
+            "--diff-range" => {
+                if let Some(value) = args.get(i + 1) {
+                    initial_diff_mode = Some(InitialDiffMode::Range(value.clone()));
+                    i += 2;
+                } else {
+                    i += 1;
+                }
+            }
+            "--diff-branch" => {
+                if let Some(value) = args.get(i + 1) {
+                    initial_diff_mode = Some(InitialDiffMode::Branch(value.clone()));
+                    i += 2;
+                } else {
+                    i += 1;
+                }
+            }
+            arg if !arg.starts_with("--") => {
+                dir_arg = Some(arg.to_string());
+                i += 1;
+            }
+            _ => {
+                i += 1;
+            }
+        }
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .setup(|app| {
-            // Get CLI arguments
-            let args: Vec<String> = std::env::args().collect();
-
+        .setup(move |app| {
             // Default to current directory
             let mut working_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
 
-            // Check if a directory was passed as argument
-            if args.len() > 1 {
-                let arg_path = PathBuf::from(&args[1]);
+            if let Some(dir) = &dir_arg {
+                let arg_path = PathBuf::from(dir);
                 if arg_path.exists() && arg_path.is_dir() {
                     working_dir = arg_path;
                 }
@@ -335,16 +389,22 @@ pub fn run() {
             // Initialize app state with working directory
             app.manage(AppState {
                 working_dir: Mutex::new(working_dir),
+                wait_mode: Mutex::new(wait_mode),
+                initial_diff_mode: Mutex::new(initial_diff_mode.clone()),
             });
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             get_working_directory,
+            is_wait_mode,
+            submit_feedback,
+            get_initial_diff_mode,
             is_git_repo,
             get_unstaged_diff,
             get_staged_diff,
             get_commit_ref_diff,
+            get_range_diff,
             list_files,
             read_file_content,
             get_file_at_ref,
@@ -367,4 +427,8 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+
+    if wait_mode {
+        std::process::exit(1);
+    }
 }
