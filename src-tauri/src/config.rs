@@ -36,14 +36,12 @@ pub fn read_config() -> Result<Config, String> {
         let default = Config::default();
         let json = serde_json::to_string_pretty(&default)
             .map_err(|e| format!("Failed to serialize config: {}", e))?;
-        fs::write(&path, json)
-            .map_err(|e| format!("Failed to write config: {}", e))?;
+        fs::write(&path, json).map_err(|e| format!("Failed to write config: {}", e))?;
         return Ok(default);
     }
-    let contents = fs::read_to_string(&path)
-        .map_err(|e| format!("Failed to read config: {}", e))?;
-    serde_json::from_str(&contents)
-        .map_err(|e| format!("Failed to parse config: {}", e))
+    let contents =
+        fs::read_to_string(&path).map_err(|e| format!("Failed to read config: {}", e))?;
+    serde_json::from_str(&contents).map_err(|e| format!("Failed to parse config: {}", e))
 }
 
 /// Write config to disk.
@@ -55,8 +53,7 @@ pub fn write_config(config: &Config) -> Result<(), String> {
     }
     let json = serde_json::to_string_pretty(config)
         .map_err(|e| format!("Failed to serialize config: {}", e))?;
-    fs::write(&path, json)
-        .map_err(|e| format!("Failed to write config: {}", e))
+    fs::write(&path, json).map_err(|e| format!("Failed to write config: {}", e))
 }
 
 /// Add a repo path to config. Idempotent.
@@ -115,10 +112,14 @@ mod tests {
         let tmp = std::env::temp_dir().join(format!("air-test-{}", std::process::id()));
         fs::create_dir_all(&tmp).unwrap();
         let old_home = env::var("HOME").ok();
-        unsafe { env::set_var("HOME", &tmp); }
+        unsafe {
+            env::set_var("HOME", &tmp);
+        }
         f();
         if let Some(h) = old_home {
-            unsafe { env::set_var("HOME", h); }
+            unsafe {
+                env::set_var("HOME", h);
+            }
         }
         let _ = fs::remove_dir_all(&tmp);
     }

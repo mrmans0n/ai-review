@@ -2,9 +2,9 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::Manager;
 
+mod config;
 mod files;
 mod git;
-mod config;
 
 // Global state to store the working directory
 struct AppState {

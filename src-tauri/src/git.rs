@@ -306,7 +306,11 @@ pub fn list_files_at_ref(dir: &Path, git_ref: &str) -> Result<Vec<String>, Strin
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    Ok(stdout.lines().filter(|l| !l.is_empty()).map(|l| l.to_string()).collect())
+    Ok(stdout
+        .lines()
+        .filter(|l| !l.is_empty())
+        .map(|l| l.to_string())
+        .collect())
 }
 
 /// List recent commits
