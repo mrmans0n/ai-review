@@ -193,8 +193,8 @@ export function CommitSelector({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-32 z-50">
-      <div className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-700">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-32 z-50" onClick={onClose}>
+      <div className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-700" onClick={(e) => e.stopPropagation()}>
         <div className="p-4 border-b border-gray-700 space-y-3">
           <div className="inline-flex bg-gray-900 rounded p-1">
             <button
