@@ -353,11 +353,11 @@ pub fn run() {
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
-            "--wait-mode" => {
+            "--wait-mode" | "--wait" => {
                 wait_mode = true;
                 i += 1;
             }
-            "--diff-commit" => {
+            "--diff-commit" | "--commit" => {
                 if let Some(value) = args.get(i + 1) {
                     initial_diff_mode = Some(InitialDiffMode::Commit(value.clone()));
                     i += 2;
@@ -365,7 +365,7 @@ pub fn run() {
                     i += 1;
                 }
             }
-            "--diff-range" => {
+            "--diff-range" | "--commits" => {
                 if let Some(value) = args.get(i + 1) {
                     initial_diff_mode = Some(InitialDiffMode::Range(value.clone()));
                     i += 2;
@@ -373,7 +373,7 @@ pub fn run() {
                     i += 1;
                 }
             }
-            "--diff-branch" => {
+            "--diff-branch" | "--branch" => {
                 if let Some(value) = args.get(i + 1) {
                     initial_diff_mode = Some(InitialDiffMode::Branch(value.clone()));
                     i += 2;

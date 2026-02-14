@@ -14,7 +14,10 @@ fn main() {
             .and_then(|n| n.to_str())
             .unwrap_or("");
 
-        if exe_name == "air" && !args.contains(&"--foreground".to_string()) {
+        let is_wait = args.contains(&"--wait".to_string())
+            || args.contains(&"--wait-mode".to_string());
+
+        if exe_name == "air" && !args.contains(&"--foreground".to_string()) && !is_wait {
             use std::os::unix::process::CommandExt;
             use std::process::{Command, Stdio};
 
