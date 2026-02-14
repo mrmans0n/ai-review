@@ -46,6 +46,16 @@ export function useGit(workingDir: string | null) {
           path: workingDir,
           commit: config.commitRef,
         });
+      } else if (config.mode === "range" && config.range) {
+        result = await invoke<GitDiffResult>("get_range_diff", {
+          path: workingDir,
+          range: config.range,
+        });
+      } else if (config.mode === "branch" && config.branchName) {
+        result = await invoke<GitDiffResult>("get_branch_diff", {
+          path: workingDir,
+          branch: config.branchName,
+        });
       } else {
         throw new Error("Invalid diff mode configuration");
       }
