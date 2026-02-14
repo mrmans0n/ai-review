@@ -1341,19 +1341,31 @@ function App() {
         <CommentOverview
           comments={comments}
           onClose={() => setShowCommentOverview(false)}
-          onGoToComment={(comment) => {
+          onGoToComment={async (comment) => {
             setShowCommentOverview(false);
-            // Scroll to the comment's file and highlight it
+            // Highlight the comment
             setHoveredCommentIds([comment.id]);
-            // Clear highlight after a few seconds
             setTimeout(() => setHoveredCommentIds(null), 3000);
-            // Scroll to the file element (diff view or file viewer)
-            const fileEl =
-              document.querySelector(`[data-diff-file="${comment.file}"]`) ||
-              document.querySelector(`[data-file-viewer="${comment.file}"]`);
-            if (fileEl) {
-              fileEl.scrollIntoView({ behavior: "smooth", block: "start" });
+
+            // Switch to the correct view if needed
+            const isInDiff = files.some(
+              (f: any) => (f.newPath || f.oldPath) === comment.file
+            );
+            if (isInDiff) {
+              setViewMode("diff");
+            } else {
+              await handleFileSelect(comment.file);
             }
+
+            // Wait for React to render the new view, then scroll
+            requestAnimationFrame(() => {
+              const fileEl =
+                document.querySelector(`[data-diff-file="${comment.file}"]`) ||
+                document.querySelector(`[data-file-viewer="${comment.file}"]`);
+              if (fileEl) {
+                fileEl.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+            });
           }}
         />
       )}
