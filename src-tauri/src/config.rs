@@ -2,16 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Config {
     #[serde(default)]
     pub repos: Vec<String>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Config { repos: vec![] }
-    }
 }
 
 /// Returns the config file path: ~/.config/ai-review/config.json
