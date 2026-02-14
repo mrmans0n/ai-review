@@ -104,9 +104,14 @@ pub fn list_repos() -> Result<Vec<(String, String)>, String> {
 mod tests {
     use super::*;
     use std::env;
+    use std::sync::Mutex;
+
+    /// Serialize config tests — they share the HOME env var which is process-global.
+    static TEST_MUTEX: Mutex<()> = Mutex::new(());
 
     /// Helper: run test with a temp HOME to isolate config.
     fn with_temp_home<F: FnOnce()>(f: F) {
+        let _lock = TEST_MUTEX.lock().unwrap();
         let tmp = std::env::temp_dir().join(format!("air-test-{}", std::process::id()));
         fs::create_dir_all(&tmp).unwrap();
         let old_home = env::var("HOME").ok();
