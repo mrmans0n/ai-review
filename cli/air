@@ -49,23 +49,54 @@ fi
 
 WAIT_MODE=false
 WORKING_DIR="."
+DIFF_ARGS=()
 
-for arg in "$@"; do
-    if [ "$arg" = "--wait" ]; then
-        WAIT_MODE=true
-    elif [[ "$arg" == --* ]]; then
-        echo "Error: unknown option '$arg'"
-        exit 1
-    else
-        WORKING_DIR="$arg"
-    fi
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --wait)
+            WAIT_MODE=true
+            shift
+            ;;
+        --commit)
+            if [ -z "$2" ]; then
+                echo "Error: --commit requires a value"
+                exit 1
+            fi
+            DIFF_ARGS=("--diff-commit" "$2")
+            shift 2
+            ;;
+        --commits)
+            if [ -z "$2" ]; then
+                echo "Error: --commits requires a value"
+                exit 1
+            fi
+            DIFF_ARGS=("--diff-range" "$2")
+            shift 2
+            ;;
+        --branch)
+            if [ -z "$2" ]; then
+                echo "Error: --branch requires a value"
+                exit 1
+            fi
+            DIFF_ARGS=("--diff-branch" "$2")
+            shift 2
+            ;;
+        --*)
+            echo "Error: unknown option '$1'"
+            exit 1
+            ;;
+        *)
+            WORKING_DIR="$1"
+            shift
+            ;;
+    esac
 done
 
 WORKING_DIR="$(cd "$WORKING_DIR" && pwd)"
 
 # Launch the app with the working directory
 if [ "$WAIT_MODE" = true ]; then
-    "$APP_PATH" "$WORKING_DIR" "--wait-mode"
+    "$APP_PATH" "$WORKING_DIR" "${DIFF_ARGS[@]}" "--wait-mode"
 else
-    "$APP_PATH" "$WORKING_DIR" &
+    "$APP_PATH" "$WORKING_DIR" "${DIFF_ARGS[@]}" &
 fi
