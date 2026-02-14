@@ -9,6 +9,7 @@ mod git;
 // Global state to store the working directory
 struct AppState {
     working_dir: Mutex<PathBuf>,
+    wait_mode: Mutex<bool>,
 }
 
 #[tauri::command]
@@ -19,6 +20,17 @@ fn get_working_directory(state: tauri::State<AppState>) -> String {
         .unwrap()
         .to_string_lossy()
         .to_string()
+}
+
+#[tauri::command]
+fn is_wait_mode(state: tauri::State<AppState>) -> bool {
+    *state.wait_mode.lock().unwrap()
+}
+
+#[tauri::command]
+fn submit_feedback(feedback: String) {
+    println!("{}", feedback);
+    std::process::exit(0);
 }
 
 #[tauri::command]
@@ -308,19 +320,19 @@ fn switch_repo(path: String, state: tauri::State<AppState>) -> Result<git::GitDi
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let args: Vec<String> = std::env::args().collect();
+    let wait_mode = args.iter().any(|arg| arg == "--wait-mode");
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .setup(|app| {
-            // Get CLI arguments
-            let args: Vec<String> = std::env::args().collect();
-
+        .setup(move |app| {
             // Default to current directory
             let mut working_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
 
-            // Check if a directory was passed as argument
-            if args.len() > 1 {
-                let arg_path = PathBuf::from(&args[1]);
+            // Check if a directory was passed as argument (ignore flags)
+            if let Some(dir_arg) = args.iter().skip(1).find(|arg| !arg.starts_with("--")) {
+                let arg_path = PathBuf::from(dir_arg);
                 if arg_path.exists() && arg_path.is_dir() {
                     working_dir = arg_path;
                 }
@@ -335,12 +347,15 @@ pub fn run() {
             // Initialize app state with working directory
             app.manage(AppState {
                 working_dir: Mutex::new(working_dir),
+                wait_mode: Mutex::new(wait_mode),
             });
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             get_working_directory,
+            is_wait_mode,
+            submit_feedback,
             is_git_repo,
             get_unstaged_diff,
             get_staged_diff,
@@ -367,4 +382,8 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+
+    if wait_mode {
+        std::process::exit(1);
+    }
 }

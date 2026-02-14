@@ -63,6 +63,7 @@ function App() {
     side: "old" | "new";
   } | null>(null);
   const [showPromptPreview, setShowPromptPreview] = useState(false);
+  const [waitMode, setWaitMode] = useState(false);
   const [cliInstalled, setCliInstalled] = useState(false);
   const [installMessage, setInstallMessage] = useState<string | null>(null);
   const [hoveredCommentIds, setHoveredCommentIds] = useState<string[] | null>(null);
@@ -102,6 +103,14 @@ function App() {
       })
       .catch((err) => {
         console.error("Failed to get working directory:", err);
+      });
+
+    invoke<boolean>("is_wait_mode")
+      .then((enabled) => {
+        setWaitMode(enabled);
+      })
+      .catch((err) => {
+        console.error("Failed to read wait mode:", err);
       });
 
     // Check if CLI is already installed
@@ -1334,6 +1343,7 @@ function App() {
             selectedBranch,
           })}
           onClose={() => setShowPromptPreview(false)}
+          waitMode={waitMode}
         />
       )}
 

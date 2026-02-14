@@ -9,17 +9,17 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
     APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/bundle/macos/ai-review.app/Contents/MacOS/ai-review"
-    
+
     # If not found in release, try debug
     if [ ! -f "$APP_PATH" ]; then
         APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/bundle/macos/ai-review.app/Contents/MacOS/ai-review"
     fi
-    
+
     # If still not found, try the binary directly
     if [ ! -f "$APP_PATH" ]; then
         APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-review"
     fi
-    
+
     # Last resort: debug binary
     if [ ! -f "$APP_PATH" ]; then
         APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-review"
@@ -27,14 +27,14 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     # Linux
     APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-review"
-    
+
     if [ ! -f "$APP_PATH" ]; then
         APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-review"
     fi
 else
     # Windows (via Git Bash or WSL)
     APP_PATH="$SCRIPT_DIR/../src-tauri/target/release/ai-review.exe"
-    
+
     if [ ! -f "$APP_PATH" ]; then
         APP_PATH="$SCRIPT_DIR/../src-tauri/target/debug/ai-review.exe"
     fi
@@ -47,9 +47,25 @@ if [ ! -f "$APP_PATH" ]; then
     exit 1
 fi
 
-# Get the working directory (use argument if provided, otherwise current dir)
-WORKING_DIR="${1:-.}"
+WAIT_MODE=false
+WORKING_DIR="."
+
+for arg in "$@"; do
+    if [ "$arg" = "--wait" ]; then
+        WAIT_MODE=true
+    elif [[ "$arg" == --* ]]; then
+        echo "Error: unknown option '$arg'"
+        exit 1
+    else
+        WORKING_DIR="$arg"
+    fi
+done
+
 WORKING_DIR="$(cd "$WORKING_DIR" && pwd)"
 
 # Launch the app with the working directory
-"$APP_PATH" "$WORKING_DIR" &
+if [ "$WAIT_MODE" = true ]; then
+    "$APP_PATH" "$WORKING_DIR" "--wait-mode"
+else
+    "$APP_PATH" "$WORKING_DIR" &
+fi

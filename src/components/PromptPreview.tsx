@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 
 interface PromptPreviewProps {
   prompt: string;
   onClose: () => void;
+  waitMode: boolean;
 }
 
-export function PromptPreview({ prompt, onClose }: PromptPreviewProps) {
+export function PromptPreview({ prompt, onClose, waitMode }: PromptPreviewProps) {
   const [editablePrompt, setEditablePrompt] = useState(prompt);
   const [copied, setCopied] = useState(false);
 
@@ -26,12 +28,20 @@ export function PromptPreview({ prompt, onClose }: PromptPreviewProps) {
     }
   };
 
+  const handleSubmitAndExit = async () => {
+    try {
+      await invoke("submit_feedback", { feedback: editablePrompt });
+    } catch (err) {
+      console.error("Failed to submit feedback:", err);
+    }
+  };
+
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
-      <div 
+      <div
         className="bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
@@ -81,6 +91,14 @@ export function PromptPreview({ prompt, onClose }: PromptPreviewProps) {
           >
             {copied ? "Copied!" : "Copy to Clipboard"}
           </button>
+          {waitMode && (
+            <button
+              onClick={handleSubmitAndExit}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors font-semibold"
+            >
+              Submit & Exit
+            </button>
+          )}
         </div>
       </div>
     </div>
