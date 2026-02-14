@@ -12,6 +12,7 @@ describe("parsePromptLines", () => {
         fileName: "Button.tsx",
         startLine: 15,
         endLine: null,
+        deleted: false,
         text: "Add error handling",
       },
     ]);
@@ -27,6 +28,7 @@ describe("parsePromptLines", () => {
         fileName: "helpers.ts",
         startLine: 10,
         endLine: 20,
+        deleted: false,
         text: "Extract to function",
       },
     ]);
@@ -67,6 +69,7 @@ describe("parsePromptLines", () => {
       fileName: "App.tsx",
       startLine: 50,
       endLine: null,
+      deleted: false,
       text: "Use useCallback here",
     });
     expect(result[6]).toEqual({
@@ -75,6 +78,7 @@ describe("parsePromptLines", () => {
       fileName: "Button.tsx",
       startLine: 15,
       endLine: 23,
+      deleted: false,
       text: "Extract to function",
     });
   });
@@ -96,6 +100,47 @@ describe("parsePromptLines", () => {
       type: "comment",
       fullPath: "README.md",
       fileName: "README.md",
+    });
+  });
+
+  it("should parse a deleted comment", () => {
+    const input = "- `src/components/Button.tsx:15 (deleted)` — This old code had a bug";
+    const result = parsePromptLines(input);
+    expect(result).toEqual([
+      {
+        type: "comment",
+        fullPath: "src/components/Button.tsx",
+        fileName: "Button.tsx",
+        startLine: 15,
+        endLine: null,
+        deleted: true,
+        text: "This old code had a bug",
+      },
+    ]);
+  });
+
+  it("should parse a deleted comment with line range", () => {
+    const input = "- `src/auth.ts:10-20 (deleted)` — Remove this block";
+    const result = parsePromptLines(input);
+    expect(result).toEqual([
+      {
+        type: "comment",
+        fullPath: "src/auth.ts",
+        fileName: "auth.ts",
+        startLine: 10,
+        endLine: 20,
+        deleted: true,
+        text: "Remove this block",
+      },
+    ]);
+  });
+
+  it("should set deleted to false for non-deleted comments", () => {
+    const input = "- `src/App.tsx:50` — Use useCallback here";
+    const result = parsePromptLines(input);
+    expect(result[0]).toMatchObject({
+      type: "comment",
+      deleted: false,
     });
   });
 });

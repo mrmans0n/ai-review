@@ -6,10 +6,11 @@ export type ParsedCommentLine = {
   startLine: number;
   endLine: number | null;
   text: string;
+  deleted: boolean;
 };
 export type ParsedLine = ParsedTextLine | ParsedCommentLine;
 
-const COMMENT_RE = /^- `(.+?):(\d+)(?:-(\d+))?` — (.+)$/;
+const COMMENT_RE = /^- `(.+?):(\d+)(?:-(\d+))?( \(deleted\))?` — (.+)$/;
 
 export function parsePromptLines(prompt: string): ParsedLine[] {
   return prompt.split("\n").map((line) => {
@@ -25,7 +26,8 @@ export function parsePromptLines(prompt: string): ParsedLine[] {
       fileName: parts[parts.length - 1],
       startLine: parseInt(match[2], 10),
       endLine: match[3] ? parseInt(match[3], 10) : null,
-      text: match[4],
+      deleted: !!match[4],
+      text: match[5],
     };
   });
 }
