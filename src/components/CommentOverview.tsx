@@ -80,8 +80,8 @@ export function CommentOverview({
                       onClick={() => onGoToComment(comment)}
                       className="w-full text-left group"
                     >
-                      <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-gray-750 hover:bg-gray-700 transition-colors border border-gray-700 hover:border-gray-600">
-                        <div className="flex-shrink-0 mt-0.5">
+                      <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-750 hover:bg-gray-700 transition-colors border border-gray-700 hover:border-gray-600">
+                        <div className="flex-shrink-0">
                           <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-mono bg-gray-600 text-gray-300">
                             {comment.startLine === comment.endLine
                               ? `L${comment.startLine}`
