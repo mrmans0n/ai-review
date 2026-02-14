@@ -98,12 +98,15 @@ export function PromptPreview({ prompt, onClose }: PromptPreviewProps) {
                   </p>
                 ) : (
                   <div key={i} className="flex items-baseline gap-2 text-sm">
-                    <span className="inline-flex items-center gap-1 bg-gray-700 text-gray-200 rounded-full px-2.5 py-0.5 text-xs font-mono flex-shrink-0">
+                    <span className="inline-flex items-center gap-1 bg-gray-600 text-gray-300 rounded px-2 py-0.5 text-xs font-mono flex-shrink-0">
                       {line.fileName}
                       <span className="text-gray-400">
                         ({line.endLine ? `L${line.startLine}-${line.endLine}` : `L${line.startLine}`})
                       </span>
                     </span>
+                    {line.deleted && (
+                      <span className="text-orange-400 text-xs">deleted</span>
+                    )}
                     <span className="text-gray-200">{line.text}</span>
                   </div>
                 )
