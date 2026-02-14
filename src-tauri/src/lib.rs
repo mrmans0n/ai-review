@@ -6,10 +6,22 @@ mod config;
 mod files;
 mod git;
 
+#[derive(Clone, serde::Serialize)]
+#[serde(tag = "type", content = "value")]
+enum InitialDiffMode {
+    #[serde(rename = "commit")]
+    Commit(String),
+    #[serde(rename = "range")]
+    Range(String),
+    #[serde(rename = "branch")]
+    Branch(String),
+}
+
 // Global state to store the working directory
 struct AppState {
     working_dir: Mutex<PathBuf>,
     wait_mode: Mutex<bool>,
+    initial_diff_mode: Mutex<Option<InitialDiffMode>>,
 }
 
 #[tauri::command]
@@ -34,6 +46,11 @@ fn submit_feedback(feedback: String) {
 }
 
 #[tauri::command]
+fn get_initial_diff_mode(state: tauri::State<AppState>) -> Option<InitialDiffMode> {
+    state.initial_diff_mode.lock().unwrap().clone()
+}
+
+#[tauri::command]
 fn is_git_repo(path: String) -> bool {
     let dir = PathBuf::from(path);
     git::is_git_repo(&dir)
@@ -54,15 +71,17 @@ fn get_staged_diff(path: String) -> Result<git::GitDiffResult, String> {
 #[tauri::command]
 fn get_commit_ref_diff(path: String, commit: String) -> Result<git::GitDiffResult, String> {
     let dir = PathBuf::from(path);
-    // Parse commit ref to get the number (e.g., "HEAD~1" -> 1)
-    let n = if commit == "HEAD" {
-        0
-    } else if let Some(num_str) = commit.strip_prefix("HEAD~") {
-        num_str.parse::<u32>().unwrap_or(1)
-    } else {
-        1
-    };
-    git::get_head_diff(&dir, n)
+
+    if commit == "HEAD" {
+        return git::get_head_diff(&dir, 0);
+    }
+
+    if let Some(num_str) = commit.strip_prefix("HEAD~") {
+        let n = num_str.parse::<u32>().unwrap_or(1);
+        return git::get_head_diff(&dir, n);
+    }
+
+    git::get_commit_diff(&dir, &commit)
 }
 
 #[tauri::command]
@@ -106,6 +125,12 @@ fn list_branches(path: String) -> Result<Vec<git::BranchInfo>, String> {
 fn get_branch_diff(path: String, branch: String) -> Result<git::GitDiffResult, String> {
     let dir = PathBuf::from(path);
     git::get_branch_diff(&dir, &branch)
+}
+
+#[tauri::command]
+fn get_range_diff(path: String, range: String) -> Result<git::GitDiffResult, String> {
+    let dir = PathBuf::from(path);
+    git::get_range_diff(&dir, &range)
 }
 
 #[tauri::command]

@@ -26,6 +26,11 @@ import { resolveLineFromNode } from "./lib/resolveLineFromNode";
 import { HunkExpandControl } from "./components/HunkExpandControl";
 import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, GitDiffResult, ChangedFile } from "./types";
 
+type InitialDiffMode = {
+  type: "commit" | "range" | "branch";
+  value: string;
+};
+
 function App() {
   const [workingDir, setWorkingDir] = useState<string | null>(null);
   const [diffText, setDiffText] = useState("");
@@ -64,6 +69,7 @@ function App() {
   } | null>(null);
   const [showPromptPreview, setShowPromptPreview] = useState(false);
   const [waitMode, setWaitMode] = useState(false);
+  const [initialDiffMode, setInitialDiffMode] = useState<InitialDiffMode | null>(null);
   const [cliInstalled, setCliInstalled] = useState(false);
   const [installMessage, setInstallMessage] = useState<string | null>(null);
   const [hoveredCommentIds, setHoveredCommentIds] = useState<string[] | null>(null);
@@ -113,6 +119,14 @@ function App() {
         console.error("Failed to read wait mode:", err);
       });
 
+    invoke<InitialDiffMode | null>("get_initial_diff_mode")
+      .then((mode) => {
+        setInitialDiffMode(mode);
+      })
+      .catch((err) => {
+        console.error("Failed to read initial diff mode:", err);
+      });
+
     // Check if CLI is already installed
     invoke<boolean>("check_cli_installed")
       .then((installed) => {
@@ -130,6 +144,74 @@ function App() {
       setViewMode("diff");
     }
   }, [diffResult]);
+
+  useEffect(() => {
+    if (!workingDir || !isGitRepo || !initialDiffMode) return;
+
+    const mode = initialDiffMode;
+    setInitialDiffMode(null);
+
+    const applyInitialMode = async () => {
+      try {
+        if (mode.type === "commit") {
+          const [result, commits] = await Promise.all([
+            invoke<GitDiffResult>("get_commit_diff", {
+              path: workingDir,
+              hash: mode.value,
+            }),
+            invoke<CommitInfo[]>("list_commits", {
+              path: workingDir,
+              limit: 200,
+            }),
+          ]);
+
+          setDiffText(result.diff || "No changes in this commit");
+          setChangedFiles(result.files);
+          setDiffMode({ mode: "commit", commitRef: mode.value });
+          setSelectedCommit(
+            commits.find(
+              (commit) =>
+                commit.hash === mode.value || commit.short_hash === mode.value
+            ) || null
+          );
+          setSelectedBranch(null);
+        } else if (mode.type === "range") {
+          const result = await invoke<GitDiffResult>("get_range_diff", {
+            path: workingDir,
+            range: mode.value,
+          });
+          setDiffText(result.diff || "No changes in this range");
+          setChangedFiles(result.files);
+          setDiffMode({ mode: "range", range: mode.value });
+          setSelectedCommit(null);
+          setSelectedBranch(null);
+        } else if (mode.type === "branch") {
+          const [result, branches] = await Promise.all([
+            invoke<GitDiffResult>("get_branch_diff", {
+              path: workingDir,
+              branch: mode.value,
+            }),
+            invoke<BranchInfo[]>("list_branches", {
+              path: workingDir,
+            }),
+          ]);
+          setDiffText(result.diff || "No changes in this branch comparison");
+          setChangedFiles(result.files);
+          setDiffMode({ mode: "branch", branchName: mode.value });
+          setSelectedBranch(
+            branches.find((branch) => branch.name === mode.value) || null
+          );
+          setSelectedCommit(null);
+        }
+
+        setViewMode("diff");
+      } catch (err) {
+        console.error("Failed to apply initial diff mode:", err);
+      }
+    };
+
+    applyInitialMode();
+  }, [workingDir, isGitRepo, initialDiffMode]);
 
   const files = diffText ? parseDiff(diffText) : [];
 

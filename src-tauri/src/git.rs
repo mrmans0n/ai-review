@@ -434,6 +434,39 @@ pub fn get_commit_diff(dir: &Path, hash: &str) -> Result<GitDiffResult, String> 
     Ok(GitDiffResult { diff, files })
 }
 
+/// Get diff and changed files for an arbitrary git range (e.g. HEAD~3..HEAD)
+pub fn get_range_diff(dir: &Path, range: &str) -> Result<GitDiffResult, String> {
+    let diff_output = Command::new("git")
+        .arg("diff")
+        .arg("--no-color")
+        .arg(range)
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to execute git diff {}: {}", range, e))?;
+
+    if !diff_output.status.success() {
+        return Err(String::from_utf8_lossy(&diff_output.stderr).to_string());
+    }
+
+    let diff = String::from_utf8_lossy(&diff_output.stdout).to_string();
+
+    let files_output = Command::new("git")
+        .arg("diff")
+        .arg("--name-status")
+        .arg(range)
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to get changed files for {}: {}", range, e))?;
+
+    if !files_output.status.success() {
+        return Err(String::from_utf8_lossy(&files_output.stderr).to_string());
+    }
+
+    let files = parse_file_status(&String::from_utf8_lossy(&files_output.stdout));
+
+    Ok(GitDiffResult { diff, files })
+}
+
 /// Get diff and changed files comparing base branch and selected branch
 pub fn get_branch_diff(dir: &Path, branch: &str) -> Result<GitDiffResult, String> {
     // Prefer main if present, otherwise compare against current branch

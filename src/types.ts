@@ -18,12 +18,19 @@ export interface Comment {
   createdAt: string;
 }
 
-export type DiffMode = "unstaged" | "staged" | "commit";
+export type DiffMode = "unstaged" | "staged" | "commit" | "range" | "branch";
 
 export interface DiffModeConfig {
   mode: DiffMode;
   commitRef?: string;
+  range?: string;
+  branchName?: string;
 }
+
+export type InitialDiffMode =
+  | { type: "commit"; value: string }
+  | { type: "range"; value: string }
+  | { type: "branch"; value: string };
 
 export interface CommitInfo {
   hash: string;
