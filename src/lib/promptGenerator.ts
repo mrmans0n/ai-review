@@ -59,9 +59,11 @@ export function generatePrompt(comments: Comment[], context?: PromptContext): st
     fileComments.sort((a, b) => a.startLine - b.startLine);
 
     for (const comment of fileComments) {
-      const location = comment.startLine === comment.endLine
-        ? `${file}:${comment.startLine}`
-        : `${file}:${comment.startLine}-${comment.endLine}`;
+      const lineRef = comment.startLine === comment.endLine
+        ? `${comment.startLine}`
+        : `${comment.startLine}-${comment.endLine}`;
+      const deleted = comment.side === "old" ? " (deleted)" : "";
+      const location = `${file}:${lineRef}${deleted}`;
 
       lines.push(`- \`${location}\` — ${comment.text}`);
     }

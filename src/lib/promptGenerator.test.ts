@@ -342,4 +342,68 @@ describe("generatePrompt", () => {
     expect(result).toContain("commit abc123d");
     expect(result).not.toContain("branch feature/auth");
   });
+
+  it("should annotate old-side comments with (deleted)", () => {
+    const comments: Comment[] = [
+      {
+        id: "1",
+        file: "src/components/Button.tsx",
+        startLine: 15,
+        endLine: 15,
+        side: "old",
+        text: "This old code had a bug",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ];
+
+    const result = generatePrompt(comments);
+    expect(result).toBe(
+      `Please address these review comments:\n\n- \`src/components/Button.tsx:15 (deleted)\` — This old code had a bug`
+    );
+  });
+
+  it("should not annotate new-side comments with (deleted)", () => {
+    const comments: Comment[] = [
+      {
+        id: "1",
+        file: "src/components/Button.tsx",
+        startLine: 15,
+        endLine: 15,
+        side: "new",
+        text: "Add error handling",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ];
+
+    const result = generatePrompt(comments);
+    expect(result).not.toContain("(deleted)");
+  });
+
+  it("should handle mix of old and new side comments", () => {
+    const comments: Comment[] = [
+      {
+        id: "1",
+        file: "src/auth.ts",
+        startLine: 10,
+        endLine: 10,
+        side: "old",
+        text: "This was wrong",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+      {
+        id: "2",
+        file: "src/auth.ts",
+        startLine: 20,
+        endLine: 25,
+        side: "new",
+        text: "Good replacement",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ];
+
+    const result = generatePrompt(comments);
+    expect(result).toBe(
+      `Please address these review comments:\n\n- \`src/auth.ts:10 (deleted)\` — This was wrong\n- \`src/auth.ts:20-25\` — Good replacement`
+    );
+  });
 });
