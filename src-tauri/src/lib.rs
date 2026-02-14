@@ -79,7 +79,7 @@ fn list_commits(path: String, limit: u32) -> Result<Vec<git::CommitInfo>, String
 }
 
 #[tauri::command]
-fn get_commit_diff(path: String, hash: String) -> Result<String, String> {
+fn get_commit_diff(path: String, hash: String) -> Result<git::GitDiffResult, String> {
     let dir = PathBuf::from(path);
     git::get_commit_diff(&dir, &hash)
 }
@@ -91,9 +91,15 @@ fn list_branches(path: String) -> Result<Vec<git::BranchInfo>, String> {
 }
 
 #[tauri::command]
-fn get_branch_diff(path: String, branch: String) -> Result<String, String> {
+fn get_branch_diff(path: String, branch: String) -> Result<git::GitDiffResult, String> {
     let dir = PathBuf::from(path);
     git::get_branch_diff(&dir, &branch)
+}
+
+#[tauri::command]
+fn list_files_at_ref(path: String, git_ref: String) -> Result<Vec<String>, String> {
+    let dir = PathBuf::from(path);
+    git::list_files_at_ref(&dir, &git_ref)
 }
 
 #[tauri::command]
@@ -346,6 +352,7 @@ pub fn run() {
             get_commit_diff,
             list_branches,
             get_branch_diff,
+            list_files_at_ref,
             has_gg_stacks,
             list_gg_stacks,
             get_gg_stack_entries,

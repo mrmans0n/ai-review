@@ -23,7 +23,7 @@ import { RepoSwitcher } from "./components/RepoSwitcher";
 import { ConfirmModal } from "./components/ConfirmModal";
 import { generatePrompt } from "./lib/promptGenerator";
 import { HunkExpandControl } from "./components/HunkExpandControl";
-import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, GitDiffResult } from "./types";
+import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, GitDiffResult, ChangedFile } from "./types";
 
 function App() {
   const [workingDir, setWorkingDir] = useState<string | null>(null);
@@ -69,6 +69,7 @@ function App() {
   const suppressNextClickRef = useRef(false);
   const [expandedHunksMap, setExpandedHunksMap] = useState<Record<string, any[]>>({});
   const sourceCache = useRef<Record<string, string[]>>({});
+  const [changedFiles, setChangedFiles] = useState<ChangedFile[]>([]);
 
   const repoManager = useRepoManager();
   const [pendingSwitchPath, setPendingSwitchPath] = useState<string | null>(null);
@@ -84,11 +85,13 @@ function App() {
     clearAll,
   } = useComments();
 
-  const { isGitRepo, diffResult, loading, error, loadDiff } = useGit(workingDir);
-  const fileExplorer = useFileExplorer(workingDir);
-  const commitSelector = useCommitSelector(workingDir);
   const [selectedCommit, setSelectedCommit] = useState<CommitInfo | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<BranchInfo | null>(null);
+
+  const { isGitRepo, diffResult, loading, error, loadDiff } = useGit(workingDir);
+  const fileExplorerRef = selectedCommit?.hash ?? selectedBranch?.name ?? null;
+  const fileExplorer = useFileExplorer(workingDir, fileExplorerRef);
+  const commitSelector = useCommitSelector(workingDir);
 
   useEffect(() => {
     invoke<string>("get_working_directory")
@@ -113,6 +116,7 @@ function App() {
   useEffect(() => {
     if (diffResult) {
       setDiffText(diffResult.diff || "No changes");
+      setChangedFiles(diffResult.files);
       setViewMode("diff");
     }
   }, [diffResult]);
@@ -322,6 +326,7 @@ function App() {
       const result = await invoke<GitDiffResult>("switch_repo", { path });
       setWorkingDir(path);
       setDiffText(result.diff || "No changes");
+      setChangedFiles(result.files);
       setDiffMode({ mode: "unstaged" });
       setSelectedCommit(null);
       setSelectedBranch(null);
@@ -476,11 +481,12 @@ function App() {
     if (!workingDir) return;
 
     try {
-      const result = await invoke<string>("get_commit_diff", {
+      const result = await invoke<GitDiffResult>("get_commit_diff", {
         path: workingDir,
         hash: commit.hash,
       });
-      setDiffText(result || "No changes in this commit");
+      setDiffText(result.diff || "No changes in this commit");
+      setChangedFiles(result.files);
       setSelectedCommit(commit);
       setSelectedBranch(null);
       setViewMode("diff");
@@ -494,11 +500,12 @@ function App() {
     if (!workingDir) return;
 
     try {
-      const result = await invoke<string>("get_branch_diff", {
+      const result = await invoke<GitDiffResult>("get_branch_diff", {
         path: workingDir,
         branch: branch.name,
       });
-      setDiffText(result || "No changes in this branch comparison");
+      setDiffText(result.diff || "No changes in this branch comparison");
+      setChangedFiles(result.files);
       setSelectedBranch(branch);
       setSelectedCommit(null);
       setViewMode("diff");
@@ -1234,14 +1241,14 @@ function App() {
       )}
 
       <div className="flex h-[calc(100vh-140px)]">
-        {diffResult && (
+        {changedFiles.length > 0 && (
           <div className="w-64 border-r border-gray-700 flex flex-col bg-gray-800">
             <div className="px-4 py-2 border-b border-gray-700 font-semibold">
-              Changed Files ({diffResult.files.length})
+              Changed Files ({changedFiles.length})
             </div>
             <div className="flex-1 overflow-auto">
               <FileList
-                files={diffResult.files}
+                files={changedFiles}
                 selectedFile={selectedFile}
                 onSelectFile={handleFileSelect}
               />

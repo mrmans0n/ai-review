@@ -290,6 +290,25 @@ pub fn get_file_at_ref(dir: &Path, git_ref: &str, file_path: &str) -> Result<Str
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
 
+/// List all files in the repository at a given ref
+pub fn list_files_at_ref(dir: &Path, git_ref: &str) -> Result<Vec<String>, String> {
+    let output = Command::new("git")
+        .arg("ls-tree")
+        .arg("-r")
+        .arg("--name-only")
+        .arg(git_ref)
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to execute git ls-tree: {}", e))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(stdout.lines().filter(|l| !l.is_empty()).map(|l| l.to_string()).collect())
+}
+
 /// List recent commits
 pub fn list_commits(dir: &Path, limit: u32) -> Result<Vec<CommitInfo>, String> {
     let output = Command::new("git")
@@ -378,8 +397,8 @@ fn parse_branch_list(output: &str) -> Vec<BranchInfo> {
         .collect()
 }
 
-/// Get raw diff for a specific commit by hash
-pub fn get_commit_diff(dir: &Path, hash: &str) -> Result<String, String> {
+/// Get diff and changed files for a specific commit by hash
+pub fn get_commit_diff(dir: &Path, hash: &str) -> Result<GitDiffResult, String> {
     let diff_output = Command::new("git")
         .arg("show")
         .arg(hash)
@@ -393,11 +412,26 @@ pub fn get_commit_diff(dir: &Path, hash: &str) -> Result<String, String> {
         return Err(String::from_utf8_lossy(&diff_output.stderr).to_string());
     }
 
-    Ok(String::from_utf8_lossy(&diff_output.stdout).to_string())
+    let diff = String::from_utf8_lossy(&diff_output.stdout).to_string();
+
+    // Get changed files for this commit
+    let files_output = Command::new("git")
+        .arg("diff-tree")
+        .arg("--no-commit-id")
+        .arg("--name-status")
+        .arg("-r")
+        .arg(hash)
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to get changed files: {}", e))?;
+
+    let files = parse_file_status(&String::from_utf8_lossy(&files_output.stdout));
+
+    Ok(GitDiffResult { diff, files })
 }
 
-/// Get raw diff comparing base branch and selected branch
-pub fn get_branch_diff(dir: &Path, branch: &str) -> Result<String, String> {
+/// Get diff and changed files comparing base branch and selected branch
+pub fn get_branch_diff(dir: &Path, branch: &str) -> Result<GitDiffResult, String> {
     // Prefer main if present, otherwise compare against current branch
     let has_main = Command::new("git")
         .arg("show-ref")
@@ -427,10 +461,12 @@ pub fn get_branch_diff(dir: &Path, branch: &str) -> Result<String, String> {
         String::from_utf8_lossy(&output.stdout).trim().to_string()
     };
 
+    let range = format!("{}...{}", base, branch);
+
     let diff_output = Command::new("git")
         .arg("diff")
         .arg("--no-color")
-        .arg(format!("{}...{}", base, branch))
+        .arg(&range)
         .current_dir(dir)
         .output()
         .map_err(|e| format!("Failed to execute branch diff: {}", e))?;
@@ -439,7 +475,20 @@ pub fn get_branch_diff(dir: &Path, branch: &str) -> Result<String, String> {
         return Err(String::from_utf8_lossy(&diff_output.stderr).to_string());
     }
 
-    Ok(String::from_utf8_lossy(&diff_output.stdout).to_string())
+    let diff = String::from_utf8_lossy(&diff_output.stdout).to_string();
+
+    // Get changed files for this branch comparison
+    let files_output = Command::new("git")
+        .arg("diff")
+        .arg("--name-status")
+        .arg(&range)
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to get changed files: {}", e))?;
+
+    let files = parse_file_status(&String::from_utf8_lossy(&files_output.stdout));
+
+    Ok(GitDiffResult { diff, files })
 }
 
 // =============================================================================

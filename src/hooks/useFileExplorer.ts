@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
-export function useFileExplorer(workingDir: string | null) {
+export function useFileExplorer(workingDir: string | null, gitRef?: string | null) {
   const [isOpen, setIsOpen] = useState(false);
   const [files, setFiles] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -17,11 +17,18 @@ export function useFileExplorer(workingDir: string | null) {
 
     setLoading(true);
     try {
-      // Backend returns Vec<String>, not Vec<FileEntry>
-      const result = await invoke<string[]>(
-        "list_files",
-        { path: workingDir }
-      );
+      let result: string[];
+      if (gitRef) {
+        result = await invoke<string[]>(
+          "list_files_at_ref",
+          { path: workingDir, gitRef }
+        );
+      } else {
+        result = await invoke<string[]>(
+          "list_files",
+          { path: workingDir }
+        );
+      }
       setFiles(result);
       setSelectedIndex(0);
     } catch (err) {
@@ -29,7 +36,7 @@ export function useFileExplorer(workingDir: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [workingDir]);
+  }, [workingDir, gitRef]);
 
   const closeExplorer = useCallback(() => {
     setIsOpen(false);
