@@ -78,6 +78,9 @@ function App() {
   const [expandedHunksMap, setExpandedHunksMap] = useState<Record<string, any[]>>({});
   const sourceCache = useRef<Record<string, string[]>>({});
   const [changedFiles, setChangedFiles] = useState<ChangedFile[]>([]);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(256);
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
 
   const repoManager = useRepoManager();
   const [pendingSwitchPath, setPendingSwitchPath] = useState<string | null>(null);
@@ -135,6 +138,19 @@ function App() {
       .catch((err) => {
         console.error("Failed to check CLI installation:", err);
       });
+
+    const savedSidebarWidth = window.localStorage.getItem("changed-files-sidebar-width");
+    if (savedSidebarWidth) {
+      const parsedWidth = Number.parseInt(savedSidebarWidth, 10);
+      if (!Number.isNaN(parsedWidth)) {
+        setSidebarWidth(Math.min(500, Math.max(150, parsedWidth)));
+      }
+    }
+
+    const savedSidebarVisibility = window.localStorage.getItem("changed-files-sidebar-visible");
+    if (savedSidebarVisibility !== null) {
+      setIsSidebarVisible(savedSidebarVisibility === "true");
+    }
   }, []);
 
   useEffect(() => {
@@ -214,6 +230,42 @@ function App() {
   }, [workingDir, isGitRepo, initialDiffMode]);
 
   const files = diffText ? parseDiff(diffText) : [];
+
+  useEffect(() => {
+    window.localStorage.setItem("changed-files-sidebar-width", String(sidebarWidth));
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    window.localStorage.setItem("changed-files-sidebar-visible", String(isSidebarVisible));
+  }, [isSidebarVisible]);
+
+  useEffect(() => {
+    if (!isResizingSidebar) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const nextWidth = Math.min(500, Math.max(150, event.clientX));
+      setSidebarWidth(nextWidth);
+    };
+
+    const stopResizing = () => {
+      setIsResizingSidebar(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", stopResizing);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", stopResizing);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizingSidebar]);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -1185,6 +1237,27 @@ function App() {
         )}
 
         <div className="ml-auto flex items-center gap-3">
+          {changedFiles.length > 0 && (
+            <button
+              onClick={() => setIsSidebarVisible((prev) => !prev)}
+              className="p-2 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+              title={isSidebarVisible ? "Hide changed files sidebar" : "Show changed files sidebar"}
+              aria-label={isSidebarVisible ? "Hide changed files sidebar" : "Show changed files sidebar"}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                className="w-5 h-5"
+              >
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <path d="M9 4v16" />
+                {!isSidebarVisible && <path d="M6 12h6" />}
+              </svg>
+            </button>
+          )}
           {comments.length > 0 && (
             <>
               <button
@@ -1289,8 +1362,11 @@ function App() {
       )}
 
       <div className="flex h-[calc(100vh-140px)]">
-        {changedFiles.length > 0 && (
-          <div className="w-64 border-r border-gray-700 flex flex-col bg-gray-800">
+        {changedFiles.length > 0 && isSidebarVisible && (
+          <div
+            className="border-r border-gray-700 flex flex-col bg-gray-800 relative"
+            style={{ width: `${sidebarWidth}px` }}
+          >
             <div className="px-4 py-2 border-b border-gray-700 font-semibold">
               Changed Files ({changedFiles.length})
             </div>
@@ -1336,6 +1412,16 @@ function App() {
                 return null;
               })()}
             </div>
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize changed files sidebar"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                setIsResizingSidebar(true);
+              }}
+              className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-blue-500/40 transition-colors"
+            />
           </div>
         )}
 
