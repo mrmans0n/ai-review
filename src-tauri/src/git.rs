@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -88,8 +89,18 @@ pub fn get_unstaged_diff(dir: &Path) -> Result<GitDiffResult, String> {
         return Err(String::from_utf8_lossy(&diff_output.stderr).to_string());
     }
 
-    let diff = String::from_utf8_lossy(&diff_output.stdout).to_string();
+    let mut diff = String::from_utf8_lossy(&diff_output.stdout).to_string();
     let files = get_changed_files(dir, false)?;
+
+    let untracked_files = get_untracked_files(dir)?;
+
+    let synthetic_diff = generate_untracked_files_diff(dir, &untracked_files)?;
+    if !synthetic_diff.is_empty() {
+        if !diff.is_empty() && !diff.ends_with('\n') {
+            diff.push('\n');
+        }
+        diff.push_str(&synthetic_diff);
+    }
 
     Ok(GitDiffResult { diff, files })
 }
@@ -155,7 +166,7 @@ pub fn get_head_diff(dir: &Path, n: u32) -> Result<GitDiffResult, String> {
 /// Get list of changed files
 fn get_changed_files(dir: &Path, staged: bool) -> Result<Vec<GitFile>, String> {
     let output = Command::new("git")
-        .args(["status", "--porcelain"])
+        .args(["status", "--porcelain", "-uall"])
         .current_dir(dir)
         .output()
         .map_err(|e| format!("Failed to get changed files: {}", e))?;
@@ -166,6 +177,70 @@ fn get_changed_files(dir: &Path, staged: bool) -> Result<Vec<GitFile>, String> {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     Ok(parse_porcelain_status(&stdout, staged))
+}
+
+fn get_untracked_files(dir: &Path) -> Result<Vec<String>, String> {
+    let output = Command::new("git")
+        .args(["ls-files", "--others", "--exclude-standard"])
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to list untracked files: {}", e))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| line.to_string())
+        .collect())
+}
+
+fn generate_untracked_files_diff(dir: &Path, files: &[String]) -> Result<String, String> {
+    let mut diff = String::new();
+
+    for file in files {
+        let path = dir.join(file);
+
+        // Only synthetic-diff files that are untracked and exist in worktree.
+        if !path.is_file() {
+            continue;
+        }
+
+        let content = fs::read_to_string(&path)
+            .map_err(|e| format!("Failed to read untracked file '{}': {}", file, e))?;
+
+        diff.push_str(&build_new_file_diff(file, &content));
+    }
+
+    Ok(diff)
+}
+
+fn build_new_file_diff(file_path: &str, content: &str) -> String {
+    let normalized_content = content.replace("\r\n", "\n");
+    let mut lines: Vec<&str> = normalized_content.lines().collect();
+
+    // Preserve trailing newline by adding an empty line entry so the last
+    // line still appears in unified format.
+    if normalized_content.ends_with('\n') {
+        lines.push("");
+    }
+
+    let line_count = lines.len();
+
+    let mut diff = String::new();
+    diff.push_str(&format!("diff --git a/{0} b/{0}\n", file_path));
+    diff.push_str("new file mode 100644\n");
+    diff.push_str("--- /dev/null\n");
+    diff.push_str(&format!("+++ b/{}\n", file_path));
+    diff.push_str(&format!("@@ -0,0 +1,{} @@\n", line_count));
+
+    for line in lines {
+        diff.push_str(&format!("+{}\n", line));
+    }
+
+    diff
 }
 
 /// Parse git status --porcelain output
@@ -212,6 +287,7 @@ fn parse_porcelain_status(output: &str, staged: bool) -> Vec<GitFile> {
                     (_, 'D') => "deleted",
                     ('D', _) => "deleted",
                     ('R', _) => "renamed",
+                    ('?', '?') => "added",
                     _ => "modified",
                 }
             };
@@ -959,6 +1035,16 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_porcelain_status_untracked_as_added() {
+        let output = "?? src/untracked.rs\n";
+        let files = parse_porcelain_status(output, false);
+
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "src/untracked.rs");
+        assert_eq!(files[0].status, "added");
+    }
+
+    #[test]
     fn test_parse_porcelain_status_empty() {
         let output = "";
         let files = parse_porcelain_status(output, false);
@@ -993,6 +1079,26 @@ mod tests {
 
         // Both files should be returned for unstaged
         assert_eq!(files.len(), 2);
+    }
+
+    #[test]
+    fn test_build_new_file_diff() {
+        let diff = build_new_file_diff("src/new.rs", "line 1\nline 2\n");
+
+        assert!(diff.contains("diff --git a/src/new.rs b/src/new.rs"));
+        assert!(diff.contains("new file mode 100644"));
+        assert!(diff.contains("--- /dev/null"));
+        assert!(diff.contains("+++ b/src/new.rs"));
+        assert!(diff.contains("@@ -0,0 +1,3 @@"));
+        assert!(diff.contains("+line 1\n+line 2\n+\n"));
+    }
+
+    #[test]
+    fn test_build_new_file_diff_without_trailing_newline() {
+        let diff = build_new_file_diff("README.md", "hello");
+
+        assert!(diff.contains("@@ -0,0 +1,1 @@"));
+        assert!(diff.contains("+hello\n"));
     }
 
     #[test]
