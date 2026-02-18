@@ -19,7 +19,6 @@ cask "ai-review" do
   depends_on arch: :arm64
 
   app "AI Review.app"
-
   binary "#{{appdir}}/AI Review.app/Contents/MacOS/AI Review", target: "air"
 
   zap trash: [
