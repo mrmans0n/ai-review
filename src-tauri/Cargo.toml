@@ -1,6 +1,6 @@
 [package]
 name = "ai-review"
-version = "0.1.2"
+version = "0.1.3"
 description = "AI Code Review Tool - Review AI-generated code diffs with inline comments"
 authors = ["Nacho Lopez"]
 edition = "2021"
