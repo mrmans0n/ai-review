@@ -19,14 +19,15 @@ jobs:
           - name: macos-arm
             os: macos-latest
             artifact_name: tauri-macos-arm
-            artifact_paths: |
-              src-tauri/target/release/bundle/dmg/*.dmg
+            rust_target: aarch64-apple-darwin
+          - name: macos-intel
+            os: macos-latest
+            artifact_name: tauri-macos-intel
+            rust_target: x86_64-apple-darwin
           - name: linux
             os: ubuntu-22.04
             artifact_name: tauri-linux
-            artifact_paths: |
-              src-tauri/target/release/bundle/appimage/*.AppImage
-              src-tauri/target/release/bundle/deb/*.deb
+            rust_target: x86_64-unknown-linux-gnu
 
     steps:
       - name: Checkout code
@@ -57,6 +58,8 @@ jobs:
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -99,13 +102,22 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build app
-        run: pnpm tauri build
+        run: pnpm tauri build --target ${{ matrix.rust_target }}
+
+      - name: Collect artifacts
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          find src-tauri/target -name '*.dmg' -exec cp {} artifacts/ \;
+          find src-tauri/target -name '*.AppImage' -exec cp {} artifacts/ \;
+          find src-tauri/target -name '*.deb' -exec cp {} artifacts/ \;
+          ls -la artifacts/
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.artifact_paths }}
+          path: artifacts/*
           if-no-files-found: error
           retention-days: 1
 
@@ -121,6 +133,9 @@ jobs:
           path: release-artifacts
           merge-multiple: true
 
+      - name: List artifacts
+        run: find release-artifacts -type f | sort
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
@@ -128,6 +143,4 @@ jobs:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
           files: |
-            release-artifacts/*.dmg
-            release-artifacts/*.AppImage
-            release-artifacts/*.deb
+            release-artifacts/*
