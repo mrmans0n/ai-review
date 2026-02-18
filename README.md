@@ -20,6 +20,12 @@ It brings a pull-request-style review experience to the human → AI feedback lo
 - **Multi-repo management**
 - **Commit selector**
 
+## Agent Skill
+
+AI Review ships with a **human-review** skill that AI coding agents can use to request your review before committing or merging. The agent runs `air --wait`, which opens the diff viewer and blocks until you submit your feedback. The agent then addresses each comment automatically.
+
+The skill definition lives in [`skills/human-review/SKILL.md`](skills/human-review/SKILL.md) and works with any agent framework that supports skill files (OpenClaw, Claude Code, Codex CLI, etc.).
+
 ## Tech Stack
 
 - **Desktop shell:** Tauri v2 (Rust backend)
@@ -82,12 +88,6 @@ cd cli && ./install.sh
 │   └── src/          # Rust backend commands and app integration
 └── cli/              # air launcher installer and CLI wiring
 ```
-
-## Agent Skill
-
-AI Review ships with a **human-review** skill that AI coding agents can use to request your review before committing or merging. The agent runs `air --wait`, which opens the diff viewer and blocks until you submit your feedback. The agent then addresses each comment automatically.
-
-The skill definition lives in [`skills/human-review/SKILL.md`](skills/human-review/SKILL.md) and works with any agent framework that supports skill files (OpenClaw, Claude Code, Codex CLI, etc.).
 
 ## License
 
