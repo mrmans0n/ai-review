@@ -5,25 +5,18 @@ import pathlib
 
 VERSION = os.environ["VERSION"]
 SHA_ARM = os.environ["SHA_ARM"]
-SHA_INTEL = os.environ["SHA_INTEL"]
 
 CASK = f'''\
 cask "ai-review" do
   version "{VERSION}"
+  sha256 "{SHA_ARM}"
 
-  on_arm do
-    sha256 "{SHA_ARM}"
-    url "https://github.com/mrmans0n/ai-review/releases/download/v#{{version}}/AI.Review_#{{version}}_aarch64.dmg"
-  end
-
-  on_intel do
-    sha256 "{SHA_INTEL}"
-    url "https://github.com/mrmans0n/ai-review/releases/download/v#{{version}}/AI.Review_#{{version}}_x64.dmg"
-  end
-
+  url "https://github.com/mrmans0n/ai-review/releases/download/v#{{version}}/AI.Review_#{{version}}_aarch64.dmg"
   name "AI Review"
   desc "Desktop code review tool for AI-generated diffs"
   homepage "https://github.com/mrmans0n/ai-review"
+
+  depends_on arch: :arm64
 
   app "AI Review.app"
 
