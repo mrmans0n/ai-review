@@ -21,11 +21,6 @@ jobs:
             artifact_name: tauri-macos-arm
             artifact_paths: |
               src-tauri/target/release/bundle/dmg/*.dmg
-          - name: macos-intel
-            os: macos-13
-            artifact_name: tauri-macos-intel
-            artifact_paths: |
-              src-tauri/target/release/bundle/dmg/*.dmg
           - name: linux
             os: ubuntu-22.04
             artifact_name: tauri-linux
