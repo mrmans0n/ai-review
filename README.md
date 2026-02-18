@@ -32,7 +32,24 @@ It brings a pull-request-style review experience to the human → AI feedback lo
 - pnpm
 - Rust toolchain
 
-## Quick Start
+## Installation
+
+### Homebrew (macOS, Apple Silicon)
+
+```bash
+brew install --cask mrmans0n/tap/ai-review
+```
+
+This installs the app and the `air` CLI command.
+
+### Manual
+
+Download the latest release from [GitHub Releases](https://github.com/mrmans0n/ai-review/releases):
+
+- **macOS** — `.dmg` (Apple Silicon)
+- **Linux** — `.AppImage` or `.deb`
+
+### From Source
 
 ```bash
 pnpm install
