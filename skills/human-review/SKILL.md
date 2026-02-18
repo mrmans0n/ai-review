@@ -41,6 +41,6 @@ You have finished writing code and need the human to review it before proceeding
 
 ## Notes
 
-- If `air` is not found, tell the user they need to install the CLI from the ai-review app (Settings > Install CLI) or ensure `~/.local/bin` is in their PATH.
+- If `air` is not found, tell the user to install via `brew install --cask mrmans0n/tap/ai-review` (macOS) or build from source at https://github.com/mrmans0n/ai-review.
 - If the diff is empty (current branch is identical to base), inform the user there are no changes to review.
 - Do NOT commit after making changes — let the user decide when to commit.
