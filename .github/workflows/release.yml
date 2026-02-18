@@ -156,26 +156,22 @@ jobs:
           echo "SHA_ARM=$(shasum -a 256 arm.dmg | cut -d' ' -f1)" >> $GITHUB_ENV
 
       - name: Checkout homebrew-tap
-        uses: actions/checkout@v4
-        with:
-          repository: mrmans0n/homebrew-tap
-          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          git clone "https://x-access-token:${{ secrets.HOMEBREW_TAP_TOKEN }}@github.com/mrmans0n/homebrew-tap.git" homebrew-tap
 
-      - name: Checkout release workflow scripts
-        uses: actions/checkout@v4
-        with:
-          path: _ai-review
-          sparse-checkout: .github/workflows/update-cask.py
-          sparse-checkout-cone-mode: false
+      - name: Download update script
+        run: |
+          curl -sL "https://raw.githubusercontent.com/mrmans0n/ai-review/${{ github.ref_name }}/.github/workflows/update-cask.py" -o update-cask.py
 
       - name: Update cask
-        run: python3 _ai-review/.github/workflows/update-cask.py
+        working-directory: homebrew-tap
+        run: python3 ../update-cask.py
 
       - name: Commit and push
+        working-directory: homebrew-tap
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin "https://x-access-token:${{ secrets.HOMEBREW_TAP_TOKEN }}@github.com/mrmans0n/homebrew-tap.git"
           git add Casks/ai-review.rb
           git commit -m "Update ai-review cask to ${VERSION}"
           git push
