@@ -20,11 +20,30 @@ It brings a pull-request-style review experience to the human → AI feedback lo
 - **Multi-repo management**
 - **Commit selector**
 
-## Agent Skill
+## Agent Skills
 
-AI Review ships with a **human-review** skill that AI coding agents can use to request your review before committing or merging. The agent runs `air --wait`, which opens the diff viewer and blocks until you submit your feedback. The agent then addresses each comment automatically.
+AI Review ships with skills that AI coding agents can use to interact with the desktop app. The most important one is **human-review**, which lets the agent request your code review before committing — it runs `air --wait`, opens the diff viewer, blocks until you submit feedback, and the agent addresses each comment automatically.
 
-The skill definition lives in [`skills/human-review/SKILL.md`](skills/human-review/SKILL.md) and works with any agent framework that supports skill files (OpenClaw, Claude Code, Codex CLI, etc.).
+| Skill | Description |
+|-------|-------------|
+| [**human-review**](skills/human-review/SKILL.md) | Request human code review with inline comments and feedback loop |
+| [**show-changes**](skills/show-changes/SKILL.md) | Present completed work for optional review |
+| [**review-commits**](skills/review-commits/SKILL.md) | Open existing commits or branch diffs for review |
+| [**browse-diff**](skills/browse-diff/SKILL.md) | Open the diff viewer just for browsing (no feedback loop) |
+
+### Claude Code
+
+Install as a [Claude Code plugin](https://docs.anthropic.com/en/docs/agents/claude-code/plugins) to give your agent access to all skills automatically:
+
+```bash
+claude plugin add https://github.com/mrmans0n/ai-review
+```
+
+That's it — Claude Code will discover the skills and can invoke `air` during coding sessions.
+
+### Other Agents (OpenClaw, Codex CLI, etc.)
+
+Copy the skill files from [`skills/`](skills/) into your agent's skills directory and reference them in your agent configuration. Each skill is a standalone Markdown file with instructions the agent can follow.
 
 ## Tech Stack
 
