@@ -4,6 +4,8 @@ AI Review (`air`) is a desktop code review tool for reviewing diffs, adding inli
 
 It brings a pull-request-style review experience to the human → AI feedback loop.
 
+!(A code review with air)[art/air.png]
+
 ## Features
 
 - **CLI launcher (`air`)** — open AI Review from any Git repository
