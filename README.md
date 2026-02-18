@@ -83,6 +83,12 @@ cd cli && ./install.sh
 └── cli/              # air launcher installer and CLI wiring
 ```
 
+## Agent Skill
+
+AI Review ships with a **human-review** skill that AI coding agents can use to request your review before committing or merging. The agent runs `air --wait`, which opens the diff viewer and blocks until you submit your feedback. The agent then addresses each comment automatically.
+
+The skill definition lives in [`skills/human-review/SKILL.md`](skills/human-review/SKILL.md) and works with any agent framework that supports skill files (OpenClaw, Claude Code, Codex CLI, etc.).
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).
