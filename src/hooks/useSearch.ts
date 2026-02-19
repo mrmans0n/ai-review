@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { clearMarks, markText } from "../utils/textMarker";
 
 const SEARCH_CELL_SELECTOR = ".diff-code, .diff-code-cell";
 const SEARCH_CLASS = "search-match";
 const SEARCH_CURRENT_CLASS = "search-match-current";
+const RE_MARK_DEBOUNCE_MS = 100;
 
 const isVisible = (element: HTMLElement): boolean => {
   if (element.hidden) return false;
@@ -25,6 +26,7 @@ export function useSearch() {
   const [isOpen, setIsOpen] = useState(false);
   const [matches, setMatches] = useState<HTMLElement[]>([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
+  const debounceTimeoutRef = useRef<number | null>(null);
 
   const clearAllMarks = useCallback(() => {
     document.querySelectorAll<HTMLElement>(SEARCH_CELL_SELECTOR).forEach((container) => {
@@ -43,7 +45,7 @@ export function useSearch() {
     current.scrollIntoView({ block: "center", behavior: "smooth" });
   }, []);
 
-  useEffect(() => {
+  const applyMarks = useCallback((preferredIndex: number) => {
     clearAllMarks();
 
     if (!isOpen || !query.trim()) {
@@ -63,12 +65,47 @@ export function useSearch() {
     setMatches(nextMatches);
 
     if (nextMatches.length > 0) {
-      setCurrentMatchIndex(0);
-      updateCurrentMatch(0, nextMatches);
+      const clampedIndex = Math.min(
+        Math.max(preferredIndex, 0),
+        nextMatches.length - 1,
+      );
+      setCurrentMatchIndex(clampedIndex);
+      updateCurrentMatch(clampedIndex, nextMatches);
     } else {
       setCurrentMatchIndex(-1);
     }
-  }, [query, isOpen, clearAllMarks, updateCurrentMatch]);
+  }, [clearAllMarks, isOpen, query, updateCurrentMatch]);
+
+  useEffect(() => {
+    applyMarks(0);
+  }, [applyMarks]);
+
+  useEffect(() => {
+    const diffContainer = document.querySelector<HTMLElement>(".diff-view");
+    if (!diffContainer || !isOpen || !query.trim()) return;
+
+    const observer = new MutationObserver(() => {
+      if (debounceTimeoutRef.current) {
+        window.clearTimeout(debounceTimeoutRef.current);
+      }
+
+      debounceTimeoutRef.current = window.setTimeout(() => {
+        observer.disconnect();
+        applyMarks(currentMatchIndex < 0 ? 0 : currentMatchIndex);
+        observer.observe(diffContainer, { childList: true, subtree: true });
+      }, RE_MARK_DEBOUNCE_MS);
+    });
+
+    observer.observe(diffContainer, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      if (debounceTimeoutRef.current) {
+        window.clearTimeout(debounceTimeoutRef.current);
+        debounceTimeoutRef.current = null;
+      }
+    };
+  }, [isOpen, query, currentMatchIndex, applyMarks]);
 
   const next = useCallback(() => {
     if (matches.length === 0) return;
@@ -124,6 +161,10 @@ export function useSearch() {
   useEffect(() => {
     return () => {
       clearAllMarks();
+      if (debounceTimeoutRef.current) {
+        window.clearTimeout(debounceTimeoutRef.current);
+        debounceTimeoutRef.current = null;
+      }
     };
   }, [clearAllMarks]);
 
