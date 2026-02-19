@@ -926,18 +926,6 @@ function App() {
           }}
         >
           <div className="flex items-center gap-3">
-            <label
-              className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-300"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <input
-                type="checkbox"
-                checked={isViewed}
-                onChange={() => toggleViewed(fileName)}
-                className="h-4 w-4 rounded border-gray-500 bg-gray-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
-              />
-              Viewed
-            </label>
             <div>
               {file.type === "delete" && (
                 <span className="text-red-400">Deleted: {file.oldPath}</span>
@@ -956,6 +944,18 @@ function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <label
+              className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-300 cursor-pointer"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <input
+                type="checkbox"
+                checked={isViewed}
+                onChange={() => toggleViewed(fileName)}
+                className="h-4 w-4 rounded border-gray-500 bg-gray-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+              />
+              Viewed
+            </label>
             <span className="text-xs text-gray-300">
               +{file.additions ?? 0} / -{file.deletions ?? 0}
             </span>
