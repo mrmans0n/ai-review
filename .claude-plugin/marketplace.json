@@ -1,0 +1,12 @@
+{
+  "name": "ai-review",
+  "owner": {
+    "name": "Nacho Lopez"
+  },
+  "plugins": [
+    {
+      "name": "ai-review",
+      "source": "./"
+    }
+  ]
+}

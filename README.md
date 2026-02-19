@@ -36,7 +36,8 @@ AI Review ships with skills that AI coding agents can use to interact with the d
 Install as a [Claude Code plugin](https://docs.anthropic.com/en/docs/agents/claude-code/plugins) to give your agent access to all skills automatically:
 
 ```bash
-claude plugin add https://github.com/mrmans0n/ai-review
+claude plugin marketplace add https://github.com/mrmans0n/ai-review
+claude plugin install ai-review
 ```
 
 That's it — Claude Code will discover the skills and can invoke `air` during coding sessions.
