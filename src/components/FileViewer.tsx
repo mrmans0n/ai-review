@@ -37,6 +37,7 @@ interface FileViewerProps {
   onShiftClickLine: (file: string, startLine: number, endLine: number, side: "old" | "new") => void;
   suppressNextClick: MutableRefObject<boolean>;
   searchQuery: string;
+  highlightedWord: string | null;
 }
 
 export function FileViewer({
@@ -67,6 +68,7 @@ export function FileViewer({
   onShiftClickLine,
   suppressNextClick,
   searchQuery,
+  highlightedWord,
 }: FileViewerProps) {
   const lines = content.split("\n");
 
@@ -179,7 +181,7 @@ export function FileViewer({
   };
 
   return (
-    <div className="bg-gray-900 rounded overflow-hidden border border-gray-700" data-file-viewer={fileName} data-search-query={searchQuery}>
+    <div className="bg-gray-900 rounded overflow-hidden border border-gray-700" data-file-viewer={fileName} data-search-query={searchQuery} data-highlighted-word={highlightedWord || ""}>
       <div
         className={`px-4 py-2 border-b border-gray-700 flex items-center justify-between transition-colors ${
           isViewed ? "bg-gray-800/80 text-gray-400 cursor-pointer" : "bg-gray-800"
@@ -253,7 +255,7 @@ export function FileViewer({
               {/* Code content */}
               <div className="diff-code-cell flex-1 px-4 py-1 overflow-x-auto">
                 <code
-                  className="font-mono text-sm text-gray-200 whitespace-pre"
+                  className="diff-code font-mono text-sm text-gray-200 whitespace-pre"
                   dangerouslySetInnerHTML={{
                     __html: highlightedLines[index] || line,
                   }}
