@@ -1420,6 +1420,7 @@ function App() {
         </div>
       )}
 
+      <ScrollProgressBar />
       <div className="flex h-[calc(100vh-140px)]">
         {changedFiles.length > 0 && isSidebarVisible && (
           <div
@@ -1652,7 +1653,6 @@ function App() {
         />
       )}
 
-      <ScrollProgressBar />
     </div>
   );
 }
