@@ -83,6 +83,7 @@ function App() {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(256);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
 
   const repoManager = useRepoManager();
   const search = useSearch();
@@ -233,6 +234,7 @@ function App() {
   }, [workingDir, isGitRepo, initialDiffMode]);
 
   const files = diffText ? parseDiff(diffText) : [];
+  const viewedCount = files.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
 
   useEffect(() => {
     window.localStorage.setItem("changed-files-sidebar-width", String(sidebarWidth));
@@ -415,6 +417,18 @@ function App() {
     loadDiff(newMode);
   };
 
+  const toggleViewed = (fileName: string) => {
+    setViewedFiles((prev) => {
+      const next = new Set(prev);
+      if (next.has(fileName)) {
+        next.delete(fileName);
+      } else {
+        next.add(fileName);
+      }
+      return next;
+    });
+  };
+
   const handleSwitchRepo = async (path: string) => {
     if (path === workingDir) return;
     if (comments.length > 0) {
@@ -443,6 +457,7 @@ function App() {
       setSelectedRange(null);
       setLastFocusedLine(null);
       clearAll();
+      setViewedFiles(new Set());
       setPendingSwitchPath(null);
     } catch (err) {
       console.error("Failed to switch repo:", err);
@@ -869,6 +884,7 @@ function App() {
 
   const renderFile = (file: any) => {
     const fileName = file.newPath || file.oldPath;
+    const isViewed = viewedFiles.has(fileName);
     const fileHunks = expandedHunksMap[fileName] || file.hunks;
     const tokens = highlight(fileHunks, {
       language: detectLanguage(fileName),
@@ -896,41 +912,72 @@ function App() {
 
     return (
       <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={file.newPath || file.oldPath}>
-        <div className="bg-gray-700 px-4 py-2 font-semibold border-b border-gray-600 flex justify-between items-center">
-          <div>
-            {file.type === "delete" && (
-              <span className="text-red-400">Deleted: {file.oldPath}</span>
-            )}
-            {file.type === "add" && (
-              <span className="text-green-400">Added: {file.newPath}</span>
-            )}
-            {file.type === "modify" && (
-              <span className="text-blue-400">Modified: {file.newPath}</span>
-            )}
-            {file.type === "rename" && (
-              <span className="text-yellow-400">
-                Renamed: {file.oldPath} → {file.newPath}
-              </span>
+        <div
+          className={`px-4 py-2 font-semibold border-b border-gray-600 flex justify-between items-center transition-colors ${
+            isViewed ? "bg-gray-800/80 text-gray-400" : "bg-gray-700"
+          }`}
+          onClick={() => {
+            if (isViewed) {
+              toggleViewed(fileName);
+            }
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <label
+              className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-300"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <input
+                type="checkbox"
+                checked={isViewed}
+                onChange={() => toggleViewed(fileName)}
+                className="h-4 w-4 rounded border-gray-500 bg-gray-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+              />
+              Viewed
+            </label>
+            <div>
+              {file.type === "delete" && (
+                <span className="text-red-400">Deleted: {file.oldPath}</span>
+              )}
+              {file.type === "add" && (
+                <span className="text-green-400">Added: {file.newPath}</span>
+              )}
+              {file.type === "modify" && (
+                <span className="text-blue-400">Modified: {file.newPath}</span>
+              )}
+              {file.type === "rename" && (
+                <span className="text-yellow-400">
+                  Renamed: {file.oldPath} → {file.newPath}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-300">
+              +{file.additions ?? 0} / -{file.deletions ?? 0}
+            </span>
+            {!isViewed && (
+              <button
+                onClick={(event) => {
+                  event.stopPropagation();
+                  // Find the first changed line in this file's hunks
+                  let firstLine = 1;
+                  if (file.hunks && file.hunks.length > 0) {
+                    const firstHunk = file.hunks[0];
+                    // Use the first new line number from the hunk
+                    firstLine = firstHunk.newStart || 1;
+                  }
+                  setLastFocusedLine({ file: fileName, line: firstLine, side: "new" });
+                  handleLineClick(fileName, firstLine, "new");
+                }}
+                className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+              >
+                + Add Comment
+              </button>
             )}
           </div>
-          <button
-            onClick={() => {
-              const fileName = file.newPath || file.oldPath;
-              // Find the first changed line in this file's hunks
-              let firstLine = 1;
-              if (file.hunks && file.hunks.length > 0) {
-                const firstHunk = file.hunks[0];
-                // Use the first new line number from the hunk
-                firstLine = firstHunk.newStart || 1;
-              }
-              setLastFocusedLine({ file: fileName, line: firstLine, side: "new" });
-              handleLineClick(fileName, firstLine, "new");
-            }}
-            className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
-          >
-            + Add Comment
-          </button>
         </div>
+        {!isViewed && (
         <Diff
           viewType={viewType}
           diffType={file.type}
@@ -1126,6 +1173,7 @@ function App() {
             return elements;
           }}
         </Diff>
+        )}
       </div>
     );
   };
@@ -1240,6 +1288,11 @@ function App() {
         )}
 
         <div className="ml-auto flex items-center gap-3">
+          {files.length > 0 && (
+            <div className="px-2.5 py-1 rounded bg-gray-700 text-xs text-gray-300 border border-gray-600">
+              {viewedCount}/{files.length} viewed
+            </div>
+          )}
           {changedFiles.length > 0 && (
             <button
               onClick={() => setIsSidebarVisible((prev) => !prev)}
@@ -1452,6 +1505,8 @@ function App() {
                 fileName={currentFile}
                 content={fileContent}
                 language={detectLanguage(currentFile)}
+                isViewed={viewedFiles.has(currentFile)}
+                onToggleViewed={() => toggleViewed(currentFile)}
                 onLineClick={handleLineClick}
                 addingCommentAt={addingCommentAt}
                 onAddComment={handleAddComment}
