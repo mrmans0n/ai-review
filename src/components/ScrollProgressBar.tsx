@@ -7,11 +7,11 @@ export function ScrollProgressBar() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 h-[3px] bg-gray-700/50 z-40 pointer-events-none"
+      className="w-full h-[2px] bg-gray-700/30 pointer-events-none"
       aria-hidden="true"
     >
       <div
-        className="h-full transition-[width] duration-100 ease-out"
+        className="h-full transition-[width] duration-100 ease-out opacity-60"
         style={{
           width: `${progress}%`,
           background: "linear-gradient(90deg, #3b82f6, #60a5fa)",
