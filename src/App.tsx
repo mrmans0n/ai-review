@@ -889,6 +889,7 @@ function App() {
     const fileName = file.newPath || file.oldPath;
     const isViewed = viewedFiles.has(fileName);
     const fileHunks = expandedHunksMap[fileName] || file.hunks;
+    if (!fileHunks || fileHunks.length === 0) return null;
     const tokens = highlight(fileHunks, {
       language: detectLanguage(fileName),
     });
