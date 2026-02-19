@@ -34,6 +34,7 @@ interface FileViewerProps {
   onHoverCommentIds: (ids: string[] | null) => void;
   onShiftClickLine: (file: string, startLine: number, endLine: number, side: "old" | "new") => void;
   suppressNextClick: MutableRefObject<boolean>;
+  searchQuery: string;
 }
 
 export function FileViewer({
@@ -61,6 +62,7 @@ export function FileViewer({
   onHoverCommentIds,
   onShiftClickLine,
   suppressNextClick,
+  searchQuery,
 }: FileViewerProps) {
   const lines = content.split("\n");
 
@@ -173,7 +175,7 @@ export function FileViewer({
   };
 
   return (
-    <div className="bg-gray-900 rounded overflow-hidden" data-file-viewer={fileName}>
+    <div className="bg-gray-900 rounded overflow-hidden" data-file-viewer={fileName} data-search-query={searchQuery}>
       {lines.map((line, index) => {
         const lineNumber = index + 1;
         const lineComments = getCommentsAtEndLine(lineNumber);
@@ -217,7 +219,7 @@ export function FileViewer({
               </div>
 
               {/* Code content */}
-              <div className="flex-1 px-4 py-1 overflow-x-auto">
+              <div className="diff-code-cell flex-1 px-4 py-1 overflow-x-auto">
                 <code
                   className="font-mono text-sm text-gray-200 whitespace-pre"
                   dangerouslySetInnerHTML={{

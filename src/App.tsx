@@ -10,10 +10,12 @@ import { useFileExplorer } from "./hooks/useFileExplorer";
 import { useCommitSelector } from "./hooks/useCommitSelector";
 import { useComments } from "./hooks/useComments";
 import { useRepoManager } from "./hooks/useRepoManager";
+import { useSearch } from "./hooks/useSearch";
 import { FileExplorer } from "./components/FileExplorer";
 import { CommitSelector } from "./components/CommitSelector";
 import { FileList } from "./components/FileList";
 import { FileViewer } from "./components/FileViewer";
+import { SearchBar } from "./components/SearchBar";
 import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
 import { PromptPreview } from "./components/PromptPreview";
@@ -83,6 +85,7 @@ function App() {
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
 
   const repoManager = useRepoManager();
+  const search = useSearch();
   const [pendingSwitchPath, setPendingSwitchPath] = useState<string | null>(null);
 
   const {
@@ -1472,6 +1475,7 @@ function App() {
                   setAddingCommentAt({ file, startLine, endLine, side });
                 }}
                 suppressNextClick={suppressNextClickRef}
+                searchQuery={search.query}
               />
             </div>
           ) : (
@@ -1565,6 +1569,17 @@ function App() {
         onSelectRef={handleRefSelect}
         onBackToStacks={commitSelector.backToStacks}
         onClose={commitSelector.closeSelector}
+      />
+
+      <SearchBar
+        isOpen={search.isOpen}
+        query={search.query}
+        matchCount={search.matches.length}
+        currentMatchIndex={search.currentMatchIndex}
+        onQueryChange={search.setQuery}
+        onNext={search.next}
+        onPrev={search.prev}
+        onClose={search.close}
       />
 
       {pendingSwitchPath && (
