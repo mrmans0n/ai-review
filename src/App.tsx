@@ -11,6 +11,7 @@ import { useCommitSelector } from "./hooks/useCommitSelector";
 import { useComments } from "./hooks/useComments";
 import { useRepoManager } from "./hooks/useRepoManager";
 import { useSearch } from "./hooks/useSearch";
+import { useWordHighlight } from "./hooks/useWordHighlight";
 import { FileExplorer } from "./components/FileExplorer";
 import { CommitSelector } from "./components/CommitSelector";
 import { FileList } from "./components/FileList";
@@ -87,6 +88,7 @@ function App() {
 
   const repoManager = useRepoManager();
   const search = useSearch();
+  const wordHighlight = useWordHighlight(search.isOpen);
   const [pendingSwitchPath, setPendingSwitchPath] = useState<string | null>(null);
 
   const {
@@ -1531,6 +1533,7 @@ function App() {
                 }}
                 suppressNextClick={suppressNextClickRef}
                 searchQuery={search.query}
+                highlightedWord={wordHighlight.highlightedWord}
               />
             </div>
           ) : (

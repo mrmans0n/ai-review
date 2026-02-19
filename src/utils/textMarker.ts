@@ -22,11 +22,23 @@ export function clearMarks(container: HTMLElement, className: string): void {
   });
 }
 
-export function markText(container: HTMLElement, text: string, className: string): HTMLElement[] {
+type MarkTextOptions = {
+  caseSensitive?: boolean;
+  wholeWord?: boolean;
+};
+
+export function markText(
+  container: HTMLElement,
+  text: string,
+  className: string,
+  options: MarkTextOptions = {},
+): HTMLElement[] {
   if (!text.trim()) return [];
 
   const escapedText = escapeRegExp(text.trim());
-  const matcher = new RegExp(escapedText, "gi");
+  const pattern = options.wholeWord ? `\\b${escapedText}\\b` : escapedText;
+  const flags = options.caseSensitive ? "g" : "gi";
+  const matcher = new RegExp(pattern, flags);
   const marks: HTMLElement[] = [];
 
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {

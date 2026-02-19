@@ -167,3 +167,8 @@ td[colspan="4"].diff-widget-content .split-widget-new {
   border-radius: 2px;
   outline: 1px solid rgba(251, 146, 60, 0.8);
 }
+
+.word-highlight {
+  background-color: rgba(250, 204, 21, 0.4);
+  border-radius: 2px;
+}
