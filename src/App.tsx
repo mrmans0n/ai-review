@@ -149,7 +149,7 @@ function App() {
     if (savedSidebarWidth) {
       const parsedWidth = Number.parseInt(savedSidebarWidth, 10);
       if (!Number.isNaN(parsedWidth)) {
-        setSidebarWidth(Math.min(500, Math.max(150, parsedWidth)));
+        setSidebarWidth(Math.min(Math.floor(window.innerWidth * 2 / 3), Math.max(150, parsedWidth)));
       }
     }
 
@@ -250,7 +250,7 @@ function App() {
     if (!isResizingSidebar) return;
 
     const handleMouseMove = (event: MouseEvent) => {
-      const nextWidth = Math.min(500, Math.max(150, event.clientX));
+      const nextWidth = Math.min(Math.floor(window.innerWidth * 2 / 3), Math.max(150, event.clientX));
       setSidebarWidth(nextWidth);
     };
 
