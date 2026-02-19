@@ -24,6 +24,7 @@ import { CommentOverview } from "./components/CommentOverview";
 import { RepoLandingPage } from "./components/RepoLandingPage";
 import { RepoSwitcher } from "./components/RepoSwitcher";
 import { ConfirmModal } from "./components/ConfirmModal";
+import { ScrollProgressBar } from "./components/ScrollProgressBar";
 import { generatePrompt } from "./lib/promptGenerator";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
 import { HunkExpandControl } from "./components/HunkExpandControl";
@@ -1650,6 +1651,8 @@ function App() {
           onCancel={handleCancelSwitch}
         />
       )}
+
+      <ScrollProgressBar />
     </div>
   );
 }
