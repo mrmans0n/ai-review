@@ -28,6 +28,8 @@ function makeProps(overrides: Partial<Parameters<typeof FileViewer>[0]> = {}) {
     fileName: "src/app.ts",
     content: "line one\nline two\nline three",
     language: "plaintext",
+    isViewed: false,
+    onToggleViewed: vi.fn(),
     onLineClick: vi.fn(),
     addingCommentAt: null,
     onAddComment: vi.fn(),
@@ -49,6 +51,7 @@ function makeProps(overrides: Partial<Parameters<typeof FileViewer>[0]> = {}) {
     onHoverCommentIds: vi.fn(),
     onShiftClickLine: vi.fn(),
     suppressNextClick,
+    searchQuery: "",
     ...overrides,
   };
 }

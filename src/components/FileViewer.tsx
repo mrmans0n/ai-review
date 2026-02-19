@@ -8,6 +8,8 @@ interface FileViewerProps {
   fileName: string;
   content: string;
   language: string;
+  isViewed: boolean;
+  onToggleViewed: () => void;
   onLineClick: (file: string, line: number, side: "old" | "new") => void;
   addingCommentAt: {
     file: string;
@@ -41,6 +43,8 @@ export function FileViewer({
   fileName,
   content,
   language,
+  isViewed,
+  onToggleViewed,
   onLineClick,
   addingCommentAt,
   onAddComment,
@@ -175,8 +179,36 @@ export function FileViewer({
   };
 
   return (
-    <div className="bg-gray-900 rounded overflow-hidden" data-file-viewer={fileName} data-search-query={searchQuery}>
-      {lines.map((line, index) => {
+    <div className="bg-gray-900 rounded overflow-hidden border border-gray-700" data-file-viewer={fileName} data-search-query={searchQuery}>
+      <div
+        className={`px-4 py-2 border-b border-gray-700 flex items-center justify-between transition-colors ${
+          isViewed ? "bg-gray-800/80 text-gray-400 cursor-pointer" : "bg-gray-800"
+        }`}
+        onClick={() => {
+          if (isViewed) {
+            onToggleViewed();
+          }
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <label
+            className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-300"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              checked={isViewed}
+              onChange={onToggleViewed}
+              className="h-4 w-4 rounded border-gray-500 bg-gray-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+            />
+            Viewed
+          </label>
+          <span className="text-sm text-gray-200 font-medium">{fileName}</span>
+        </div>
+        <span className="text-xs text-gray-400">{lines.length} lines</span>
+      </div>
+
+      {!isViewed && lines.map((line, index) => {
         const lineNumber = index + 1;
         const lineComments = getCommentsAtEndLine(lineNumber);
         const isAddingComment =
