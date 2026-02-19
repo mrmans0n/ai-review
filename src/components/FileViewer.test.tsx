@@ -13,7 +13,13 @@ vi.mock("highlight.js/lib/core", () => ({
 // Mock sub-components to simplify tests
 vi.mock("./AddCommentForm", () => ({
   AddCommentForm: (props: any) => (
-    <div data-testid="add-comment-form" data-file={props.file} data-start={props.startLine} data-end={props.endLine} />
+    <div
+      data-testid="add-comment-form"
+      data-file={props.file}
+      data-start={props.startLine}
+      data-end={props.endLine}
+      data-prefilled={props.prefilledCode ?? ""}
+    />
   ),
 }));
 vi.mock("./CommentWidget", () => ({
@@ -231,6 +237,21 @@ describe("FileViewer", () => {
       // Form should appear after line 2 (the endLine)
       const lineEl = form.closest("[data-line-number]");
       expect(lineEl?.getAttribute("data-line-number")).toBe("2");
+    });
+
+    it("passes selected lines as prefilledCode to AddCommentForm", () => {
+      // content: "line one\nline two\nline three" — startLine=2, endLine=3
+      const props = makeProps({
+        addingCommentAt: {
+          file: "src/app.ts",
+          startLine: 2,
+          endLine: 3,
+          side: "new",
+        },
+      });
+      render(<FileViewer {...props} />);
+      const form = screen.getByTestId("add-comment-form");
+      expect(form.getAttribute("data-prefilled")).toBe("line two\nline three");
     });
   });
 });

@@ -27,6 +27,7 @@ import { ConfirmModal } from "./components/ConfirmModal";
 import { ScrollProgressBar } from "./components/ScrollProgressBar";
 import { generatePrompt } from "./lib/promptGenerator";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
+import { extractLinesFromHunks } from "./lib/extractLinesFromHunks";
 import { HunkExpandControl } from "./components/HunkExpandControl";
 import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, GitDiffResult, ChangedFile } from "./types";
 
@@ -811,6 +812,7 @@ function App() {
   const buildFileWidgets = (
     file: any,
     fileComments: import("./types").Comment[],
+    fileHunks: any[],
   ): Record<string, React.ReactNode> => {
     const widgets: Record<string, React.ReactNode> = {};
     const fileName = file.newPath || file.oldPath;
@@ -874,6 +876,13 @@ function App() {
               side={addingCommentAt.side}
               onSubmit={handleAddComment}
               onCancel={() => setAddingCommentAt(null)}
+              prefilledCode={extractLinesFromHunks(
+                fileHunks,
+                addingCommentAt.startLine,
+                addingCommentAt.endLine,
+                addingCommentAt.side
+              )}
+              language={detectLanguage(fileName)}
             />
           </div>,
           addingCommentAt.side
@@ -894,7 +903,7 @@ function App() {
       language: detectLanguage(fileName),
     });
     const fileComments = comments.filter((c) => c.file === fileName);
-    const fileWidgets = buildFileWidgets(file, fileComments);
+    const fileWidgets = buildFileWidgets(file, fileComments, fileHunks);
 
     // Build selectedChanges for hover highlighting and drag selection
     const highlightedChangeKeys: string[] = [];

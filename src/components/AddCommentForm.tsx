@@ -7,6 +7,8 @@ interface AddCommentFormProps {
   side: "old" | "new";
   onSubmit: (text: string) => void;
   onCancel: () => void;
+  prefilledCode?: string;
+  language?: string;
 }
 
 export function AddCommentForm({
@@ -16,14 +18,23 @@ export function AddCommentForm({
   side,
   onSubmit,
   onCancel,
+  prefilledCode,
+  language,
 }: AddCommentFormProps) {
-  const [text, setText] = useState("");
+  const langTag = prefilledCode && language && language !== "plaintext" ? language : "";
+  const initialText = prefilledCode
+    ? `\`\`\`${langTag}\n${prefilledCode}\n\`\`\`\n\n`
+    : "";
+  const [text, setText] = useState(initialText);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    // Delay focus to prevent key event from being typed into textarea
     setTimeout(() => {
-      textareaRef.current?.focus();
+      const el = textareaRef.current;
+      if (el) {
+        el.focus();
+        el.selectionStart = el.selectionEnd = el.value.length;
+      }
     }, 50);
   }, []);
 
