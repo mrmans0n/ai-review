@@ -1,0 +1,83 @@
+name: Version Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src-tauri/Cargo.toml'
+      - 'src-tauri/tauri.conf.json'
+      - 'package.json'
+
+permissions:
+  contents: write
+
+jobs:
+  sync-versions:
+    name: Sync Versions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read version from Cargo.toml
+        id: cargo
+        run: |
+          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -1)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Source of truth version: $VERSION"
+
+      - name: Read other versions
+        id: others
+        run: |
+          TAURI_VERSION=$(jq -r '.version' src-tauri/tauri.conf.json)
+          PKG_VERSION=$(jq -r '.version' package.json)
+          echo "tauri=$TAURI_VERSION" >> "$GITHUB_OUTPUT"
+          echo "pkg=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tauri.conf.json: $TAURI_VERSION"
+          echo "package.json: $PKG_VERSION"
+
+      - name: Check if sync is needed
+        id: check
+        run: |
+          VERSION="${{ steps.cargo.outputs.version }}"
+          TAURI="${{ steps.others.outputs.tauri }}"
+          PKG="${{ steps.others.outputs.pkg }}"
+          if [ "$VERSION" = "$TAURI" ] && [ "$VERSION" = "$PKG" ]; then
+            echo "All versions match ($VERSION). Nothing to do."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Version mismatch detected. Cargo.toml=$VERSION, tauri.conf.json=$TAURI, package.json=$PKG"
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update tauri.conf.json
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          VERSION="${{ steps.cargo.outputs.version }}"
+          jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+
+      - name: Update package.json
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          VERSION="${{ steps.cargo.outputs.version }}"
+          jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+
+      - name: Setup Rust toolchain
+        if: steps.check.outputs.needed == 'true'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Update Cargo.lock
+        if: steps.check.outputs.needed == 'true'
+        working-directory: src-tauri
+        run: cargo generate-lockfile
+
+      - name: Commit and push
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          VERSION="${{ steps.cargo.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src-tauri/tauri.conf.json package.json src-tauri/Cargo.lock
+          git commit -m "chore: sync versions to $VERSION [skip ci]"
+          git push
