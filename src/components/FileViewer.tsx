@@ -273,6 +273,12 @@ export function FileViewer({
                   side="new"
                   onSubmit={onAddComment}
                   onCancel={onCancelComment}
+                  prefilledCode={
+                    lines
+                      .slice(addingCommentAt!.startLine - 1, addingCommentAt!.endLine)
+                      .join("\n") || undefined
+                  }
+                  language={language}
                 />
               </div>
             )}

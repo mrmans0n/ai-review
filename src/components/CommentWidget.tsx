@@ -1,4 +1,7 @@
 import { useState } from "react";
+import hljs from "highlight.js/lib/core";
+import { parseCommentText } from "../lib/parseCommentText";
+import type { CommentSegment } from "../lib/parseCommentText";
 import type { Comment } from "../types";
 
 interface CommentWidgetProps {
@@ -8,6 +11,37 @@ interface CommentWidgetProps {
   editingId: string | null;
   onStartEdit: (id: string) => void;
   onStopEdit: () => void;
+}
+
+function renderCommentText(text: string): React.ReactNode {
+  const segments = parseCommentText(text);
+  if (segments.length === 0) return text;
+  return segments.map((seg: CommentSegment, i: number) => {
+    if (seg.type === "text") {
+      return (
+        <span key={i} className="whitespace-pre-wrap">
+          {seg.content}
+        </span>
+      );
+    }
+    let highlightedHtml: string;
+    try {
+      const result = seg.language
+        ? hljs.highlight(seg.content, { language: seg.language, ignoreIllegals: true })
+        : hljs.highlightAuto(seg.content);
+      highlightedHtml = result.value;
+    } catch {
+      highlightedHtml = seg.content;
+    }
+    return (
+      <pre key={i} className="bg-gray-900 rounded p-2 my-1 overflow-x-auto text-sm">
+        <code
+          className="hljs"
+          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+        />
+      </pre>
+    );
+  });
 }
 
 export function CommentWidget({
@@ -66,8 +100,8 @@ export function CommentWidget({
             </div>
           ) : (
             <div>
-              <div className="text-yellow-100 text-sm mb-1 whitespace-pre-wrap">
-                {comment.text}
+              <div className="text-yellow-100 text-sm mb-1">
+                {renderCommentText(comment.text)}
               </div>
               <div className="flex gap-2 items-center text-xs text-gray-400">
                 <span>
