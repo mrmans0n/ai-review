@@ -95,7 +95,7 @@ export function AddCommentForm({
         >
           Add Comment
         </button>
-        {prefilledCode && !text.includes(prefilledCode) && (
+        {prefilledCode && !text.includes("```") && (
           <button
             type="button"
             onClick={insertCode}
