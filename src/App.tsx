@@ -514,7 +514,11 @@ function App() {
     // because hunk line numbers (oldStart/oldLines) reference the old file.
     // Using the new version would produce mismatched content and duplicate lines.
     let oldRef: string;
-    if (diffMode.mode === "unstaged" || diffMode.mode === "staged") {
+    if (diffMode.mode === "unstaged") {
+      // Unstaged diff compares working tree vs index, so old side = index (:0)
+      oldRef = ":0";
+    } else if (diffMode.mode === "staged") {
+      // Staged diff compares index vs HEAD, so old side = HEAD
       oldRef = "HEAD";
     } else if (diffMode.mode === "commit") {
       oldRef = `${diffMode.commitRef || "HEAD"}~1`;
