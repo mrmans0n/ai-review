@@ -24,6 +24,25 @@ export function parsePromptLines(prompt: string): ParsedLine[] {
   let i = 0;
 
   while (i < lines.length) {
+    // Check comments first — they're always single lines and should not
+    // be mistaken for code fences even if they contain backticks
+    const commentMatch = lines[i].match(COMMENT_RE);
+    if (commentMatch) {
+      const fullPath = commentMatch[1];
+      const parts = fullPath.split("/");
+      result.push({
+        type: "comment",
+        fullPath,
+        fileName: parts[parts.length - 1],
+        startLine: parseInt(commentMatch[2], 10),
+        endLine: commentMatch[3] ? parseInt(commentMatch[3], 10) : null,
+        deleted: !!commentMatch[4],
+        text: commentMatch[5],
+      });
+      i++;
+      continue;
+    }
+
     const fenceMatch = lines[i].match(CODE_FENCE_RE);
     if (fenceMatch) {
       const language = fenceMatch[1] || "";
@@ -43,22 +62,7 @@ export function parsePromptLines(prompt: string): ParsedLine[] {
       continue;
     }
 
-    const commentMatch = lines[i].match(COMMENT_RE);
-    if (commentMatch) {
-      const fullPath = commentMatch[1];
-      const parts = fullPath.split("/");
-      result.push({
-        type: "comment",
-        fullPath,
-        fileName: parts[parts.length - 1],
-        startLine: parseInt(commentMatch[2], 10),
-        endLine: commentMatch[3] ? parseInt(commentMatch[3], 10) : null,
-        deleted: !!commentMatch[4],
-        text: commentMatch[5],
-      });
-    } else {
-      result.push({ type: "text", content: lines[i] });
-    }
+    result.push({ type: "text", content: lines[i] });
     i++;
   }
 
