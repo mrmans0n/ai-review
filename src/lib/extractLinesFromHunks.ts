@@ -30,7 +30,7 @@ export function extractLinesFromHunks(
         lineNum <= endLine
       ) {
         // Strip leading +/- or space
-        lines.push(change.content.slice(1));
+        lines.push(change.content);
       }
     }
   }

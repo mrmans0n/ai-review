@@ -21,12 +21,27 @@ export function AddCommentForm({
   prefilledCode,
   language,
 }: AddCommentFormProps) {
-  const langTag = prefilledCode && language && language !== "plaintext" ? language : "";
-  const initialText = prefilledCode
-    ? `\`\`\`${langTag}\n${prefilledCode}\n\`\`\`\n\n`
-    : "";
-  const [text, setText] = useState(initialText);
+  const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertCode = () => {
+    if (!prefilledCode) return;
+    const langTag = language && language !== "plaintext" ? language : "";
+    const codeBlock = `\`\`\`${langTag}\n${prefilledCode}\n\`\`\`\n\n`;
+    const el = textareaRef.current;
+    if (!el) {
+      setText((prev) => prev + codeBlock);
+      return;
+    }
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const newText = text.slice(0, start) + codeBlock + text.slice(end);
+    setText(newText);
+    setTimeout(() => {
+      el.selectionStart = el.selectionEnd = start + codeBlock.length;
+      el.focus();
+    }, 0);
+  };
 
   useEffect(() => {
     setTimeout(() => {
@@ -80,6 +95,15 @@ export function AddCommentForm({
         >
           Add Comment
         </button>
+        {prefilledCode && !text.includes(prefilledCode) && (
+          <button
+            type="button"
+            onClick={insertCode}
+            className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
+          >
+            Insert code
+          </button>
+        )}
         <button
           type="button"
           onClick={onCancel}
