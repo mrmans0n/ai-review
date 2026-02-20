@@ -510,24 +510,47 @@ function App() {
 
     let content: string;
 
-    if (diffMode.mode === "unstaged") {
-      content = await invoke<string>("read_file_content", {
-        path: workingDir,
-        filePath,
-      });
-    } else if (diffMode.mode === "staged") {
-      content = await invoke<string>("get_file_at_ref", {
-        path: workingDir,
-        gitRef: ":0",
-        filePath,
-      });
-    } else {
-      const ref = diffMode.commitRef || "HEAD";
-      content = await invoke<string>("get_file_at_ref", {
-        path: workingDir,
-        gitRef: ref,
-        filePath,
-      });
+    // expandFromRawCode needs the OLD side of the diff (the base version),
+    // because hunk line numbers (oldStart/oldLines) reference the old file.
+    // Using the new version would produce mismatched content and duplicate lines.
+    try {
+      if (diffMode.mode === "unstaged" || diffMode.mode === "staged") {
+        // For both unstaged and staged diffs, the old side is HEAD
+        content = await invoke<string>("get_file_at_ref", {
+          path: workingDir,
+          gitRef: "HEAD",
+          filePath,
+        });
+      } else {
+        // For commit diffs, the old side is the parent commit
+        const ref = diffMode.commitRef || "HEAD";
+        content = await invoke<string>("get_file_at_ref", {
+          path: workingDir,
+          gitRef: `${ref}~1`,
+          filePath,
+        });
+      }
+    } catch {
+      // Fallback for new files (no old version exists): use the new version
+      if (diffMode.mode === "unstaged") {
+        content = await invoke<string>("read_file_content", {
+          path: workingDir,
+          filePath,
+        });
+      } else if (diffMode.mode === "staged") {
+        content = await invoke<string>("get_file_at_ref", {
+          path: workingDir,
+          gitRef: ":0",
+          filePath,
+        });
+      } else {
+        const ref = diffMode.commitRef || "HEAD";
+        content = await invoke<string>("get_file_at_ref", {
+          path: workingDir,
+          gitRef: ref,
+          filePath,
+        });
+      }
     }
 
     const lines = content.split("\n");
