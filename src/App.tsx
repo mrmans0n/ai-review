@@ -513,23 +513,29 @@ function App() {
     // expandFromRawCode needs the OLD side of the diff (the base version),
     // because hunk line numbers (oldStart/oldLines) reference the old file.
     // Using the new version would produce mismatched content and duplicate lines.
+    let oldRef: string;
+    if (diffMode.mode === "unstaged" || diffMode.mode === "staged") {
+      oldRef = "HEAD";
+    } else if (diffMode.mode === "commit") {
+      oldRef = `${diffMode.commitRef || "HEAD"}~1`;
+    } else if (diffMode.mode === "range" && diffMode.range) {
+      // Range is "A..B" — old side is A
+      const rangeBase = diffMode.range.split("..")[0];
+      oldRef = rangeBase || "HEAD";
+    } else if (diffMode.mode === "branch" && diffMode.branchName) {
+      // Branch diff compares against main (or current branch)
+      // The old side is the merge-base
+      oldRef = "main";
+    } else {
+      oldRef = "HEAD";
+    }
+
     try {
-      if (diffMode.mode === "unstaged" || diffMode.mode === "staged") {
-        // For both unstaged and staged diffs, the old side is HEAD
-        content = await invoke<string>("get_file_at_ref", {
-          path: workingDir,
-          gitRef: "HEAD",
-          filePath,
-        });
-      } else {
-        // For commit diffs, the old side is the parent commit
-        const ref = diffMode.commitRef || "HEAD";
-        content = await invoke<string>("get_file_at_ref", {
-          path: workingDir,
-          gitRef: `${ref}~1`,
-          filePath,
-        });
-      }
+      content = await invoke<string>("get_file_at_ref", {
+        path: workingDir,
+        gitRef: oldRef,
+        filePath,
+      });
     } catch {
       // Fallback for new files (no old version exists): use the new version
       if (diffMode.mode === "unstaged") {
@@ -544,7 +550,7 @@ function App() {
           filePath,
         });
       } else {
-        const ref = diffMode.commitRef || "HEAD";
+        const ref = diffMode.commitRef || diffMode.branchName || "HEAD";
         content = await invoke<string>("get_file_at_ref", {
           path: workingDir,
           gitRef: ref,
