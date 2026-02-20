@@ -2,13 +2,13 @@ import { describe, it, expect } from "vitest";
 import { extractLinesFromHunks } from "./extractLinesFromHunks";
 
 function insertChange(lineNumber: number, content: string) {
-  return { type: "insert", isNormal: false, lineNumber, content: `+${content}` };
+  return { type: "insert", isNormal: false, lineNumber, content };
 }
 function deleteChange(lineNumber: number, content: string) {
-  return { type: "delete", isNormal: false, lineNumber, content: `-${content}` };
+  return { type: "delete", isNormal: false, lineNumber, content };
 }
 function normalChange(oldLine: number, newLine: number, content: string) {
-  return { isNormal: true, type: "normal", oldLineNumber: oldLine, newLineNumber: newLine, content: ` ${content}` };
+  return { isNormal: true, type: "normal", oldLineNumber: oldLine, newLineNumber: newLine, content };
 }
 
 const hunks = [
@@ -47,13 +47,8 @@ describe("extractLinesFromHunks", () => {
     expect(extractLinesFromHunks([], 1, 1, "new")).toBeUndefined();
   });
 
-  it("strips the leading + character from insert content", () => {
+  it("returns raw content without any marker prefix", () => {
     const result = extractLinesFromHunks(hunks, 2, 2, "new");
-    expect(result).not.toMatch(/^\+/);
-  });
-
-  it("strips the leading - character from delete content", () => {
-    const result = extractLinesFromHunks(hunks, 2, 2, "old");
-    expect(result).not.toMatch(/^-/);
+    expect(result).toBe("new line two");
   });
 });

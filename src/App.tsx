@@ -238,7 +238,8 @@ function App() {
   }, [workingDir, isGitRepo, initialDiffMode]);
 
   const files = diffText ? parseDiff(diffText) : [];
-  const viewedCount = files.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
+  const renderableFiles = files.filter((file: any) => file.hunks && file.hunks.length > 0);
+  const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
 
   useEffect(() => {
     window.localStorage.setItem("changed-files-sidebar-width", String(sidebarWidth));
@@ -1301,9 +1302,9 @@ function App() {
         )}
 
         <div className="ml-auto flex items-center gap-3">
-          {files.length > 0 && (
+          {renderableFiles.length > 0 && (
             <div className="px-2.5 py-1 rounded bg-gray-700 text-xs text-gray-300 border border-gray-600">
-              {viewedCount}/{files.length} viewed
+              {viewedCount}/{renderableFiles.length} viewed
             </div>
           )}
           {changedFiles.length > 0 && (
