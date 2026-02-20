@@ -510,24 +510,63 @@ function App() {
 
     let content: string;
 
+    // expandFromRawCode needs the OLD side of the diff (the base version),
+    // because hunk line numbers (oldStart/oldLines) reference the old file.
+    // Using the new version would produce mismatched content and duplicate lines.
+    let oldRef: string;
     if (diffMode.mode === "unstaged") {
-      content = await invoke<string>("read_file_content", {
-        path: workingDir,
-        filePath,
-      });
+      // Unstaged diff compares working tree vs index, so old side = index (:0)
+      oldRef = ":0";
     } else if (diffMode.mode === "staged") {
-      content = await invoke<string>("get_file_at_ref", {
-        path: workingDir,
-        gitRef: ":0",
-        filePath,
-      });
+      // Staged diff compares index vs HEAD, so old side = HEAD
+      oldRef = "HEAD";
+    } else if (diffMode.mode === "commit") {
+      oldRef = `${diffMode.commitRef || "HEAD"}~1`;
+    } else if (diffMode.mode === "range" && diffMode.range) {
+      // Range is "A..B" — old side is A
+      const rangeBase = diffMode.range.split("..")[0];
+      oldRef = rangeBase || "HEAD";
+    } else if (diffMode.mode === "branch" && diffMode.branchName) {
+      // Branch diff: resolve the actual merge-base dynamically
+      try {
+        oldRef = await invoke<string>("get_branch_base", {
+          path: workingDir,
+          branch: diffMode.branchName,
+        });
+      } catch {
+        oldRef = "HEAD";
+      }
     } else {
-      const ref = diffMode.commitRef || "HEAD";
+      oldRef = "HEAD";
+    }
+
+    try {
       content = await invoke<string>("get_file_at_ref", {
         path: workingDir,
-        gitRef: ref,
+        gitRef: oldRef,
         filePath,
       });
+    } catch {
+      // Fallback for new files (no old version exists): use the new version
+      if (diffMode.mode === "unstaged") {
+        content = await invoke<string>("read_file_content", {
+          path: workingDir,
+          filePath,
+        });
+      } else if (diffMode.mode === "staged") {
+        content = await invoke<string>("get_file_at_ref", {
+          path: workingDir,
+          gitRef: ":0",
+          filePath,
+        });
+      } else {
+        const ref = diffMode.commitRef || diffMode.branchName || "HEAD";
+        content = await invoke<string>("get_file_at_ref", {
+          path: workingDir,
+          gitRef: ref,
+          filePath,
+        });
+      }
     }
 
     const lines = content.split("\n");
