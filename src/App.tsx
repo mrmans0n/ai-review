@@ -523,9 +523,15 @@ function App() {
       const rangeBase = diffMode.range.split("..")[0];
       oldRef = rangeBase || "HEAD";
     } else if (diffMode.mode === "branch" && diffMode.branchName) {
-      // Branch diff compares against main (or current branch)
-      // The old side is the merge-base
-      oldRef = "main";
+      // Branch diff: resolve the actual merge-base dynamically
+      try {
+        oldRef = await invoke<string>("get_branch_base", {
+          path: workingDir,
+          branch: diffMode.branchName,
+        });
+      } catch {
+        oldRef = "HEAD";
+      }
     } else {
       oldRef = "HEAD";
     }

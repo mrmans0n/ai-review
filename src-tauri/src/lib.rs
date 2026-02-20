@@ -128,6 +128,12 @@ fn get_branch_diff(path: String, branch: String) -> Result<git::GitDiffResult, S
 }
 
 #[tauri::command]
+fn get_branch_base(path: String, branch: String) -> Result<String, String> {
+    let dir = PathBuf::from(path);
+    git::get_branch_base(&dir, &branch)
+}
+
+#[tauri::command]
 fn get_range_diff(path: String, range: String) -> Result<git::GitDiffResult, String> {
     let dir = PathBuf::from(path);
     git::get_range_diff(&dir, &range)
@@ -437,6 +443,7 @@ pub fn run() {
             get_commit_diff,
             list_branches,
             get_branch_diff,
+            get_branch_base,
             list_files_at_ref,
             has_gg_stacks,
             list_gg_stacks,

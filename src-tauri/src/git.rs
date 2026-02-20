@@ -544,6 +544,51 @@ pub fn get_range_diff(dir: &Path, range: &str) -> Result<GitDiffResult, String> 
 }
 
 /// Get diff and changed files comparing base branch and selected branch
+/// Returns the base ref used for branch diffs (same logic as get_branch_diff).
+pub fn get_branch_base(dir: &Path, branch: &str) -> Result<String, String> {
+    let has_main = Command::new("git")
+        .arg("show-ref")
+        .arg("--verify")
+        .arg("--quiet")
+        .arg("refs/heads/main")
+        .current_dir(dir)
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false);
+
+    let base = if has_main {
+        "main".to_string()
+    } else {
+        let output = Command::new("git")
+            .arg("rev-parse")
+            .arg("--abbrev-ref")
+            .arg("HEAD")
+            .current_dir(dir)
+            .output()
+            .map_err(|e| format!("Failed to resolve current branch: {}", e))?;
+
+        if !output.status.success() {
+            return Err(String::from_utf8_lossy(&output.stderr).to_string());
+        }
+
+        String::from_utf8_lossy(&output.stdout).trim().to_string()
+    };
+
+    // Return the merge-base commit for accurate old-side resolution
+    let output = Command::new("git")
+        .args(["merge-base", &base, branch])
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to find merge-base: {}", e))?;
+
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    } else {
+        // Fallback to the base branch name
+        Ok(base)
+    }
+}
+
 pub fn get_branch_diff(dir: &Path, branch: &str) -> Result<GitDiffResult, String> {
     // Prefer main if present, otherwise compare against current branch
     let has_main = Command::new("git")
