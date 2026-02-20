@@ -80,6 +80,7 @@ function App() {
   const [hoveredCommentIds, setHoveredCommentIds] = useState<string[] | null>(null);
   const [showCommentOverview, setShowCommentOverview] = useState(false);
   const suppressNextClickRef = useRef(false);
+  const mainContentRef = useRef<HTMLDivElement>(null);
   const [expandedHunksMap, setExpandedHunksMap] = useState<Record<string, any[]>>({});
   const sourceCache = useRef<Record<string, string[]>>({});
   const [changedFiles, setChangedFiles] = useState<ChangedFile[]>([]);
@@ -1431,7 +1432,7 @@ function App() {
         </div>
       )}
 
-      <ScrollProgressBar />
+      <ScrollProgressBar containerRef={mainContentRef} />
       <div className="flex h-[calc(100vh-140px)]">
         {changedFiles.length > 0 && isSidebarVisible && (
           <div
@@ -1496,7 +1497,7 @@ function App() {
           </div>
         )}
 
-        <div className="flex-1 overflow-auto">
+        <div ref={mainContentRef} className="flex-1 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-gray-400 text-lg">Loading...</div>

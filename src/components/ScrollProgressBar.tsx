@@ -1,7 +1,12 @@
+import type { RefObject } from "react";
 import { useScrollProgress } from "../hooks/useScrollProgress";
 
-export function ScrollProgressBar() {
-  const { progress, isScrollable } = useScrollProgress();
+type ScrollProgressBarProps = {
+  containerRef?: RefObject<HTMLElement | null>;
+};
+
+export function ScrollProgressBar({ containerRef }: ScrollProgressBarProps) {
+  const { progress, isScrollable } = useScrollProgress(containerRef);
 
   if (!isScrollable) return null;
 

@@ -3,30 +3,44 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useScrollProgress } from "./useScrollProgress";
 
 describe("useScrollProgress", () => {
-  const originalInnerHeight = window.innerHeight;
-  const originalScrollY = window.scrollY;
   const originalRequestAnimationFrame = window.requestAnimationFrame;
   const originalCancelAnimationFrame = window.cancelAnimationFrame;
 
-  const setScrollableDimensions = (scrollHeight: number, innerHeight: number) => {
-    Object.defineProperty(document.documentElement, "scrollHeight", {
+  let container: HTMLDivElement;
+  let containerRef: { current: HTMLDivElement };
+
+  const setContainerDimensions = (
+    scrollHeight: number,
+    clientHeight: number,
+    scrollTop: number
+  ) => {
+    Object.defineProperty(container, "scrollHeight", {
       configurable: true,
       value: scrollHeight,
     });
-    Object.defineProperty(window, "innerHeight", {
+    Object.defineProperty(container, "clientHeight", {
       configurable: true,
-      value: innerHeight,
+      value: clientHeight,
     });
-  };
-
-  const setScrollY = (value: number) => {
-    Object.defineProperty(window, "scrollY", {
+    Object.defineProperty(container, "scrollTop", {
       configurable: true,
-      value,
+      value: scrollTop,
     });
   };
 
   beforeEach(() => {
+    // Mock ResizeObserver (not available in jsdom)
+    globalThis.ResizeObserver = class {
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+      constructor() {}
+    } as any;
+
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    containerRef = { current: container };
+
     let rafQueue: FrameRequestCallback[] = [];
 
     window.requestAnimationFrame = vi.fn((cb: FrameRequestCallback) => {
@@ -44,28 +58,20 @@ describe("useScrollProgress", () => {
       pending.forEach((callback) => callback(performance.now()));
     });
 
-    setScrollableDimensions(600, 600);
-    setScrollY(0);
+    setContainerDimensions(600, 600, 0);
   });
 
   afterEach(() => {
-    Object.defineProperty(window, "innerHeight", {
-      configurable: true,
-      value: originalInnerHeight,
-    });
-    Object.defineProperty(window, "scrollY", {
-      configurable: true,
-      value: originalScrollY,
-    });
+    document.body.removeChild(container);
     window.requestAnimationFrame = originalRequestAnimationFrame;
     window.cancelAnimationFrame = originalCancelAnimationFrame;
     vi.unstubAllGlobals();
   });
 
-  it("returns not scrollable when content fits viewport", () => {
-    setScrollableDimensions(600, 600);
+  it("returns not scrollable when content fits container", () => {
+    setContainerDimensions(600, 600, 0);
 
-    const { result } = renderHook(() => useScrollProgress());
+    const { result } = renderHook(() => useScrollProgress(containerRef));
 
     act(() => {
       (globalThis as any).flushRaf();
@@ -76,10 +82,9 @@ describe("useScrollProgress", () => {
   });
 
   it("calculates progress based on scroll position", () => {
-    setScrollableDimensions(1400, 700);
-    setScrollY(350);
+    setContainerDimensions(1400, 700, 350);
 
-    const { result } = renderHook(() => useScrollProgress());
+    const { result } = renderHook(() => useScrollProgress(containerRef));
 
     act(() => {
       (globalThis as any).flushRaf();
@@ -90,9 +95,9 @@ describe("useScrollProgress", () => {
   });
 
   it("throttles scroll updates with requestAnimationFrame", () => {
-    setScrollableDimensions(2000, 1000);
+    setContainerDimensions(2000, 1000, 0);
 
-    const { result } = renderHook(() => useScrollProgress());
+    const { result } = renderHook(() => useScrollProgress(containerRef));
 
     act(() => {
       (globalThis as any).flushRaf();
@@ -101,12 +106,12 @@ describe("useScrollProgress", () => {
     expect(result.current.progress).toBe(0);
 
     act(() => {
-      setScrollY(250);
-      window.dispatchEvent(new Event("scroll"));
-      setScrollY(500);
-      window.dispatchEvent(new Event("scroll"));
-      setScrollY(750);
-      window.dispatchEvent(new Event("scroll"));
+      setContainerDimensions(2000, 1000, 250);
+      container.dispatchEvent(new Event("scroll"));
+      setContainerDimensions(2000, 1000, 500);
+      container.dispatchEvent(new Event("scroll"));
+      setContainerDimensions(2000, 1000, 750);
+      container.dispatchEvent(new Event("scroll"));
     });
 
     expect(window.requestAnimationFrame).toHaveBeenCalledTimes(2);
@@ -116,5 +121,16 @@ describe("useScrollProgress", () => {
     });
 
     expect(result.current.progress).toBe(75);
+  });
+
+  it("returns defaults when no containerRef provided", () => {
+    const { result } = renderHook(() => useScrollProgress());
+
+    act(() => {
+      (globalThis as any).flushRaf();
+    });
+
+    expect(result.current.isScrollable).toBe(false);
+    expect(result.current.progress).toBe(0);
   });
 });
