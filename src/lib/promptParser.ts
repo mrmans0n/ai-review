@@ -8,26 +8,63 @@ export type ParsedCommentLine = {
   text: string;
   deleted: boolean;
 };
-export type ParsedLine = ParsedTextLine | ParsedCommentLine;
+export type ParsedCodeBlock = {
+  type: "codeblock";
+  language: string;
+  content: string;
+};
+export type ParsedLine = ParsedTextLine | ParsedCommentLine | ParsedCodeBlock;
 
 const COMMENT_RE = /^- `(.+?):(\d+)(?:-(\d+))?( \(deleted\))?` — (.+)$/;
+const CODE_FENCE_RE = /^```(\w*)$/;
 
 export function parsePromptLines(prompt: string): ParsedLine[] {
-  return prompt.split("\n").map((line) => {
-    const match = line.match(COMMENT_RE);
-    if (!match) {
-      return { type: "text", content: line };
+  const lines = prompt.split("\n");
+  const result: ParsedLine[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    // Check comments first — they're always single lines and should not
+    // be mistaken for code fences even if they contain backticks
+    const commentMatch = lines[i].match(COMMENT_RE);
+    if (commentMatch) {
+      const fullPath = commentMatch[1];
+      const parts = fullPath.split("/");
+      result.push({
+        type: "comment",
+        fullPath,
+        fileName: parts[parts.length - 1],
+        startLine: parseInt(commentMatch[2], 10),
+        endLine: commentMatch[3] ? parseInt(commentMatch[3], 10) : null,
+        deleted: !!commentMatch[4],
+        text: commentMatch[5],
+      });
+      i++;
+      continue;
     }
-    const fullPath = match[1];
-    const parts = fullPath.split("/");
-    return {
-      type: "comment",
-      fullPath,
-      fileName: parts[parts.length - 1],
-      startLine: parseInt(match[2], 10),
-      endLine: match[3] ? parseInt(match[3], 10) : null,
-      deleted: !!match[4],
-      text: match[5],
-    };
-  });
+
+    const fenceMatch = lines[i].match(CODE_FENCE_RE);
+    if (fenceMatch) {
+      const language = fenceMatch[1] || "";
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].match(/^```$/)) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      // Skip closing fence
+      if (i < lines.length) i++;
+      result.push({
+        type: "codeblock",
+        language,
+        content: codeLines.join("\n"),
+      });
+      continue;
+    }
+
+    result.push({ type: "text", content: lines[i] });
+    i++;
+  }
+
+  return result;
 }

@@ -106,6 +106,17 @@ export function PromptPreview({ prompt, onClose, waitMode }: PromptPreviewProps)
                   <p key={i} className="text-gray-300 text-sm">
                     {line.content || "\u00A0"}
                   </p>
+                ) : line.type === "codeblock" ? (
+                  <div key={i} className="my-2 rounded overflow-hidden border border-gray-700">
+                    {line.language && (
+                      <div className="px-3 py-1 bg-gray-700 text-gray-400 text-xs font-mono">
+                        {line.language}
+                      </div>
+                    )}
+                    <pre className="p-3 bg-gray-950 text-gray-200 text-sm font-mono overflow-x-auto">
+                      <code>{line.content}</code>
+                    </pre>
+                  </div>
                 ) : (
                   <div key={i} className="flex items-baseline gap-2 text-sm">
                     <span className="inline-flex items-center gap-1 bg-gray-600 text-gray-300 rounded px-2 py-0.5 text-xs font-mono flex-shrink-0">
