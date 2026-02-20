@@ -54,13 +54,16 @@ export function useScrollProgress(
     window.addEventListener("resize", requestUpdate);
 
     // Also observe content size changes (e.g., loading more files)
-    const resizeObserver = new ResizeObserver(requestUpdate);
-    resizeObserver.observe(el);
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(requestUpdate)
+        : null;
+    resizeObserver?.observe(el);
 
     return () => {
       el.removeEventListener("scroll", requestUpdate);
       window.removeEventListener("resize", requestUpdate);
-      resizeObserver.disconnect();
+      resizeObserver?.disconnect();
       if (rafId !== null) {
         window.cancelAnimationFrame(rafId);
       }
