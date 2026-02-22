@@ -193,22 +193,27 @@ export function CommitSelector({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-32 z-50" onClick={onClose}>
-      <div className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-3xl overflow-hidden border border-gray-700" onClick={(e) => e.stopPropagation()}>
-        <div className="p-4 border-b border-gray-700 space-y-3">
-          <div className="inline-flex bg-gray-900 rounded p-1">
+    <div className="fixed inset-0 bg-ctp-base/60 backdrop-blur-sm flex items-start justify-center pt-32 z-50" onClick={onClose}>
+      <div className="bg-ctp-mantle border border-ctp-surface1 rounded-md shadow-2xl w-full max-w-3xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-ctp-surface1">
+          <div className="w-0.5 h-5 bg-ctp-peach rounded-full flex-shrink-0" />
+          <h2 className="text-base font-semibold text-ctp-text">Select Commit</h2>
+        </div>
+
+        <div className="p-4 border-b border-ctp-surface1 space-y-3">
+          <div className="inline-flex bg-ctp-base border border-ctp-surface1 rounded-sm p-1">
             <button
               onClick={() => setTab("commits")}
-              className={`px-3 py-1.5 rounded text-sm ${
-                tab === "commits" ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-700"
+              className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
+                tab === "commits" ? "bg-ctp-mauve text-ctp-base" : "text-ctp-subtext hover:bg-ctp-surface0"
               }`}
             >
               Commits
             </button>
             <button
               onClick={() => setTab("branches")}
-              className={`px-3 py-1.5 rounded text-sm ${
-                tab === "branches" ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-700"
+              className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
+                tab === "branches" ? "bg-ctp-mauve text-ctp-base" : "text-ctp-subtext hover:bg-ctp-surface0"
               }`}
             >
               Branches
@@ -216,8 +221,8 @@ export function CommitSelector({
             {hasGgStacks && (
               <button
                 onClick={() => setTab("stacks")}
-                className={`px-3 py-1.5 rounded text-sm ${
-                  tab === "stacks" ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-700"
+                className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
+                  tab === "stacks" ? "bg-ctp-mauve text-ctp-base" : "text-ctp-subtext hover:bg-ctp-surface0"
                 }`}
               >
                 Stacks
@@ -225,8 +230,8 @@ export function CommitSelector({
             )}
             <button
               onClick={() => setTab("ref")}
-              className={`px-3 py-1.5 rounded text-sm ${
-                tab === "ref" ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-700"
+              className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
+                tab === "ref" ? "bg-ctp-mauve text-ctp-base" : "text-ctp-subtext hover:bg-ctp-surface0"
               }`}
             >
               Ref
@@ -248,17 +253,17 @@ export function CommitSelector({
                       ? "Search stacks... (name, base, username)"
                       : "Search entries... (title, hash, gg-id)"
               }
-              className="w-full bg-gray-900 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-ctp-base border border-ctp-surface1 rounded-sm text-ctp-text text-sm px-3 py-2 placeholder:text-ctp-overlay0 focus:border-ctp-mauve focus:outline-none"
             />
           )}
         </div>
 
         <div className="max-h-96 overflow-y-auto">
           {loading ? (
-            <div className="p-8 text-center text-gray-400">Loading {tab}...</div>
+            <div className="p-8 text-center text-ctp-subtext">Loading {tab}...</div>
           ) : tab === "commits" ? (
             filteredCommits.length === 0 ? (
-              <div className="p-8 text-center text-gray-400">
+              <div className="p-8 text-center text-ctp-subtext">
                 {searchQuery ? "No matching commits" : "No commits found"}
               </div>
             ) : (
@@ -269,21 +274,19 @@ export function CommitSelector({
                     key={commit.hash}
                     ref={isSelected ? selectedRef : null}
                     onClick={() => onSelectCommit(commit)}
-                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-gray-700 ${
-                      isSelected ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-700"
+                    className={`cursor-pointer transition-colors border-b border-ctp-surface1/50 last:border-0 ${
+                      isSelected
+                        ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
+                        : "px-4 py-3 hover:bg-ctp-surface0"
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div
-                        className={`font-mono text-xs px-2 py-1 rounded ${
-                          isSelected ? "bg-blue-700 text-blue-100" : "bg-gray-900 text-yellow-400"
-                        }`}
-                      >
+                      <div className="font-mono text-xs px-2 py-1 rounded-sm bg-ctp-base text-ctp-overlay0 border border-ctp-surface1">
                         {commit.short_hash}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm truncate">{commit.message}</div>
-                        <div className={`flex items-center gap-3 mt-1 text-xs ${isSelected ? "text-blue-100" : "text-gray-500"}`}>
+                        <div className="font-semibold text-sm truncate text-ctp-text">{commit.message}</div>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-ctp-overlay0">
                           <span>{commit.author}</span>
                           <span>•</span>
                           <span>{commit.date}</span>
@@ -294,9 +297,7 @@ export function CommitSelector({
                                 {commit.refs.split(", ").map((ref, i) => (
                                   <span
                                     key={i}
-                                    className={`px-1.5 py-0.5 rounded text-xs ${
-                                      isSelected ? "bg-blue-700 text-blue-100" : "bg-gray-700 text-gray-300"
-                                    }`}
+                                    className="px-1.5 py-0.5 rounded-sm text-xs bg-ctp-surface0 text-ctp-subtext border border-ctp-surface1"
                                   >
                                     {ref}
                                   </span>
@@ -313,7 +314,7 @@ export function CommitSelector({
             )
           ) : tab === "branches" ? (
             filteredBranches.length === 0 ? (
-              <div className="p-8 text-center text-gray-400">
+              <div className="p-8 text-center text-ctp-subtext">
                 {searchQuery ? "No matching branches" : "No branches found"}
               </div>
             ) : (
@@ -324,24 +325,22 @@ export function CommitSelector({
                     key={branch.name}
                     ref={isSelected ? selectedRef : null}
                     onClick={() => onSelectBranch(branch)}
-                    className={`px-4 py-3 cursor-pointer transition-colors border-b border-gray-700 ${
-                      isSelected ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-700"
+                    className={`cursor-pointer transition-colors border-b border-ctp-surface1/50 last:border-0 ${
+                      isSelected
+                        ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
+                        : "px-4 py-3 hover:bg-ctp-surface0"
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div
-                        className={`font-mono text-xs px-2 py-1 rounded ${
-                          isSelected ? "bg-blue-700 text-blue-100" : "bg-gray-900 text-purple-400"
-                        }`}
-                      >
+                      <div className="font-mono text-xs px-2 py-1 rounded-sm bg-ctp-base text-ctp-overlay0 border border-ctp-surface1">
                         {branch.short_hash}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm truncate">{branch.name}</div>
-                        <div className={`text-xs mt-1 ${isSelected ? "text-blue-100" : "text-gray-500"}`}>
+                        <div className="font-semibold text-sm truncate text-ctp-text">{branch.name}</div>
+                        <div className="text-xs mt-1 text-ctp-overlay0">
                           {branch.subject}
                         </div>
-                        <div className={`text-xs mt-1 ${isSelected ? "text-blue-100" : "text-gray-500"}`}>
+                        <div className="text-xs mt-1 text-ctp-overlay0">
                           {branch.author} • {branch.date}
                         </div>
                       </div>
@@ -354,7 +353,7 @@ export function CommitSelector({
             stackView === "list" ? (
             <>
               {filteredStacks.length === 0 ? (
-                <div className="p-8 text-center text-gray-400">
+                <div className="p-8 text-center text-ctp-subtext">
                   {searchQuery ? "No matching stacks" : "No stacks found"}
                 </div>
               ) : (
@@ -366,32 +365,26 @@ export function CommitSelector({
                       key={stackInfo.name}
                       ref={isSelected ? selectedRef : null}
                       onClick={() => onSelectStack(stackInfo)}
-                      className={`px-4 py-3 cursor-pointer transition-colors border-b border-gray-700 ${
-                        isSelected ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-700"
+                      className={`cursor-pointer transition-colors border-b border-ctp-surface1/50 last:border-0 ${
+                        isSelected
+                          ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
+                          : "px-4 py-3 hover:bg-ctp-surface0"
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <div
-                          className={`font-mono text-xs px-2 py-1 rounded ${
-                            isSelected ? "bg-blue-700 text-blue-100" : "bg-gray-900 text-green-400"
-                          }`}
-                        >
+                        <div className="font-mono text-xs px-2 py-1 rounded-sm bg-ctp-base text-ctp-overlay0 border border-ctp-surface1">
                           {stackInfo.commit_count}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm">{stackInfo.name}</span>
+                            <span className="font-semibold text-sm text-ctp-text">{stackInfo.name}</span>
                             {stackInfo.is_current && (
-                              <span
-                                className={`text-xs px-1.5 py-0.5 rounded ${
-                                  isSelected ? "bg-blue-700 text-blue-100" : "bg-green-700 text-green-100"
-                                }`}
-                              >
+                              <span className="text-xs px-1.5 py-0.5 rounded-sm bg-ctp-teal/20 text-ctp-teal border border-ctp-teal/30">
                                 current
                               </span>
                             )}
                           </div>
-                          <div className={`text-xs mt-1 ${isSelected ? "text-blue-100" : "text-gray-500"}`}>
+                          <div className="text-xs mt-1 text-ctp-overlay0">
                             {stackInfo.username}/{stackInfo.name} • base: {stackInfo.base}
                           </div>
                         </div>
@@ -404,10 +397,10 @@ export function CommitSelector({
           ) : (
             <>
               {selectedStack && (
-                <div className="bg-gray-900 border-b border-gray-700 p-3 flex items-center gap-3">
+                <div className="bg-ctp-base border-b border-ctp-surface1 p-3 flex items-center gap-3">
                   <button
                     onClick={onBackToStacks}
-                    className="text-gray-300 hover:text-white text-sm px-3 py-1.5 rounded hover:bg-gray-700"
+                    className="text-ctp-subtext hover:text-ctp-text text-sm px-3 py-1.5 rounded-sm hover:bg-ctp-surface0 transition-colors"
                   >
                     ← Back to stacks
                   </button>
@@ -416,14 +409,14 @@ export function CommitSelector({
                       const stack = ggStacks.find((s) => s.name === selectedStack);
                       if (stack) onSelectStackDiff(stack);
                     }}
-                    className="text-gray-300 hover:text-white text-sm px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-700"
+                    className="text-ctp-base text-sm px-3 py-1.5 rounded-sm bg-ctp-mauve hover:opacity-90 transition-opacity"
                   >
                     View full stack diff
                   </button>
                 </div>
               )}
               {filteredStacks.length === 0 ? (
-                <div className="p-8 text-center text-gray-400">
+                <div className="p-8 text-center text-ctp-subtext">
                   {searchQuery ? "No matching entries" : "No entries found"}
                 </div>
               ) : (
@@ -435,32 +428,26 @@ export function CommitSelector({
                       key={stackEntry.hash}
                       ref={isSelected ? selectedRef : null}
                       onClick={() => onSelectStackEntry(stackEntry)}
-                      className={`px-4 py-3 cursor-pointer transition-colors border-b border-gray-700 ${
-                        isSelected ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-700"
+                      className={`cursor-pointer transition-colors border-b border-ctp-surface1/50 last:border-0 ${
+                        isSelected
+                          ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
+                          : "px-4 py-3 hover:bg-ctp-surface0"
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <div
-                          className={`font-mono text-xs px-2 py-1 rounded ${
-                            isSelected ? "bg-blue-700 text-blue-100" : "bg-gray-900 text-yellow-400"
-                          }`}
-                        >
+                        <div className="font-mono text-xs px-2 py-1 rounded-sm bg-ctp-base text-ctp-overlay0 border border-ctp-surface1">
                           {stackEntry.short_hash}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm truncate">{stackEntry.title}</span>
+                            <span className="font-semibold text-sm truncate text-ctp-text">{stackEntry.title}</span>
                             {stackEntry.mr_number && (
-                              <span
-                                className={`text-xs px-1.5 py-0.5 rounded font-mono ${
-                                  isSelected ? "bg-blue-700 text-blue-100" : "bg-purple-700 text-purple-100"
-                                }`}
-                              >
+                              <span className="text-xs px-1.5 py-0.5 rounded-sm font-mono bg-ctp-mauve/20 text-ctp-mauve border border-ctp-mauve/30">
                                 !{stackEntry.mr_number}
                               </span>
                             )}
                           </div>
-                          <div className={`text-xs mt-1 ${isSelected ? "text-blue-100" : "text-gray-500"}`}>
+                          <div className="text-xs mt-1 text-ctp-overlay0">
                             Position {stackEntry.position + 1}
                             {stackEntry.gg_id && ` • GG-ID: ${stackEntry.gg_id}`}
                           </div>
@@ -474,7 +461,7 @@ export function CommitSelector({
           )
           ) : tab === "ref" ? (
             <div className="p-6">
-              <div className="text-gray-300 text-sm mb-4">
+              <div className="text-ctp-subtext text-sm mb-4">
                 Enter a git ref to compare against (e.g., HEAD~1, main~3, abc1234, feature-branch)
               </div>
               <div className="flex gap-2">
@@ -484,15 +471,15 @@ export function CommitSelector({
                   value={refValue}
                   onChange={(e) => setRefValue(e.target.value)}
                   placeholder="HEAD~1"
-                  className="flex-1 bg-gray-900 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                  className="flex-1 bg-ctp-base border border-ctp-surface1 rounded-sm text-ctp-text text-sm px-3 py-2 placeholder:text-ctp-overlay0 focus:border-ctp-mauve focus:outline-none font-mono"
                 />
                 <button
                   onClick={() => refValue.trim() && onSelectRef(refValue.trim())}
                   disabled={!refValue.trim()}
-                  className={`px-4 py-2 rounded transition-colors ${
+                  className={`px-4 py-2 rounded-sm text-sm transition-colors ${
                     refValue.trim()
-                      ? "bg-blue-600 text-white hover:bg-blue-700"
-                      : "bg-gray-700 text-gray-500 cursor-not-allowed"
+                      ? "bg-ctp-mauve text-ctp-base hover:opacity-90"
+                      : "bg-ctp-surface0 text-ctp-overlay0 cursor-not-allowed border border-ctp-surface1"
                   }`}
                 >
                   Compare
@@ -502,7 +489,7 @@ export function CommitSelector({
           ) : null}
         </div>
 
-        <div className="p-3 border-t border-gray-700 bg-gray-900 text-xs text-gray-400">
+        <div className="p-3 border-t border-ctp-surface1 bg-ctp-base text-xs text-ctp-overlay0">
           {tab === "ref" ? (
             <>
               <span className="mr-4">Enter Compare</span>

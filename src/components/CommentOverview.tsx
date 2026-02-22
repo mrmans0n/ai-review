@@ -27,22 +27,23 @@ export function CommentOverview({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-ctp-base/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] flex flex-col"
+        className="bg-ctp-mantle border border-ctp-surface1 rounded-md shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-ctp-surface1">
+          <div className="w-0.5 h-5 bg-ctp-peach rounded-full flex-shrink-0" />
+          <h2 className="text-base font-semibold text-ctp-text">
             Review Overview — {comments.length} comment
             {comments.length !== 1 ? "s" : ""} across{" "}
             {commentsByFile.size} file{commentsByFile.size !== 1 ? "s" : ""}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="ml-auto text-ctp-subtext hover:text-ctp-text transition-colors"
             aria-label="Close"
           >
             <svg
@@ -70,19 +71,19 @@ export function CommentOverview({
 
             return (
               <div key={file}>
-                <h3 className="text-sm font-mono text-blue-400 mb-3 pb-2 border-b border-gray-700">
+                <h3 className="text-sm font-mono text-ctp-mauve mb-3 pb-2 border-b border-ctp-surface1">
                   {file}
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {sortedComments.map((comment) => (
                     <button
                       key={comment.id}
                       onClick={() => onGoToComment(comment)}
                       className="w-full text-left group"
                     >
-                      <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-750 hover:bg-gray-700 transition-colors border border-gray-700 hover:border-gray-600">
+                      <div className="px-4 py-3 border-b border-ctp-surface1/50 last:border-0 hover:bg-ctp-surface0 cursor-pointer transition-colors rounded-sm flex items-center gap-3 border border-ctp-surface1">
                         <div className="flex-shrink-0 flex items-center gap-1.5">
-                          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-mono bg-gray-600 text-gray-300">
+                          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-sm text-xs font-mono bg-ctp-surface0 text-ctp-subtext border border-ctp-surface1">
                             {comment.startLine === comment.endLine
                               ? `L${comment.startLine}`
                               : `L${comment.startLine}-${comment.endLine}`}
@@ -91,10 +92,10 @@ export function CommentOverview({
                             <span className="text-orange-400 text-xs">deleted</span>
                           )}
                         </div>
-                        <p className="text-gray-200 text-sm leading-relaxed flex-1">
+                        <p className="text-ctp-text text-sm leading-relaxed flex-1">
                           {comment.text}
                         </p>
-                        <span className="flex-shrink-0 text-gray-500 group-hover:text-gray-300 text-xs transition-colors">
+                        <span className="flex-shrink-0 text-ctp-overlay0 group-hover:text-ctp-subtext text-xs transition-colors">
                           Go →
                         </span>
                       </div>
@@ -106,10 +107,10 @@ export function CommentOverview({
           })}
         </div>
 
-        <div className="px-6 py-4 border-t border-gray-700 flex justify-end">
+        <div className="px-6 py-4 border-t border-ctp-surface1 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
+            className="text-ctp-subtext hover:text-ctp-text bg-ctp-surface0 rounded-sm px-4 py-2 text-sm border border-ctp-surface1 transition-colors"
           >
             Close
           </button>

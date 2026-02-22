@@ -40,21 +40,22 @@ export function PromptPreview({ prompt, onClose, waitMode }: PromptPreviewProps)
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-ctp-base/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col"
+        className="bg-ctp-mantle border border-ctp-surface1 rounded-md shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">Generated Prompt</h2>
-          <div className="flex items-center gap-3">
-            <div className="inline-flex bg-gray-900 rounded p-0.5 text-xs">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-ctp-surface1">
+          <div className="w-0.5 h-5 bg-ctp-peach rounded-full flex-shrink-0" />
+          <h2 className="text-base font-semibold text-ctp-text">Generated Prompt</h2>
+          <div className="ml-auto flex items-center gap-3">
+            <div className="inline-flex bg-ctp-base rounded p-0.5 text-xs border border-ctp-surface1">
               <button
                 onClick={() => setViewMode("rich")}
                 className={`px-2.5 py-1 rounded transition-colors ${
-                  viewMode === "rich" ? "bg-gray-700 text-white" : "text-gray-400 hover:text-gray-200"
+                  viewMode === "rich" ? "bg-ctp-surface0 text-ctp-text" : "text-ctp-subtext hover:text-ctp-text"
                 }`}
               >
                 Formatted
@@ -62,7 +63,7 @@ export function PromptPreview({ prompt, onClose, waitMode }: PromptPreviewProps)
               <button
                 onClick={() => setViewMode("raw")}
                 className={`px-2.5 py-1 rounded transition-colors ${
-                  viewMode === "raw" ? "bg-gray-700 text-white" : "text-gray-400 hover:text-gray-200"
+                  viewMode === "raw" ? "bg-ctp-surface0 text-ctp-text" : "text-ctp-subtext hover:text-ctp-text"
                 }`}
               >
                 Raw
@@ -70,7 +71,7 @@ export function PromptPreview({ prompt, onClose, waitMode }: PromptPreviewProps)
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-ctp-subtext hover:text-ctp-text transition-colors"
               aria-label="Close"
             >
               <svg
@@ -96,39 +97,39 @@ export function PromptPreview({ prompt, onClose, waitMode }: PromptPreviewProps)
             <textarea
               value={editablePrompt}
               onChange={(e) => setEditablePrompt(e.target.value)}
-              className="w-full h-full min-h-[60vh] p-4 bg-gray-900 text-gray-100 font-mono text-sm rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full h-full min-h-[60vh] bg-ctp-base border border-ctp-surface1 rounded-sm text-ctp-text font-mono text-sm p-4 resize-none focus:outline-none focus:border-ctp-mauve"
               autoFocus
             />
           ) : (
-            <div className="min-h-[60vh] p-4 bg-gray-900 rounded space-y-1">
+            <div className="min-h-[60vh] bg-ctp-base border border-ctp-surface1 rounded-sm text-ctp-text font-mono text-sm p-4 space-y-1">
               {parsePromptLines(editablePrompt).map((line, i) =>
                 line.type === "text" ? (
-                  <p key={i} className="text-gray-300 text-sm">
+                  <p key={i} className="text-ctp-subtext text-sm">
                     {line.content || "\u00A0"}
                   </p>
                 ) : line.type === "codeblock" ? (
-                  <div key={i} className="my-2 rounded overflow-hidden border border-gray-700">
+                  <div key={i} className="my-2 rounded-sm overflow-hidden border border-ctp-surface1">
                     {line.language && (
-                      <div className="px-3 py-1 bg-gray-700 text-gray-400 text-xs font-mono">
+                      <div className="px-3 py-1 bg-ctp-surface0 text-ctp-subtext text-xs font-mono">
                         {line.language}
                       </div>
                     )}
-                    <pre className="p-3 bg-gray-950 text-gray-200 text-sm font-mono overflow-x-auto">
+                    <pre className="p-3 bg-ctp-base text-ctp-text text-sm font-mono overflow-x-auto">
                       <code>{line.content}</code>
                     </pre>
                   </div>
                 ) : (
                   <div key={i} className="flex items-baseline gap-2 text-sm">
-                    <span className="inline-flex items-center gap-1 bg-gray-600 text-gray-300 rounded px-2 py-0.5 text-xs font-mono flex-shrink-0">
+                    <span className="inline-flex items-center gap-1 bg-ctp-surface0 text-ctp-subtext rounded-sm px-2 py-0.5 text-xs font-mono flex-shrink-0">
                       {line.fileName}
-                      <span className="text-gray-400">
+                      <span className="text-ctp-overlay0">
                         ({line.endLine ? `L${line.startLine}-${line.endLine}` : `L${line.startLine}`})
                       </span>
                     </span>
                     {line.deleted && (
                       <span className="text-orange-400 text-xs">deleted</span>
                     )}
-                    <span className="text-gray-200">{line.text}</span>
+                    <span className="text-ctp-text">{line.text}</span>
                   </div>
                 )
               )}
@@ -136,23 +137,23 @@ export function PromptPreview({ prompt, onClose, waitMode }: PromptPreviewProps)
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-gray-700 flex items-center justify-end gap-3">
+        <div className="px-6 py-4 border-t border-ctp-surface1 flex items-center justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
+            className="text-ctp-subtext hover:text-ctp-text transition-colors px-4 py-2 text-sm"
           >
             Close
           </button>
           <button
             onClick={handleCopy}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-ctp-mauve text-ctp-base rounded-sm text-sm hover:opacity-90 transition-opacity"
           >
             {copied ? "Copied!" : "Copy to Clipboard"}
           </button>
           {waitMode && (
             <button
               onClick={handleSubmitAndExit}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors font-semibold"
+              className="px-4 py-2 bg-ctp-green text-ctp-base rounded-sm text-sm hover:opacity-90 transition-opacity font-semibold"
             >
               Submit & Exit
             </button>
