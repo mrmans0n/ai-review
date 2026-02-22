@@ -1,60 +1,68 @@
 /* react-diff-view default styles */
 @import 'react-diff-view/style/index.css';
 
-/* Override react-diff-view CSS variables for dark theme */
+/* ─── react-diff-view CSS variable overrides ─── */
 :root {
-  --diff-background-color: #1f2937;
-  --diff-text-color: #f3f4f6;
-  --diff-selection-background-color: #3b82f6;
-  --diff-gutter-insert-background-color: rgba(22, 101, 52, 0.3);
-  --diff-gutter-delete-background-color: rgba(153, 27, 27, 0.3);
-  --diff-code-insert-background-color: rgba(22, 101, 52, 0.25);
-  --diff-code-delete-background-color: rgba(153, 27, 27, 0.25);
-  --diff-code-insert-edit-background-color: rgba(34, 197, 94, 0.2);
-  --diff-code-delete-edit-background-color: rgba(239, 68, 68, 0.2);
-  --diff-gutter-selected-background-color: rgba(59, 130, 246, 0.2);
-  --diff-code-selected-background-color: rgba(59, 130, 246, 0.15);
+  --diff-background-color:             var(--diff-bg);
+  --diff-text-color:                   var(--diff-text);
+  --diff-selection-background-color:   var(--diff-selection-bg);
+  --diff-gutter-insert-background-color: var(--diff-insert-gutter);
+  --diff-gutter-delete-background-color: var(--diff-delete-gutter);
+  --diff-code-insert-background-color:   var(--diff-insert-bg);
+  --diff-code-delete-background-color:   var(--diff-delete-bg);
+  --diff-code-insert-edit-background-color: var(--diff-insert-edit-bg);
+  --diff-code-delete-edit-background-color: var(--diff-delete-edit-bg);
+  --diff-gutter-selected-background-color: var(--diff-gutter-selected);
+  --diff-code-selected-background-color:   var(--diff-selection-bg);
 }
 
-/* Custom dark theme overrides */
+/* ─── Diff viewer base ─── */
 .diff-view {
-  @apply bg-gray-800 text-gray-100;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  background-color: var(--diff-bg);
+  color: var(--diff-text);
+  font-family: 'Geist Mono', ui-monospace, 'Fira Code', monospace;
   font-size: 13px;
   line-height: 1.5;
 }
 
+/* ─── Gutter ─── */
 .diff-gutter {
-  @apply bg-gray-900 text-gray-500;
-  border-right: 1px solid #374151;
+  background-color: var(--diff-gutter-bg);
+  color: var(--ctp-overlay0);
+  border-right: 1px solid var(--ctp-surface1);
   min-width: 50px;
   padding: 0 8px;
   text-align: right;
   user-select: none;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
+  position: relative;
+  overflow: visible;
+  transition: background-color 0.15s, color 0.15s;
 }
 
 .diff-gutter:hover {
-  @apply bg-blue-900/30 text-blue-400;
+  background-color: color-mix(in srgb, var(--ctp-peach) 12%, var(--diff-gutter-bg));
+  color: var(--ctp-peach);
 }
 
 .diff-gutter-col {
-  @apply bg-gray-900;
+  background-color: var(--diff-gutter-bg);
 }
 
+/* ─── Lines ─── */
 .diff-line {
-  @apply bg-gray-800;
+  background-color: var(--diff-bg);
 }
 
 .diff-line-insert {
-  @apply bg-green-900/30;
+  background-color: var(--diff-insert-bg);
 }
 
 .diff-line-delete {
-  @apply bg-red-900/30;
+  background-color: var(--diff-delete-bg);
 }
 
+/* ─── Code cells ─── */
 .diff-code {
   padding-left: 12px;
   white-space: pre-wrap;
@@ -62,22 +70,33 @@
 }
 
 .diff-code-insert {
-  @apply bg-green-900/40;
+  background-color: var(--diff-insert-bg);
 }
 
 .diff-code-delete {
-  @apply bg-red-900/40;
+  background-color: var(--diff-delete-bg);
 }
 
+/* ─── Hunk header ─── */
 .diff-hunk-header {
-  @apply bg-gray-700 text-gray-300;
+  background-color: var(--ctp-surface0);
+  color: var(--ctp-subtext);
   padding: 4px 12px;
   font-weight: 600;
-  border-top: 1px solid #4b5563;
-  border-bottom: 1px solid #4b5563;
+  border-top: 1px solid var(--ctp-surface1);
+  border-bottom: 1px solid var(--ctp-surface1);
 }
 
-/* Split view specific */
+/* ─── Selection ─── */
+.diff td.diff-gutter-selected {
+  background-color: var(--diff-gutter-selected) !important;
+}
+
+.diff td.diff-code-selected {
+  background-color: var(--diff-selection-bg) !important;
+}
+
+/* ─── Split view ─── */
 .diff-view-split .diff-gutter {
   min-width: 45px;
 }
@@ -91,7 +110,6 @@
   width: 50%;
 }
 
-/* Split view layout */
 .diff-split {
   table-layout: fixed;
 }
@@ -106,29 +124,11 @@ table.diff-split[data-selecting="new"] td:nth-child(-n+2) {
   -webkit-user-select: none !important;
 }
 
-/* Highlight lines when hovering or selecting a range */
-.diff td.diff-gutter-selected {
-  background-color: rgba(59, 130, 246, 0.28) !important;
-}
-
-.diff td.diff-code-selected {
-  background-color: rgba(59, 130, 246, 0.2) !important;
-}
-
-/* Inline comment/form widget rows */
+/* ─── Widget rows ─── */
 .diff-widget {
   background-color: transparent;
 }
 
-/* Gutter needs relative positioning for the comment button */
-.diff-gutter {
-  position: relative;
-  overflow: visible;
-}
-
-/* Split view: constrain comment widgets to their respective side.
-   In colspan=2 cells (insert/delete lines), the td already covers one side — fill it.
-   In colspan=4 cells (normal lines), we need to position within the full-width cell. */
 .diff-widget-content .split-widget-old,
 .diff-widget-content .split-widget-new {
   width: 100%;
@@ -143,32 +143,33 @@ td[colspan="4"].diff-widget-content .split-widget-new {
   margin-left: 50%;
 }
 
-/* Expand context decoration rows */
+/* ─── Decoration rows (expand context) ─── */
 .diff-decoration {
   background-color: transparent;
 }
 
 .diff-decoration-gutter {
-  @apply bg-gray-900;
-  border-right: 1px solid #374151;
+  background-color: var(--diff-gutter-bg);
+  border-right: 1px solid var(--ctp-surface1);
 }
 
 .diff-decoration-content {
   background-color: transparent;
 }
 
+/* ─── Search highlights ─── */
 .search-match {
-  background-color: rgba(250, 204, 21, 0.4);
+  background-color: color-mix(in srgb, var(--ctp-yellow) 35%, transparent);
   border-radius: 2px;
 }
 
 .search-match-current {
-  background-color: rgba(251, 146, 60, 0.6);
+  background-color: color-mix(in srgb, var(--ctp-peach) 50%, transparent);
   border-radius: 2px;
-  outline: 1px solid rgba(251, 146, 60, 0.8);
+  outline: 1px solid color-mix(in srgb, var(--ctp-peach) 70%, transparent);
 }
 
 .word-highlight {
-  background-color: rgba(250, 204, 21, 0.4);
+  background-color: color-mix(in srgb, var(--ctp-yellow) 35%, transparent);
   border-radius: 2px;
 }
