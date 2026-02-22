@@ -34,7 +34,7 @@ function renderCommentText(text: string): React.ReactNode {
       highlightedHtml = seg.content;
     }
     return (
-      <pre key={i} className="bg-gray-900 rounded p-2 my-1 overflow-x-auto text-sm">
+      <pre key={i} className="bg-ctp-mantle rounded p-2 my-1 overflow-x-auto text-sm">
         <code
           className="hljs"
           dangerouslySetInnerHTML={{ __html: highlightedHtml }}
@@ -71,7 +71,7 @@ export function CommentWidget({
   };
 
   return (
-    <div className="bg-yellow-900 bg-opacity-30 border-l-4 border-yellow-500 p-3 my-2">
+    <div className="border-l-2 border-ctp-peach bg-ctp-surface0 p-3 text-sm">
       {comments.map((comment) => (
         <div key={comment.id} className="mb-2 last:mb-0">
           {editingId === comment.id ? (
@@ -79,20 +79,20 @@ export function CommentWidget({
               <textarea
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
-                className="w-full bg-gray-800 text-white p-2 rounded text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full bg-ctp-mantle border border-ctp-surface1 rounded-sm text-ctp-text text-sm p-2 placeholder:text-ctp-overlay0 focus:border-ctp-mauve focus:outline-none focus:ring-1 focus:ring-ctp-mauve/30 resize-none"
                 rows={3}
                 autoFocus
               />
               <div className="flex gap-2 mt-2">
                 <button
                   onClick={() => handleSaveEdit(comment.id)}
-                  className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
+                  className="px-3 py-1.5 bg-ctp-mauve text-ctp-base text-sm rounded-sm hover:opacity-90 transition-opacity font-medium"
                 >
                   Save
                 </button>
                 <button
                   onClick={handleCancelEdit}
-                  className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
+                  className="px-3 py-1.5 text-ctp-subtext text-sm rounded-sm hover:text-ctp-text hover:bg-ctp-surface0 transition-colors"
                 >
                   Cancel
                 </button>
@@ -100,10 +100,10 @@ export function CommentWidget({
             </div>
           ) : (
             <div>
-              <div className="text-yellow-100 text-sm mb-1">
+              <div className="text-ctp-text leading-relaxed mb-1">
                 {renderCommentText(comment.text)}
               </div>
-              <div className="flex gap-2 items-center text-xs text-gray-400">
+              <div className="flex gap-2 items-center text-xs text-ctp-subtext">
                 <span>
                   Lines {comment.startLine}
                   {comment.endLine !== comment.startLine && `-${comment.endLine}`}
@@ -111,13 +111,13 @@ export function CommentWidget({
                 <span>•</span>
                 <button
                   onClick={() => handleStartEdit(comment)}
-                  className="text-blue-400 hover:text-blue-300 transition-colors"
+                  className="text-ctp-mauve hover:text-ctp-blue transition-colors text-xs"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => onDelete(comment.id)}
-                  className="text-red-400 hover:text-red-300 transition-colors"
+                  className="text-ctp-subtext hover:text-ctp-red transition-colors text-xs"
                 >
                   Delete
                 </button>
