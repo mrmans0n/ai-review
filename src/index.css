@@ -38,35 +38,35 @@
   --diff-gutter-selected:  rgba(136, 57, 239, 0.22);
 }
 
-/* ─── Catppuccin Mocha (dark mode) ─── */
+/* ─── One Dark (dark mode) ─── */
 [data-theme="dark"] {
-  --ctp-base:     #1e1e2e;
-  --ctp-mantle:   #181825;
-  --ctp-surface0: #313244;
-  --ctp-surface1: #45475a;
-  --ctp-overlay0: #6c7086;
-  --ctp-text:     #cdd6f4;
-  --ctp-subtext:  #a6adc8;
-  --ctp-blue:     #89b4fa;
-  --ctp-mauve:    #cba6f7;
-  --ctp-peach:    #fab387;
-  --ctp-green:    #a6e3a1;
-  --ctp-red:      #f38ba8;
-  --ctp-yellow:   #f9e2af;
-  --ctp-teal:     #94e2d5;
+  --ctp-base:     #282c34;
+  --ctp-mantle:   #21252b;
+  --ctp-surface0: #2c313c;
+  --ctp-surface1: #3e4451;
+  --ctp-overlay0: #5c6370;
+  --ctp-text:     #abb2bf;
+  --ctp-subtext:  #828997;
+  --ctp-blue:     #61afef;
+  --ctp-mauve:    #c678dd;
+  --ctp-peach:    #d19a66;
+  --ctp-green:    #98c379;
+  --ctp-red:      #e06c75;
+  --ctp-yellow:   #e5c07b;
+  --ctp-teal:     #56b6c2;
 
-  /* Diff semantic tokens — Mocha values */
+  /* Diff semantic tokens — One Dark values */
   --diff-bg:               var(--ctp-base);
   --diff-gutter-bg:        var(--ctp-mantle);
   --diff-text:             var(--ctp-text);
-  --diff-insert-bg:        rgba(166, 227, 161, 0.20);
-  --diff-insert-gutter:    rgba(166, 227, 161, 0.32);
-  --diff-delete-bg:        rgba(243, 139, 168, 0.18);
-  --diff-delete-gutter:    rgba(243, 139, 168, 0.30);
-  --diff-insert-edit-bg:   rgba(166, 227, 161, 0.32);
-  --diff-delete-edit-bg:   rgba(243, 139, 168, 0.28);
-  --diff-selection-bg:     rgba(203, 166, 247, 0.28);
-  --diff-gutter-selected:  rgba(203, 166, 247, 0.22);
+  --diff-insert-bg:        rgba(152, 195, 121, 0.20);
+  --diff-insert-gutter:    rgba(152, 195, 121, 0.32);
+  --diff-delete-bg:        rgba(224, 108, 117, 0.18);
+  --diff-delete-gutter:    rgba(224, 108, 117, 0.30);
+  --diff-insert-edit-bg:   rgba(152, 195, 121, 0.32);
+  --diff-delete-edit-bg:   rgba(224, 108, 117, 0.28);
+  --diff-selection-bg:     rgba(198, 120, 221, 0.28);
+  --diff-gutter-selected:  rgba(198, 120, 221, 0.22);
 }
 
 /* ─── Base styles ─── */

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import catppuccinMochaCss from '@catppuccin/highlightjs/css/catppuccin-mocha.css?inline';
+import oneDarkCss from 'highlight.js/styles/atom-one-dark.css?inline';
 import catppuccinLatteCss from '@catppuccin/highlightjs/css/catppuccin-latte.css?inline';
 
 export type Theme = 'light' | 'dark';
@@ -28,7 +28,7 @@ export function useTheme() {
       styleEl.id = 'hljs-theme';
       document.head.appendChild(styleEl);
     }
-    styleEl.textContent = theme === 'dark' ? catppuccinMochaCss : catppuccinLatteCss;
+    styleEl.textContent = theme === 'dark' ? oneDarkCss : catppuccinLatteCss;
   }, [theme]);
 
   const toggle = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
