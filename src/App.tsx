@@ -1322,7 +1322,7 @@ function App() {
               >
                 Staged
               </button>
-              <button
+              {renderableFiles.length > 0 && <button
                 onClick={commitSelector.openSelector}
                 className={btnDefault + " flex items-center gap-1.5"}
                 title="Browse commits (Ctrl+K)"
@@ -1342,7 +1342,7 @@ function App() {
                   />
                 </svg>
                 Browse Commits
-              </button>
+              </button>}
             </div>
           </>
         )}
@@ -1597,11 +1597,22 @@ function App() {
                 highlightedWord={wordHighlight.highlightedWord}
               />
             </div>
-          ) : files.length === 0 ? (
+          ) : renderableFiles.length === 0 ? (
             <div className="flex-1 flex items-center justify-center aperture-grid bg-ctp-base h-full">
               <div className="text-center">
-                <div className="text-ctp-surface1 text-4xl mb-3 select-none">⊕</div>
-                <p className="text-ctp-subtext text-sm">Select a file to review</p>
+                <div className="text-ctp-surface1 text-4xl mb-4 select-none">⊕</div>
+                <p className="text-ctp-subtext text-sm mb-4">No changes to review</p>
+                {isGitRepo && (
+                  <button
+                    onClick={commitSelector.openSelector}
+                    className={btnDefault + " flex items-center gap-1.5 mx-auto"}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Browse Commits
+                  </button>
+                )}
               </div>
             </div>
           ) : (
