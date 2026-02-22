@@ -892,7 +892,7 @@ function App() {
       if (changeKey) {
         const commentWidget = wrapForSide(
           <div
-            className="px-4 py-2 bg-gray-800 border-t border-b border-gray-700"
+            className="px-4 py-2 bg-ctp-mantle border-t border-b border-ctp-surface1"
             onMouseEnter={() => setHoveredCommentIds(commentsAtLine.map(c => c.id))}
             onMouseLeave={() => setHoveredCommentIds(null)}
           >
@@ -917,7 +917,7 @@ function App() {
       if (formChangeKey) {
         const existingWidget = widgets[formChangeKey];
         const formWidget = wrapForSide(
-          <div className="px-4 py-2 bg-gray-800 border-t border-b border-gray-700">
+          <div className="px-4 py-2 bg-ctp-mantle border-t border-b border-ctp-surface1">
             <AddCommentForm
               file={addingCommentAt.file}
               startLine={addingCommentAt.startLine}
@@ -975,8 +975,8 @@ function App() {
     return (
       <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={file.newPath || file.oldPath}>
         <div
-          className={`px-4 py-2 font-semibold border-b border-gray-600 flex justify-between items-center transition-colors ${
-            isViewed ? "bg-gray-800/80 text-gray-400" : "bg-gray-700"
+          className={`px-4 py-2 font-medium border-b border-ctp-surface1 flex justify-between items-center transition-colors text-sm ${
+            isViewed ? "bg-ctp-mantle/80 text-ctp-subtext" : "bg-ctp-mantle text-ctp-text"
           }`}
           onClick={() => {
             if (isViewed) {
@@ -993,7 +993,7 @@ function App() {
                 <span className="text-green-400">Added: {file.newPath}</span>
               )}
               {file.type === "modify" && (
-                <span className="text-blue-400">Modified: {file.newPath}</span>
+                <span className="text-ctp-blue">Modified: {file.newPath}</span>
               )}
               {file.type === "rename" && (
                 <span className="text-yellow-400">
@@ -1004,18 +1004,18 @@ function App() {
           </div>
           <div className="flex items-center gap-2">
             <label
-              className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-300 cursor-pointer"
+              className="flex items-center gap-2 text-xs uppercase tracking-wide text-ctp-subtext cursor-pointer"
               onClick={(event) => event.stopPropagation()}
             >
               <input
                 type="checkbox"
                 checked={isViewed}
                 onChange={() => toggleViewed(fileName)}
-                className="h-4 w-4 rounded border-gray-500 bg-gray-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                className="h-4 w-4 rounded border-ctp-surface1 bg-ctp-mantle text-ctp-blue focus:ring-ctp-blue focus:ring-offset-0"
               />
               Viewed
             </label>
-            <span className="text-xs text-gray-300">
+            <span className="text-xs text-ctp-subtext">
               +{file.additions ?? 0} / -{file.deletions ?? 0}
             </span>
             {!isViewed && (
@@ -1032,7 +1032,7 @@ function App() {
                   setLastFocusedLine({ file: fileName, line: firstLine, side: "new" });
                   handleLineClick(fileName, firstLine, "new");
                 }}
-                className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                className="bg-ctp-mauve text-ctp-base text-xs px-2 py-1 rounded-sm hover:opacity-90 transition-opacity"
               >
                 + Add Comment
               </button>
@@ -1057,7 +1057,7 @@ function App() {
               <span className="relative inline-flex items-center w-full">
                 {showButton && (
                   <span
-                    className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 hover:bg-blue-500 cursor-pointer text-white opacity-80 hover:opacity-100 transition-all"
+                    className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-ctp-mauve hover:opacity-90 cursor-pointer text-ctp-base opacity-80 hover:opacity-100 transition-all"
                     title="Add comment"
                     onMouseDown={(e) => {
                       e.stopPropagation();
@@ -1243,8 +1243,8 @@ function App() {
   if (!workingDir || !isGitRepo) {
     if (repoManager.loading) {
       return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-          <div className="text-gray-400 text-lg">Loading...</div>
+        <div className="min-h-screen bg-ctp-base flex items-center justify-center">
+          <div className="text-ctp-subtext text-lg">Loading...</div>
         </div>
       );
     }
@@ -1259,7 +1259,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
+    <div className="min-h-screen bg-ctp-base text-ctp-text">
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-2.5 bg-ctp-mantle border-b border-ctp-surface1 flex-shrink-0"
@@ -1566,7 +1566,7 @@ function App() {
         <div ref={mainContentRef} className="flex-1 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-gray-400 text-lg">Loading...</div>
+              <div className="text-ctp-subtext text-lg">Loading...</div>
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-full">
@@ -1574,10 +1574,10 @@ function App() {
             </div>
           ) : viewMode === "file" && currentFile ? (
             <div className="p-6">
-              <div className="bg-gray-800 px-4 py-2 mb-4 rounded">
+              <div className="bg-ctp-mantle px-4 py-2 mb-4 rounded">
                 <button
                   onClick={() => setViewMode("diff")}
-                  className="text-blue-400 hover:text-blue-300 text-sm"
+                  className="text-ctp-blue hover:opacity-80 text-sm"
                 >
                   ← Back to diff
                 </button>

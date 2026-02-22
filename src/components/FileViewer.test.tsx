@@ -150,9 +150,9 @@ describe("FileViewer", () => {
       const row1 = lineRows[0].querySelector(".flex");
       const row2 = lineRows[1].querySelector(".flex");
       const row3 = lineRows[2].querySelector(".flex");
-      expect(row1?.className).toContain("bg-blue-900/20");
-      expect(row2?.className).toContain("bg-blue-900/20");
-      expect(row3?.className).not.toContain("bg-blue-900/20");
+      expect(row1?.className).toContain("bg-ctp-blue/10");
+      expect(row2?.className).toContain("bg-ctp-blue/10");
+      expect(row3?.className).not.toContain("bg-ctp-blue/10");
     });
 
     it("highlights lines matching hovered comment", () => {
@@ -176,9 +176,9 @@ describe("FileViewer", () => {
       const row1 = lineRows[0].querySelector(".flex");
       const row2 = lineRows[1].querySelector(".flex");
       const row3 = lineRows[2].querySelector(".flex");
-      expect(row1?.className).not.toContain("bg-blue-900/20");
-      expect(row2?.className).toContain("bg-blue-900/20");
-      expect(row3?.className).toContain("bg-blue-900/20");
+      expect(row1?.className).not.toContain("bg-ctp-blue/10");
+      expect(row2?.className).toContain("bg-ctp-blue/10");
+      expect(row3?.className).toContain("bg-ctp-blue/10");
     });
   });
 
