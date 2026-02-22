@@ -4,7 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: ['attribute', 'data-theme'],
+  darkMode: ['selector', '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
@@ -25,7 +25,7 @@ export default {
       },
       fontFamily: {
         sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['Geist Mono', 'ui-monospace', 'Fira Code', 'monospace'],
+        mono: ['Geist Mono', 'ui-monospace', 'monospace'],
       },
       borderRadius: {
         sm:      '4px',
