@@ -28,14 +28,14 @@
   --diff-bg:               var(--ctp-base);
   --diff-gutter-bg:        var(--ctp-mantle);
   --diff-text:             var(--ctp-text);
-  --diff-insert-bg:        rgba(64, 160, 43, 0.12);
-  --diff-insert-gutter:    rgba(64, 160, 43, 0.20);
-  --diff-delete-bg:        rgba(210, 15, 57, 0.10);
-  --diff-delete-gutter:    rgba(210, 15, 57, 0.18);
-  --diff-insert-edit-bg:   rgba(64, 160, 43, 0.22);
-  --diff-delete-edit-bg:   rgba(210, 15, 57, 0.18);
-  --diff-selection-bg:     rgba(136, 57, 239, 0.20);
-  --diff-gutter-selected:  rgba(136, 57, 239, 0.15);
+  --diff-insert-bg:        rgba(64, 160, 43, 0.18);
+  --diff-insert-gutter:    rgba(64, 160, 43, 0.32);
+  --diff-delete-bg:        rgba(210, 15, 57, 0.14);
+  --diff-delete-gutter:    rgba(210, 15, 57, 0.28);
+  --diff-insert-edit-bg:   rgba(64, 160, 43, 0.30);
+  --diff-delete-edit-bg:   rgba(210, 15, 57, 0.26);
+  --diff-selection-bg:     rgba(136, 57, 239, 0.28);
+  --diff-gutter-selected:  rgba(136, 57, 239, 0.22);
 }
 
 /* ─── Catppuccin Mocha (dark mode) ─── */
@@ -59,14 +59,14 @@
   --diff-bg:               var(--ctp-base);
   --diff-gutter-bg:        var(--ctp-mantle);
   --diff-text:             var(--ctp-text);
-  --diff-insert-bg:        rgba(166, 227, 161, 0.10);
-  --diff-insert-gutter:    rgba(166, 227, 161, 0.15);
-  --diff-delete-bg:        rgba(243, 139, 168, 0.10);
-  --diff-delete-gutter:    rgba(243, 139, 168, 0.15);
-  --diff-insert-edit-bg:   rgba(166, 227, 161, 0.20);
-  --diff-delete-edit-bg:   rgba(243, 139, 168, 0.20);
-  --diff-selection-bg:     rgba(203, 166, 247, 0.20);
-  --diff-gutter-selected:  rgba(203, 166, 247, 0.15);
+  --diff-insert-bg:        rgba(166, 227, 161, 0.20);
+  --diff-insert-gutter:    rgba(166, 227, 161, 0.32);
+  --diff-delete-bg:        rgba(243, 139, 168, 0.18);
+  --diff-delete-gutter:    rgba(243, 139, 168, 0.30);
+  --diff-insert-edit-bg:   rgba(166, 227, 161, 0.32);
+  --diff-delete-edit-bg:   rgba(243, 139, 168, 0.28);
+  --diff-selection-bg:     rgba(203, 166, 247, 0.28);
+  --diff-gutter-selected:  rgba(203, 166, 247, 0.22);
 }
 
 /* ─── Base styles ─── */
