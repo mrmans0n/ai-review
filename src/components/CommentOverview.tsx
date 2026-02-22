@@ -81,7 +81,7 @@ export function CommentOverview({
                       onClick={() => onGoToComment(comment)}
                       className="w-full text-left group"
                     >
-                      <div className="px-4 py-3 border-b border-ctp-surface1/50 last:border-0 hover:bg-ctp-surface0 cursor-pointer transition-colors rounded-sm flex items-center gap-3 border border-ctp-surface1">
+                      <div className="px-4 py-3 hover:bg-ctp-surface0 cursor-pointer transition-colors rounded-sm flex items-center gap-3 border border-ctp-surface1">
                         <div className="flex-shrink-0 flex items-center gap-1.5">
                           <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-sm text-xs font-mono bg-ctp-surface0 text-ctp-subtext border border-ctp-surface1">
                             {comment.startLine === comment.endLine

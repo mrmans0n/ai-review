@@ -86,7 +86,7 @@ export function FileExplorer({
                   key={file}
                   ref={index === selectedIndex ? selectedRef : null}
                   onClick={() => onSelect(file)}
-                  className={`cursor-pointer transition-colors border-b border-ctp-surface1/50 last:border-0 ${
+                  className={`cursor-pointer transition-colors ${
                     index === selectedIndex
                       ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
                       : "px-4 py-3 hover:bg-ctp-surface0"

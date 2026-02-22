@@ -1018,25 +1018,6 @@ function App() {
             <span className="text-xs text-ctp-subtext">
               +{file.additions ?? 0} / -{file.deletions ?? 0}
             </span>
-            {!isViewed && (
-              <button
-                onClick={(event) => {
-                  event.stopPropagation();
-                  // Find the first changed line in this file's hunks
-                  let firstLine = 1;
-                  if (file.hunks && file.hunks.length > 0) {
-                    const firstHunk = file.hunks[0];
-                    // Use the first new line number from the hunk
-                    firstLine = firstHunk.newStart || 1;
-                  }
-                  setLastFocusedLine({ file: fileName, line: firstLine, side: "new" });
-                  handleLineClick(fileName, firstLine, "new");
-                }}
-                className="bg-ctp-mauve text-ctp-base text-xs px-2 py-1 rounded-sm hover:opacity-90 transition-opacity"
-              >
-                + Add Comment
-              </button>
-            )}
           </div>
         </div>
         {!isViewed && (
@@ -1371,11 +1352,6 @@ function App() {
 
         {/* Group 3: Tools */}
         <div className="ml-auto flex items-center gap-1">
-          {renderableFiles.length > 0 && (
-            <span className="text-xs text-ctp-subtext px-2 py-1 bg-ctp-surface0 rounded-sm border border-ctp-surface1">
-              {viewedCount}/{renderableFiles.length} viewed
-            </span>
-          )}
           {changedFiles.length > 0 && (
             <button
               onClick={() => setIsSidebarVisible((prev) => !prev)}
@@ -1437,7 +1413,7 @@ function App() {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  CLI Installed
+                  CLI
                 </>
               ) : (
                 <>
@@ -1461,7 +1437,7 @@ function App() {
                       d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
-                  Install CLI
+                  CLI
                 </>
               )}
             </button>
@@ -1504,6 +1480,11 @@ function App() {
               <span className="text-[10px] font-semibold tracking-widest text-ctp-overlay0 uppercase">
                 Changed Files
               </span>
+              {renderableFiles.length > 0 && (
+                <span className="ml-auto text-[10px] text-ctp-overlay0">
+                  {viewedCount}/{renderableFiles.length} viewed
+                </span>
+              )}
             </div>
             <div className="flex-1 overflow-auto">
               <FileList

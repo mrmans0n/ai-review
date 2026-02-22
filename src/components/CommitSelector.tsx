@@ -274,7 +274,7 @@ export function CommitSelector({
                     key={commit.hash}
                     ref={isSelected ? selectedRef : null}
                     onClick={() => onSelectCommit(commit)}
-                    className={`cursor-pointer transition-colors border-b border-ctp-surface1/50 last:border-0 ${
+                    className={`cursor-pointer transition-colors ${
                       isSelected
                         ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
                         : "px-4 py-3 hover:bg-ctp-surface0"
@@ -325,7 +325,7 @@ export function CommitSelector({
                     key={branch.name}
                     ref={isSelected ? selectedRef : null}
                     onClick={() => onSelectBranch(branch)}
-                    className={`cursor-pointer transition-colors border-b border-ctp-surface1/50 last:border-0 ${
+                    className={`cursor-pointer transition-colors ${
                       isSelected
                         ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
                         : "px-4 py-3 hover:bg-ctp-surface0"
@@ -365,7 +365,7 @@ export function CommitSelector({
                       key={stackInfo.name}
                       ref={isSelected ? selectedRef : null}
                       onClick={() => onSelectStack(stackInfo)}
-                      className={`cursor-pointer transition-colors border-b border-ctp-surface1/50 last:border-0 ${
+                      className={`cursor-pointer transition-colors ${
                         isSelected
                           ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
                           : "px-4 py-3 hover:bg-ctp-surface0"
@@ -428,7 +428,7 @@ export function CommitSelector({
                       key={stackEntry.hash}
                       ref={isSelected ? selectedRef : null}
                       onClick={() => onSelectStackEntry(stackEntry)}
-                      className={`cursor-pointer transition-colors border-b border-ctp-surface1/50 last:border-0 ${
+                      className={`cursor-pointer transition-colors ${
                         isSelected
                           ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
                           : "px-4 py-3 hover:bg-ctp-surface0"
