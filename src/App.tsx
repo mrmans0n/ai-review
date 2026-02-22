@@ -76,7 +76,8 @@ function App() {
   const [showPromptPreview, setShowPromptPreview] = useState(false);
   const [waitMode, setWaitMode] = useState(false);
   const [initialDiffMode, setInitialDiffMode] = useState<InitialDiffMode | null>(null);
-  const [cliInstalled, setCliInstalled] = useState(false);
+  const [cliInstalled, setCliInstalled] = useState<boolean | null>(null);
+  const [cliJustInstalled, setCliJustInstalled] = useState(false);
   const [installMessage, setInstallMessage] = useState<string | null>(null);
   const [hoveredCommentIds, setHoveredCommentIds] = useState<string[] | null>(null);
   const [showCommentOverview, setShowCommentOverview] = useState(false);
@@ -796,6 +797,8 @@ function App() {
       
       if (result.success) {
         setCliInstalled(true);
+        setCliJustInstalled(true);
+        setTimeout(() => setCliJustInstalled(false), 3000);
         if (result.path_warning) {
           setInstallMessage(
             `${result.message}\n\nTo add ~/.local/bin to your PATH, add this line to your shell config:\nexport PATH="$HOME/.local/bin:$PATH"`
@@ -1403,14 +1406,14 @@ function App() {
               </button>
             </>
           )}
-          <div className="relative">
+          {(cliInstalled === false || cliJustInstalled) && <div className="relative">
             <button
               onClick={handleInstallCli}
-              disabled={cliInstalled}
-              className={`${cliInstalled ? btnActive + " cursor-not-allowed opacity-70" : btnDefault} flex items-center gap-1.5`}
-              title={cliInstalled ? "CLI is already installed" : "Install CLI command"}
+              disabled={cliJustInstalled}
+              className={`${cliJustInstalled ? btnActive + " cursor-not-allowed" : btnDefault} flex items-center gap-1.5`}
+              title={cliJustInstalled ? "CLI installed" : "Install CLI command"}
             >
-              {cliInstalled ? (
+              {cliJustInstalled ? (
                 <>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -1459,7 +1462,7 @@ function App() {
                 {installMessage}
               </div>
             )}
-          </div>
+          </div>}
         </div>
       </div>
 
