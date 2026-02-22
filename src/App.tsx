@@ -11,6 +11,7 @@ import { useComments } from "./hooks/useComments";
 import { useRepoManager } from "./hooks/useRepoManager";
 import { useSearch } from "./hooks/useSearch";
 import { useWordHighlight } from "./hooks/useWordHighlight";
+import { useTheme } from './hooks/useTheme';
 import { FileExplorer } from "./components/FileExplorer";
 import { CommitSelector } from "./components/CommitSelector";
 import { FileList } from "./components/FileList";
@@ -87,6 +88,10 @@ function App() {
   const [sidebarWidth, setSidebarWidth] = useState(256);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
+
+  const { theme, toggle: toggleTheme } = useTheme();
+  // theme and toggleTheme will be consumed by the header redesign (Task 6)
+  void theme; void toggleTheme;
 
   const repoManager = useRepoManager();
   const search = useSearch();
