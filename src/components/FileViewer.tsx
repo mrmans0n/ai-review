@@ -223,12 +223,12 @@ export function FileViewer({
 
         return (
           <div key={lineNumber} data-line-number={lineNumber} data-line-side="new">
-            <div className={`flex transition-colors ${highlighted ? "bg-blue-900/20" : "hover:bg-ctp-base"}`}>
+            <div className={`flex transition-colors ${highlighted ? "bg-ctp-blue/10" : "hover:bg-ctp-base"}`}>
               {/* Line number gutter */}
               <div
                 className={`relative flex-shrink-0 w-16 px-3 py-1 text-right text-ctp-subtext border-r border-ctp-surface1 select-none cursor-pointer transition-colors ${
                   highlighted
-                    ? "bg-blue-900/30 text-ctp-blue"
+                    ? "bg-ctp-blue/20 text-ctp-blue"
                     : "bg-ctp-mantle hover:bg-ctp-surface0 hover:text-ctp-text"
                 }`}
                 onMouseDown={(e) => {
