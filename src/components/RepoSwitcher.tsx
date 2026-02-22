@@ -69,7 +69,7 @@ export function RepoSwitcher({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-80 bg-ctp-mantle border border-ctp-surface1 rounded-md shadow-2xl z-50 overflow-hidden">
+        <div className="absolute top-full left-0 mt-2 w-80 bg-ctp-surface0 border border-ctp-surface1 rounded-md shadow-2xl z-50 overflow-hidden">
           <div className="max-h-64 overflow-auto">
             {repos.map((repo) => (
               <div

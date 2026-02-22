@@ -18,8 +18,8 @@ export function ConfirmModal({
   onCancel,
 }: ConfirmModalProps) {
   return (
-    <div className="fixed inset-0 bg-ctp-base/60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-ctp-mantle border border-ctp-surface1 rounded-md shadow-2xl max-w-md w-full mx-4">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+      <div className="bg-ctp-surface0 border border-ctp-surface1 rounded-md shadow-2xl max-w-md w-full mx-4">
         <div className="flex items-center gap-3 px-6 py-4 border-b border-ctp-surface1">
           <div className={`w-0.5 h-5 rounded-full flex-shrink-0 ${destructive ? "bg-ctp-red" : "bg-ctp-peach"}`} />
           <h2 className="text-base font-semibold text-ctp-text">{title}</h2>

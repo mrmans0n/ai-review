@@ -27,11 +27,11 @@ export function CommentOverview({
 
   return (
     <div
-      className="fixed inset-0 bg-ctp-base/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-ctp-mantle border border-ctp-surface1 rounded-md shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col"
+        className="bg-ctp-surface0 border border-ctp-surface1 rounded-md shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 px-6 py-4 border-b border-ctp-surface1">

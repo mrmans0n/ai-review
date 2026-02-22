@@ -245,10 +245,10 @@ function App() {
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
 
   const btnBase = "px-3 py-1.5 text-sm rounded-sm transition-colors border";
-  const btnDefault = `${btnBase} bg-transparent border-ctp-surface1 text-ctp-subtext hover:bg-ctp-surface0 hover:text-ctp-text hover:border-ctp-surface0`;
-  const btnActive = `${btnBase} bg-ctp-surface0 border-ctp-mauve text-ctp-text`;
+  const btnDefault = `${btnBase} bg-transparent border-ctp-surface1 text-ctp-subtext hover:bg-ctp-surface0 hover:text-ctp-text hover:border-ctp-overlay0`;
+  const btnActive = `${btnBase} bg-ctp-mauve/20 border-ctp-mauve text-ctp-mauve`;
   const btnIcon = "p-1.5 rounded-sm text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface0 transition-colors";
-  const btnIconActive = "p-1.5 rounded-sm text-ctp-text bg-ctp-surface0 border border-ctp-mauve transition-colors";
+  const btnIconActive = "p-1.5 rounded-sm text-ctp-mauve bg-ctp-mauve/20 border border-ctp-mauve transition-colors";
 
   useEffect(() => {
     window.localStorage.setItem("changed-files-sidebar-width", String(sidebarWidth));
