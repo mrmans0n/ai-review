@@ -1616,18 +1616,16 @@ function App() {
                 highlightedWord={wordHighlight.highlightedWord}
               />
             </div>
+          ) : files.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center aperture-grid bg-ctp-base h-full">
+              <div className="text-center">
+                <div className="text-ctp-surface1 text-4xl mb-3 select-none">⊕</div>
+                <p className="text-ctp-subtext text-sm">Select a file to review</p>
+              </div>
+            </div>
           ) : (
             <div className="p-6">
-              {files.length === 0 ? (
-                <div className="text-center text-gray-500 mt-20">
-                  <p className="text-lg">No diff to display</p>
-                  <p className="text-sm mt-2">
-                    No changes detected in this mode
-                  </p>
-                </div>
-              ) : (
-                files.map(renderFile)
-              )}
+              {files.map(renderFile)}
             </div>
           )}
         </div>

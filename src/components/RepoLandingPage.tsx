@@ -14,7 +14,7 @@ export function RepoLandingPage({
   onRemoveRepo,
 }: RepoLandingPageProps) {
   return (
-    <div className="min-h-screen bg-ctp-base flex items-center justify-center">
+    <div className="min-h-screen bg-ctp-base aperture-grid flex items-center justify-center">
       <div className="w-full max-w-lg px-6">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-ctp-text mb-2">AI Review</h1>
