@@ -3,7 +3,6 @@ import { parseDiff, Diff, Hunk, Decoration, getChangeKey, getCollapsedLinesCount
 import { invoke } from "@tauri-apps/api/core";
 import "react-diff-view/style/index.css";
 import "./diff.css";
-import "highlight.js/styles/github-dark.css";
 import { highlight } from "./highlight";
 import { useGit } from "./hooks/useGit";
 import { useFileExplorer } from "./hooks/useFileExplorer";
