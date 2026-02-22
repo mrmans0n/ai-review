@@ -1275,8 +1275,8 @@ function App() {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-ctp-overlay0 hidden md:block">
-            Press <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">Shift</kbd>{" "}
-            <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">Shift</kbd> to search files
+            Press <kbd className="px-2 py-1 bg-ctp-surface1 rounded text-xs">Shift</kbd>{" "}
+            <kbd className="px-2 py-1 bg-ctp-surface1 rounded text-xs">Shift</kbd> to search files
           </span>
 
           {/* Theme toggle button */}
