@@ -351,6 +351,11 @@ fn switch_repo(path: String, state: tauri::State<AppState>) -> Result<git::GitDi
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Capture CWD immediately, before Tauri/WebKit initialization can change it.
+    // On macOS, launching a GUI app causes the system to modify the process working
+    // directory. We must snapshot it here, before tauri::Builder touches anything.
+    let initial_cwd = std::env::current_dir().ok();
+
     let args: Vec<String> = std::env::args().collect();
     let mut wait_mode = false;
     let mut initial_diff_mode: Option<InitialDiffMode> = None;
@@ -401,8 +406,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(move |app| {
-            // Default to current directory
-            let mut working_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+            // Use the CWD captured before Tauri initialization (see top of run()).
+            let mut working_dir = initial_cwd.unwrap_or_else(|| PathBuf::from("."));
 
             if let Some(dir) = &dir_arg {
                 let arg_path = PathBuf::from(dir);
