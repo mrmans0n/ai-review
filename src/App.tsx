@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { parseDiff, Diff, Hunk, Decoration, getChangeKey, getCollapsedLinesCountBetween, expandFromRawCode } from "react-diff-view";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import "react-diff-view/style/index.css";
 import "./diff.css";
 import { highlight } from "./highlight";
@@ -109,6 +110,7 @@ function App() {
 
   const [selectedCommit, setSelectedCommit] = useState<CommitInfo | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<BranchInfo | null>(null);
+  const [reviewingLabel, setReviewingLabel] = useState<string | null>(null);
 
   const { isGitRepo, diffResult, loading, error, loadDiff } = useGit(workingDir);
   const fileExplorerRef = selectedCommit?.hash ?? selectedBranch?.name ?? null;
@@ -243,6 +245,10 @@ function App() {
   const files = diffText ? parseDiff(diffText) : [];
   const renderableFiles = files.filter((file: any) => file.hunks && file.hunks.length > 0);
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
+
+  useEffect(() => {
+    getCurrentWindow().setTitle(reviewingLabel ? `Reviewing ${reviewingLabel}` : "ai-review");
+  }, [reviewingLabel]);
 
   const btnBase = "px-3 py-1.5 text-sm rounded-sm transition-colors border";
   const btnDefault = `${btnBase} bg-transparent border-ctp-surface1 text-ctp-subtext hover:bg-ctp-surface0 hover:text-ctp-text hover:border-ctp-overlay0`;
@@ -429,6 +435,7 @@ function App() {
   const handleModeChange = (newMode: DiffModeConfig) => {
     setDiffMode(newMode);
     loadDiff(newMode);
+    setReviewingLabel(null);
   };
 
   const toggleViewed = (fileName: string) => {
@@ -461,6 +468,7 @@ function App() {
       setDiffMode({ mode: "unstaged" });
       setSelectedCommit(null);
       setSelectedBranch(null);
+      setReviewingLabel(null);
       setExpandedHunksMap({});
       sourceCache.current = {};
       setViewMode("diff");
@@ -660,6 +668,7 @@ function App() {
       setChangedFiles(result.files);
       setSelectedCommit(commit);
       setSelectedBranch(null);
+      setReviewingLabel(`${commit.short_hash} ${commit.message}`);
       setViewMode("diff");
       commitSelector.closeSelector();
     } catch (err) {
@@ -679,6 +688,7 @@ function App() {
       setChangedFiles(result.files);
       setSelectedBranch(branch);
       setSelectedCommit(null);
+      setReviewingLabel(branch.name);
       setViewMode("diff");
       commitSelector.closeSelector();
     } catch (err) {
@@ -702,6 +712,7 @@ function App() {
       setDiffText(result || "No changes in this entry");
       setSelectedCommit(null);
       setSelectedBranch(null);
+      setReviewingLabel(`${entry.short_hash} ${entry.title}`);
       setViewMode("diff");
       commitSelector.closeSelector();
     } catch (err) {
@@ -720,6 +731,7 @@ function App() {
       setDiffText(result || "No changes in this stack");
       setSelectedCommit(null);
       setSelectedBranch(null);
+      setReviewingLabel(stack.name);
       setViewMode("diff");
       commitSelector.closeSelector();
     } catch (err) {
@@ -739,6 +751,7 @@ function App() {
       setDiffMode({ mode: "commit", commitRef: ref });
       setSelectedCommit(null);
       setSelectedBranch(null);
+      setReviewingLabel(ref);
       setViewMode("diff");
       commitSelector.closeSelector();
     } catch (err) {
