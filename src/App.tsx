@@ -1496,11 +1496,14 @@ function App() {
       <div className="flex h-[calc(100vh-140px)]">
         {changedFiles.length > 0 && isSidebarVisible && (
           <div
-            className="border-r border-gray-700 flex flex-col bg-gray-800 relative"
+            className="border-r border-ctp-surface1 flex flex-col bg-ctp-mantle relative"
             style={{ width: `${sidebarWidth}px` }}
           >
-            <div className="px-4 py-2 border-b border-gray-700 font-semibold">
-              Changed Files ({changedFiles.length})
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-ctp-surface1">
+              <div className="w-0.5 h-3.5 bg-ctp-peach rounded-full flex-shrink-0" />
+              <span className="text-[10px] font-semibold tracking-widest text-ctp-overlay0 uppercase">
+                Changed Files
+              </span>
             </div>
             <div className="flex-1 overflow-auto">
               <FileList
@@ -1517,18 +1520,21 @@ function App() {
                 if (filesWithComments.length > 0) {
                   return (
                     <>
-                      <div className="px-4 py-2 border-t border-gray-700 font-semibold bg-gray-800 sticky top-0">
-                        Files with Comments ({filesWithComments.length})
+                      <div className="flex items-center gap-2 px-3 py-2 border-t border-b border-ctp-surface1 bg-ctp-mantle sticky top-0">
+                        <div className="w-0.5 h-3.5 bg-ctp-peach rounded-full flex-shrink-0" />
+                        <span className="text-[10px] font-semibold tracking-widest text-ctp-overlay0 uppercase">
+                          Commented Files
+                        </span>
                       </div>
                       <div className="space-y-1">
                         {filesWithComments.map((file) => (
                           <button
                             key={file}
                             onClick={() => handleFileSelect(file)}
-                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-700 transition-colors ${
+                            className={`w-full px-4 py-2 text-left text-sm transition-colors rounded-sm ${
                               selectedFile === file
-                                ? "bg-blue-600 text-white"
-                                : "text-gray-300"
+                                ? "bg-ctp-surface0 border-l-2 border-ctp-peach text-ctp-text"
+                                : "text-ctp-subtext hover:bg-ctp-surface0"
                             }`}
                           >
                             {file.split("/").pop()}
@@ -1552,7 +1558,7 @@ function App() {
                 event.preventDefault();
                 setIsResizingSidebar(true);
               }}
-              className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-blue-500/40 transition-colors"
+              className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-ctp-peach/30 transition-colors"
             />
           </div>
         )}

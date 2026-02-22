@@ -10,15 +10,15 @@ export function FileList({ files, selectedFile, onSelectFile }: FileListProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "added":
-        return "text-green-400";
+        return "text-ctp-green";
       case "modified":
-        return "text-blue-400";
+        return "text-ctp-blue";
       case "deleted":
-        return "text-red-400";
+        return "text-ctp-red";
       case "renamed":
-        return "text-yellow-400";
+        return "text-ctp-yellow";
       default:
-        return "text-gray-400";
+        return "text-ctp-overlay0";
     }
   };
 
@@ -39,7 +39,7 @@ export function FileList({ files, selectedFile, onSelectFile }: FileListProps) {
 
   if (files.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500 text-sm">
+      <div className="p-4 text-center text-ctp-overlay0 text-sm">
         No changed files
       </div>
     );
@@ -51,17 +51,17 @@ export function FileList({ files, selectedFile, onSelectFile }: FileListProps) {
         <button
           key={file.path}
           onClick={() => onSelectFile(file.path)}
-          className={`px-4 py-2 text-left transition-colors border-l-2 ${
+          className={`px-4 py-2 text-left transition-colors border-l-2 rounded-sm ${
             selectedFile === file.path
-              ? "bg-gray-700 border-blue-500"
-              : "border-transparent hover:bg-gray-800"
+              ? "bg-ctp-surface0 border-ctp-peach"
+              : "border-transparent hover:bg-ctp-surface0"
           }`}
         >
           <div className="flex items-center gap-2">
             <span className={`font-bold ${getStatusColor(file.status)}`}>
               {getStatusIcon(file.status)}
             </span>
-            <span className="text-sm font-mono text-gray-300 truncate">
+            <span className="text-sm font-mono text-ctp-subtext truncate">
               {file.path}
             </span>
           </div>
