@@ -244,6 +244,12 @@ function App() {
   const renderableFiles = files.filter((file: any) => file.hunks && file.hunks.length > 0);
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
 
+  const btnBase = "px-3 py-1.5 text-sm rounded-sm transition-colors border";
+  const btnDefault = `${btnBase} bg-transparent border-ctp-surface1 text-ctp-subtext hover:bg-ctp-surface0 hover:text-ctp-text hover:border-ctp-surface0`;
+  const btnActive = `${btnBase} bg-ctp-surface0 border-ctp-mauve text-ctp-text`;
+  const btnIcon = "p-1.5 rounded-sm text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface0 transition-colors";
+  const btnIconActive = "p-1.5 rounded-sm text-ctp-text bg-ctp-surface0 border border-ctp-mauve transition-colors";
+
   useEffect(() => {
     window.localStorage.setItem("changed-files-sidebar-width", String(sidebarWidth));
   }, [sidebarWidth]);
@@ -1299,89 +1305,81 @@ function App() {
         </div>
       </div>
 
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-3 flex items-center gap-4 flex-wrap">
-        <div className="flex gap-2">
+      <div className="flex items-center gap-1 px-3 py-2 bg-ctp-mantle border-b border-ctp-surface1 flex-shrink-0 flex-wrap">
+        {/* Group 1: View mode */}
+        <div className="flex gap-1">
           <button
             onClick={() => setViewType("split")}
-            className={`px-4 py-2 rounded transition-colors ${
-              viewType === "split"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-            }`}
+            className={viewType === "split" ? btnActive : btnDefault}
           >
-            Split View
+            Split
           </button>
           <button
             onClick={() => setViewType("unified")}
-            className={`px-4 py-2 rounded transition-colors ${
-              viewType === "unified"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-            }`}
+            className={viewType === "unified" ? btnActive : btnDefault}
           >
-            Unified View
+            Unified
           </button>
         </div>
 
         {isGitRepo && (
           <>
-            <div className="h-6 w-px bg-gray-600" />
-            <div className="flex gap-2 items-center">
+            {/* Divider between group 1 and group 2 */}
+            <div className="w-px h-5 bg-ctp-surface1 mx-1" />
+
+            {/* Group 2: Diff target */}
+            <div className="flex gap-1 items-center">
               <button
                 onClick={() => handleModeChange({ mode: "unstaged" })}
-                className={`px-4 py-2 rounded transition-colors ${
-                  diffMode.mode === "unstaged"
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                }`}
+                className={diffMode.mode === "unstaged" ? btnActive : btnDefault}
               >
                 Unstaged
               </button>
               <button
                 onClick={() => handleModeChange({ mode: "staged" })}
-                className={`px-4 py-2 rounded transition-colors ${
-                  diffMode.mode === "staged"
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                }`}
+                className={diffMode.mode === "staged" ? btnActive : btnDefault}
               >
                 Staged
               </button>
-            </div>
-            <button
-              onClick={commitSelector.openSelector}
-              className="px-4 py-2 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center gap-2"
-              title="Browse commits (Ctrl+K)"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+              <button
+                onClick={commitSelector.openSelector}
+                className={btnDefault + " flex items-center gap-1.5"}
+                title="Browse commits (Ctrl+K)"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-              Browse Commits
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+                Browse Commits
+              </button>
+            </div>
           </>
         )}
 
-        <div className="ml-auto flex items-center gap-3">
+        {/* Divider between group 2 and group 3 */}
+        <div className="w-px h-5 bg-ctp-surface1 mx-1" />
+
+        {/* Group 3: Tools */}
+        <div className="ml-auto flex items-center gap-1">
           {renderableFiles.length > 0 && (
-            <div className="px-2.5 py-1 rounded bg-gray-700 text-xs text-gray-300 border border-gray-600">
+            <span className="text-xs text-ctp-subtext px-2 py-1 bg-ctp-surface0 rounded-sm border border-ctp-surface1">
               {viewedCount}/{renderableFiles.length} viewed
-            </div>
+            </span>
           )}
           {changedFiles.length > 0 && (
             <button
               onClick={() => setIsSidebarVisible((prev) => !prev)}
-              className="p-2 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+              className={isSidebarVisible ? btnIconActive : btnIcon}
               title={isSidebarVisible ? "Hide changed files sidebar" : "Show changed files sidebar"}
               aria-label={isSidebarVisible ? "Hide changed files sidebar" : "Show changed files sidebar"}
             >
@@ -1391,7 +1389,7 @@ function App() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={2}
-                className="w-5 h-5"
+                className="w-4 h-4"
               >
                 <rect x="3" y="4" width="18" height="16" rx="2" />
                 <path d="M9 4v16" />
@@ -1403,14 +1401,14 @@ function App() {
             <>
               <button
                 onClick={() => setShowCommentOverview(true)}
-                className="px-4 py-2 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500 transition-colors cursor-pointer"
+                className={btnDefault + " flex items-center gap-1"}
               >
                 {comments.length} comment{comments.length !== 1 ? "s" : ""}
                 {comments.length > 10 ? " 🫠" : comments.length >= 3 ? " 🔥" : ""}
               </button>
               <button
                 onClick={handleGeneratePrompt}
-                className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                className={btnActive + " flex items-center gap-1"}
               >
                 Generate Prompt
               </button>
@@ -1420,11 +1418,7 @@ function App() {
             <button
               onClick={handleInstallCli}
               disabled={cliInstalled}
-              className={`px-4 py-2 rounded text-sm transition-colors flex items-center gap-2 ${
-                cliInstalled
-                  ? "bg-green-700 text-white cursor-not-allowed"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-              }`}
+              className={`${cliInstalled ? btnActive + " cursor-not-allowed opacity-70" : btnDefault} flex items-center gap-1.5`}
               title={cliInstalled ? "CLI is already installed" : "Install CLI command"}
             >
               {cliInstalled ? (
@@ -1443,7 +1437,7 @@ function App() {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  CLI Installed ✓
+                  CLI Installed
                 </>
               ) : (
                 <>
@@ -1472,7 +1466,7 @@ function App() {
               )}
             </button>
             {installMessage && (
-              <div className="absolute top-full mt-2 right-0 bg-gray-800 border border-gray-600 rounded px-4 py-2 text-sm whitespace-pre-wrap max-w-md shadow-lg z-50">
+              <div className="absolute top-full mt-2 right-0 bg-ctp-surface0 border border-ctp-surface1 rounded-sm px-4 py-2 text-sm text-ctp-text whitespace-pre-wrap max-w-md shadow-lg z-50">
                 {installMessage}
               </div>
             )}
@@ -1481,24 +1475,20 @@ function App() {
       </div>
 
       {selectedCommit && (
-        <div className="bg-blue-900 border-b border-blue-700 px-6 py-2">
-          <div className="flex items-center gap-3 text-sm">
-            <span className="font-mono bg-blue-800 text-blue-100 px-2 py-0.5 rounded">
-              {selectedCommit.short_hash}
-            </span>
-            <span className="font-semibold text-white">{selectedCommit.message}</span>
-          </div>
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-ctp-surface0 border-b border-ctp-surface1 text-xs text-ctp-subtext flex-shrink-0">
+          <span className="font-mono bg-ctp-surface1 text-ctp-text px-2 py-0.5 rounded-sm">
+            {selectedCommit.short_hash}
+          </span>
+          <span className="font-medium text-ctp-text">{selectedCommit.message}</span>
         </div>
       )}
 
       {selectedBranch && (
-        <div className="bg-purple-900 border-b border-purple-700 px-6 py-2">
-          <div className="flex items-center gap-3 text-sm">
-            <span className="font-mono bg-purple-800 text-purple-100 px-2 py-0.5 rounded">
-              {selectedBranch.short_hash}
-            </span>
-            <span className="font-semibold text-white">Branch: {selectedBranch.name}</span>
-          </div>
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-ctp-surface0 border-b border-ctp-surface1 text-xs text-ctp-subtext flex-shrink-0">
+          <span className="font-mono bg-ctp-surface1 text-ctp-text px-2 py-0.5 rounded-sm">
+            {selectedBranch.short_hash}
+          </span>
+          <span className="font-medium text-ctp-text">Branch: {selectedBranch.name}</span>
         </div>
       )}
 
