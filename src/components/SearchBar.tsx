@@ -34,7 +34,7 @@ export function SearchBar({
   const current = matchCount === 0 ? 0 : currentMatchIndex + 1;
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-gray-800 border border-gray-600 rounded-lg shadow-xl px-3 py-2 flex items-center gap-2">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-ctp-mantle border border-ctp-surface1 rounded-lg shadow-xl px-3 py-2 flex items-center gap-2">
       <input
         ref={inputRef}
         type="text"
@@ -56,28 +56,28 @@ export function SearchBar({
           }
         }}
         placeholder="Search in code..."
-        className="w-80 bg-gray-900 text-gray-100 border border-gray-600 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-80 flex-1 bg-transparent text-ctp-text text-sm placeholder:text-ctp-overlay0 focus:outline-none"
       />
-      <span className="text-sm text-gray-300 min-w-16 text-right">
+      <span className="text-xs text-ctp-subtext min-w-16 text-right">
         {current} of {matchCount}
       </span>
       <button
         onClick={onPrev}
-        className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200"
+        className="p-1.5 rounded-sm text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface0 transition-colors"
         aria-label="Previous match"
       >
         ▲
       </button>
       <button
         onClick={onNext}
-        className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200"
+        className="p-1.5 rounded-sm text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface0 transition-colors"
         aria-label="Next match"
       >
         ▼
       </button>
       <button
         onClick={onClose}
-        className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-200"
+        className="p-1.5 rounded-sm text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface0 transition-colors"
         aria-label="Close search"
       >
         ×

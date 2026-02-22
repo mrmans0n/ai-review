@@ -1,17 +1,110 @@
+@import '@fontsource/geist/400.css';
+@import '@fontsource/geist/500.css';
+@import '@fontsource/geist/600.css';
+@import '@fontsource/geist-mono/400.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Dark theme by default */
+/* ─── Catppuccin Latte (light mode) ─── */
+:root {
+  --ctp-base:     239 241 245;
+  --ctp-mantle:   230 233 239;
+  --ctp-surface0: 204 208 218;
+  --ctp-surface1: 188 192 204;
+  --ctp-overlay0: 156 160 176;
+  --ctp-text:     76 79 105;
+  --ctp-subtext:  108 111 133;
+  --ctp-blue:     30 102 245;
+  --ctp-mauve:    136 57 239;
+  --ctp-peach:    254 100 11;
+  --ctp-green:    64 160 43;
+  --ctp-red:      210 15 57;
+  --ctp-yellow:   223 142 29;
+  --ctp-teal:     23 146 153;
+
+  /* Diff semantic tokens — Latte values */
+  --diff-bg:               rgb(var(--ctp-base));
+  --diff-gutter-bg:        rgb(var(--ctp-mantle));
+  --diff-text:             rgb(var(--ctp-text));
+  --diff-insert-bg:        rgba(64, 160, 43, 0.18);
+  --diff-insert-gutter:    rgba(64, 160, 43, 0.32);
+  --diff-delete-bg:        rgba(210, 15, 57, 0.14);
+  --diff-delete-gutter:    rgba(210, 15, 57, 0.28);
+  --diff-insert-edit-bg:   rgba(64, 160, 43, 0.30);
+  --diff-delete-edit-bg:   rgba(210, 15, 57, 0.26);
+  --diff-selection-bg:     rgba(136, 57, 239, 0.28);
+  --diff-gutter-selected:  rgba(136, 57, 239, 0.22);
+}
+
+/* ─── One Dark (dark mode) ─── */
+[data-theme="dark"] {
+  --ctp-base:     40 44 52;
+  --ctp-mantle:   33 37 43;
+  --ctp-surface0: 44 49 60;
+  --ctp-surface1: 62 68 81;
+  --ctp-overlay0: 92 99 112;
+  --ctp-text:     171 178 191;
+  --ctp-subtext:  130 137 151;
+  --ctp-blue:     97 175 239;
+  --ctp-mauve:    198 120 221;
+  --ctp-peach:    209 154 102;
+  --ctp-green:    152 195 121;
+  --ctp-red:      224 108 117;
+  --ctp-yellow:   229 192 123;
+  --ctp-teal:     86 182 194;
+
+  /* Diff semantic tokens — One Dark values */
+  --diff-bg:               rgb(var(--ctp-base));
+  --diff-gutter-bg:        rgb(var(--ctp-mantle));
+  --diff-text:             rgb(var(--ctp-text));
+  --diff-insert-bg:        rgba(152, 195, 121, 0.20);
+  --diff-insert-gutter:    rgba(152, 195, 121, 0.32);
+  --diff-delete-bg:        rgba(224, 108, 117, 0.18);
+  --diff-delete-gutter:    rgba(224, 108, 117, 0.30);
+  --diff-insert-edit-bg:   rgba(152, 195, 121, 0.32);
+  --diff-delete-edit-bg:   rgba(224, 108, 117, 0.28);
+  --diff-selection-bg:     rgba(198, 120, 221, 0.28);
+  --diff-gutter-selected:  rgba(198, 120, 221, 0.22);
+}
+
+/* ─── Base styles ─── */
+html {
+  background-color: rgb(var(--ctp-base));
+  color: rgb(var(--ctp-text));
+}
+
 body {
-  @apply bg-gray-900 text-gray-100;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  background-color: rgb(var(--ctp-base));
+  color: rgb(var(--ctp-text));
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-code, pre {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+code, pre, .font-mono {
+  font-family: 'Geist Mono', ui-monospace, 'Fira Code', monospace;
+}
+
+/* ─── Scrollbars ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(var(--ctp-mantle));
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--ctp-surface1));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--ctp-overlay0));
+}
+
+/* ─── Aperture crosshair grid ─── */
+.aperture-grid {
+  background-image: radial-gradient(circle, rgb(var(--ctp-surface1)) 1px, transparent 1px);
+  background-size: 24px 24px;
 }

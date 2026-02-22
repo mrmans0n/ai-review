@@ -72,9 +72,9 @@ export function AddCommentForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-blue-900 bg-opacity-30 border-l-4 border-blue-500 p-3 my-2"
+      className="border-l-2 border-ctp-mauve bg-ctp-surface0 p-3"
     >
-      <div className="text-xs text-gray-400 mb-2">
+      <div className="text-xs text-ctp-subtext mb-2">
         Adding comment on {file} lines {startLine}
         {endLine !== startLine && `-${endLine}`} ({side} side)
       </div>
@@ -84,14 +84,14 @@ export function AddCommentForm({
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Enter your comment... (Ctrl+Enter to submit, Esc to cancel)"
-        className="w-full bg-gray-800 text-white p-2 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full bg-ctp-mantle border border-ctp-surface1 rounded-sm text-ctp-text text-sm p-2 placeholder:text-ctp-overlay0 focus:border-ctp-mauve focus:outline-none focus:ring-1 focus:ring-ctp-mauve/30 resize-none"
         rows={4}
       />
       <div className="flex gap-2 mt-2">
         <button
           type="submit"
           disabled={!text.trim()}
-          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 bg-ctp-mauve text-ctp-base text-sm rounded-sm hover:opacity-90 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Add Comment
         </button>
@@ -99,7 +99,7 @@ export function AddCommentForm({
           <button
             type="button"
             onClick={insertCode}
-            className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
+            className="px-3 py-1.5 text-ctp-subtext text-sm rounded-sm hover:text-ctp-text hover:bg-ctp-surface0 transition-colors"
           >
             Insert code
           </button>
@@ -107,7 +107,7 @@ export function AddCommentForm({
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
+          className="px-3 py-1.5 text-ctp-subtext text-sm rounded-sm hover:text-ctp-text hover:bg-ctp-surface0 transition-colors"
         >
           Cancel
         </button>

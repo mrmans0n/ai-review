@@ -66,13 +66,13 @@ export function HunkExpandControl({
   };
 
   return (
-    <div className="flex items-center gap-3 text-xs text-gray-400 py-1 px-4">
+    <div className="flex items-center gap-3 text-xs text-ctp-subtext py-1 px-4">
       {showSplit ? (
         <>
           {previousHunk && (
             <button
               onClick={handleExpandDown}
-              className="hover:text-blue-400 transition-colors flex items-center gap-1"
+              className="hover:text-ctp-blue transition-colors flex items-center gap-1 rounded-sm"
               title={`Show ${EXPAND_LINES} lines below`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
@@ -84,7 +84,7 @@ export function HunkExpandControl({
           {nextHunk && (
             <button
               onClick={handleExpandUp}
-              className="hover:text-blue-400 transition-colors flex items-center gap-1"
+              className="hover:text-ctp-blue transition-colors flex items-center gap-1 rounded-sm"
               title={`Show ${EXPAND_LINES} lines above`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
@@ -95,7 +95,7 @@ export function HunkExpandControl({
           )}
           <button
             onClick={handleExpandAll}
-            className="hover:text-blue-400 transition-colors flex items-center gap-1"
+            className="hover:text-ctp-blue transition-colors flex items-center gap-1 rounded-sm"
             title={`Show all ${collapsedCount} lines`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
@@ -107,7 +107,7 @@ export function HunkExpandControl({
       ) : (
         <button
           onClick={handleExpandAll}
-          className="hover:text-blue-400 transition-colors flex items-center gap-1"
+          className="hover:text-ctp-blue transition-colors flex items-center gap-1 rounded-sm"
           title={`Show all ${collapsedCount} lines`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">

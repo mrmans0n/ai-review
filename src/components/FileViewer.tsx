@@ -181,10 +181,10 @@ export function FileViewer({
   };
 
   return (
-    <div className="bg-gray-900 rounded overflow-hidden border border-gray-700" data-file-viewer={fileName} data-search-query={searchQuery} data-highlighted-word={highlightedWord || ""}>
+    <div className="bg-ctp-mantle rounded overflow-hidden border border-ctp-surface1" data-file-viewer={fileName} data-search-query={searchQuery} data-highlighted-word={highlightedWord || ""}>
       <div
-        className={`px-4 py-2 border-b border-gray-700 flex items-center justify-between transition-colors ${
-          isViewed ? "bg-gray-800/80 text-gray-400 cursor-pointer" : "bg-gray-800"
+        className={`px-4 py-2 border-b border-ctp-surface1 flex items-center justify-between transition-colors ${
+          isViewed ? "bg-ctp-base/80 text-ctp-subtext cursor-pointer" : "bg-ctp-base"
         }`}
         onClick={() => {
           if (isViewed) {
@@ -194,20 +194,20 @@ export function FileViewer({
       >
         <div className="flex items-center gap-3">
           <label
-            className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-300"
+            className="flex items-center gap-2 text-xs uppercase tracking-wide text-ctp-subtext"
             onClick={(event) => event.stopPropagation()}
           >
             <input
               type="checkbox"
               checked={isViewed}
               onChange={onToggleViewed}
-              className="h-4 w-4 rounded border-gray-500 bg-gray-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+              className="h-4 w-4 rounded border-ctp-surface1 bg-ctp-mantle text-ctp-blue focus:ring-ctp-blue focus:ring-offset-0"
             />
             Viewed
           </label>
-          <span className="text-sm text-gray-200 font-medium">{fileName}</span>
+          <span className="text-sm text-ctp-text font-medium">{fileName}</span>
         </div>
-        <span className="text-xs text-gray-400">{lines.length} lines</span>
+        <span className="text-xs text-ctp-subtext">{lines.length} lines</span>
       </div>
 
       {!isViewed && lines.map((line, index) => {
@@ -223,13 +223,13 @@ export function FileViewer({
 
         return (
           <div key={lineNumber} data-line-number={lineNumber} data-line-side="new">
-            <div className={`flex transition-colors ${highlighted ? "bg-blue-900/20" : "hover:bg-gray-800"}`}>
+            <div className={`flex transition-colors ${highlighted ? "bg-ctp-blue/10" : "hover:bg-ctp-base"}`}>
               {/* Line number gutter */}
               <div
-                className={`relative flex-shrink-0 w-16 px-3 py-1 text-right text-gray-500 border-r border-gray-700 select-none cursor-pointer transition-colors ${
+                className={`relative flex-shrink-0 w-16 px-3 py-1 text-right text-ctp-subtext border-r border-ctp-surface1 select-none cursor-pointer transition-colors ${
                   highlighted
-                    ? "bg-blue-900/30 text-blue-400"
-                    : "bg-gray-850 hover:bg-gray-700 hover:text-gray-300"
+                    ? "bg-ctp-blue/20 text-ctp-blue"
+                    : "bg-ctp-mantle hover:bg-ctp-surface0 hover:text-ctp-text"
                 }`}
                 onMouseDown={(e) => {
                   e.preventDefault();
@@ -241,7 +241,7 @@ export function FileViewer({
               >
                 {gutterHovered && (
                   <span
-                    className="absolute left-0.5 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 hover:bg-blue-500 cursor-pointer text-white opacity-80 hover:opacity-100 transition-all"
+                    className="absolute left-0.5 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-ctp-blue hover:bg-ctp-teal cursor-pointer text-ctp-base opacity-80 hover:opacity-100 transition-all"
                     title="Add comment"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
@@ -255,7 +255,7 @@ export function FileViewer({
               {/* Code content */}
               <div className="diff-code-cell flex-1 px-4 py-1 overflow-x-auto">
                 <code
-                  className="diff-code font-mono text-sm text-gray-200 whitespace-pre"
+                  className="diff-code font-mono text-sm text-ctp-text whitespace-pre"
                   dangerouslySetInnerHTML={{
                     __html: highlightedLines[index] || line,
                   }}

@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { parseDiff, Diff, Hunk, Decoration, getChangeKey, getCollapsedLinesCountBetween, expandFromRawCode } from "react-diff-view";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import "react-diff-view/style/index.css";
 import "./diff.css";
-import "highlight.js/styles/github-dark.css";
 import { highlight } from "./highlight";
 import { useGit } from "./hooks/useGit";
 import { useFileExplorer } from "./hooks/useFileExplorer";
@@ -12,6 +12,7 @@ import { useComments } from "./hooks/useComments";
 import { useRepoManager } from "./hooks/useRepoManager";
 import { useSearch } from "./hooks/useSearch";
 import { useWordHighlight } from "./hooks/useWordHighlight";
+import { useTheme } from './hooks/useTheme';
 import { FileExplorer } from "./components/FileExplorer";
 import { CommitSelector } from "./components/CommitSelector";
 import { FileList } from "./components/FileList";
@@ -75,7 +76,8 @@ function App() {
   const [showPromptPreview, setShowPromptPreview] = useState(false);
   const [waitMode, setWaitMode] = useState(false);
   const [initialDiffMode, setInitialDiffMode] = useState<InitialDiffMode | null>(null);
-  const [cliInstalled, setCliInstalled] = useState(false);
+  const [cliInstalled, setCliInstalled] = useState<boolean | null>(null);
+  const [cliJustInstalled, setCliJustInstalled] = useState(false);
   const [installMessage, setInstallMessage] = useState<string | null>(null);
   const [hoveredCommentIds, setHoveredCommentIds] = useState<string[] | null>(null);
   const [showCommentOverview, setShowCommentOverview] = useState(false);
@@ -88,6 +90,8 @@ function App() {
   const [sidebarWidth, setSidebarWidth] = useState(256);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
+
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const repoManager = useRepoManager();
   const search = useSearch();
@@ -107,6 +111,7 @@ function App() {
 
   const [selectedCommit, setSelectedCommit] = useState<CommitInfo | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<BranchInfo | null>(null);
+  const [reviewingLabel, setReviewingLabel] = useState<string | null>(null);
 
   const { isGitRepo, diffResult, loading, error, loadDiff } = useGit(workingDir);
   const fileExplorerRef = selectedCommit?.hash ?? selectedBranch?.name ?? null;
@@ -241,6 +246,16 @@ function App() {
   const files = diffText ? parseDiff(diffText) : [];
   const renderableFiles = files.filter((file: any) => file.hunks && file.hunks.length > 0);
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
+
+  useEffect(() => {
+    getCurrentWindow().setTitle(reviewingLabel ? `Reviewing ${reviewingLabel}` : "ai-review");
+  }, [reviewingLabel]);
+
+  const btnBase = "px-3 py-1.5 text-sm rounded-sm transition-colors border";
+  const btnDefault = `${btnBase} bg-transparent border-ctp-surface1 text-ctp-subtext hover:bg-ctp-surface0 hover:text-ctp-text hover:border-ctp-overlay0`;
+  const btnActive = `${btnBase} bg-ctp-surface1 border-ctp-peach text-ctp-text`;
+  const btnIcon = "p-1.5 rounded-sm text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface0 transition-colors";
+  const btnIconActive = "p-1.5 rounded-sm text-ctp-text bg-ctp-surface1 border border-ctp-peach transition-colors";
 
   useEffect(() => {
     window.localStorage.setItem("changed-files-sidebar-width", String(sidebarWidth));
@@ -421,6 +436,7 @@ function App() {
   const handleModeChange = (newMode: DiffModeConfig) => {
     setDiffMode(newMode);
     loadDiff(newMode);
+    setReviewingLabel(null);
   };
 
   const toggleViewed = (fileName: string) => {
@@ -453,6 +469,7 @@ function App() {
       setDiffMode({ mode: "unstaged" });
       setSelectedCommit(null);
       setSelectedBranch(null);
+      setReviewingLabel(null);
       setExpandedHunksMap({});
       sourceCache.current = {};
       setViewMode("diff");
@@ -652,6 +669,7 @@ function App() {
       setChangedFiles(result.files);
       setSelectedCommit(commit);
       setSelectedBranch(null);
+      setReviewingLabel(`${commit.short_hash} ${commit.message}`);
       setViewMode("diff");
       commitSelector.closeSelector();
     } catch (err) {
@@ -671,6 +689,7 @@ function App() {
       setChangedFiles(result.files);
       setSelectedBranch(branch);
       setSelectedCommit(null);
+      setReviewingLabel(branch.name);
       setViewMode("diff");
       commitSelector.closeSelector();
     } catch (err) {
@@ -694,6 +713,7 @@ function App() {
       setDiffText(result || "No changes in this entry");
       setSelectedCommit(null);
       setSelectedBranch(null);
+      setReviewingLabel(`${entry.short_hash} ${entry.title}`);
       setViewMode("diff");
       commitSelector.closeSelector();
     } catch (err) {
@@ -712,6 +732,7 @@ function App() {
       setDiffText(result || "No changes in this stack");
       setSelectedCommit(null);
       setSelectedBranch(null);
+      setReviewingLabel(stack.name);
       setViewMode("diff");
       commitSelector.closeSelector();
     } catch (err) {
@@ -731,6 +752,7 @@ function App() {
       setDiffMode({ mode: "commit", commitRef: ref });
       setSelectedCommit(null);
       setSelectedBranch(null);
+      setReviewingLabel(ref);
       setViewMode("diff");
       commitSelector.closeSelector();
     } catch (err) {
@@ -775,6 +797,8 @@ function App() {
       
       if (result.success) {
         setCliInstalled(true);
+        setCliJustInstalled(true);
+        setTimeout(() => setCliJustInstalled(false), 3000);
         if (result.path_warning) {
           setInstallMessage(
             `${result.message}\n\nTo add ~/.local/bin to your PATH, add this line to your shell config:\nexport PATH="$HOME/.local/bin:$PATH"`
@@ -884,7 +908,7 @@ function App() {
       if (changeKey) {
         const commentWidget = wrapForSide(
           <div
-            className="px-4 py-2 bg-gray-800 border-t border-b border-gray-700"
+            className="px-4 py-2 bg-ctp-mantle border-t border-b border-ctp-surface1"
             onMouseEnter={() => setHoveredCommentIds(commentsAtLine.map(c => c.id))}
             onMouseLeave={() => setHoveredCommentIds(null)}
           >
@@ -909,7 +933,7 @@ function App() {
       if (formChangeKey) {
         const existingWidget = widgets[formChangeKey];
         const formWidget = wrapForSide(
-          <div className="px-4 py-2 bg-gray-800 border-t border-b border-gray-700">
+          <div className="px-4 py-2 bg-ctp-mantle border-t border-b border-ctp-surface1">
             <AddCommentForm
               file={addingCommentAt.file}
               startLine={addingCommentAt.startLine}
@@ -967,8 +991,8 @@ function App() {
     return (
       <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={file.newPath || file.oldPath}>
         <div
-          className={`px-4 py-2 font-semibold border-b border-gray-600 flex justify-between items-center transition-colors ${
-            isViewed ? "bg-gray-800/80 text-gray-400" : "bg-gray-700"
+          className={`px-4 py-2 font-medium border-b border-ctp-surface1 flex justify-between items-center transition-colors text-sm ${
+            isViewed ? "bg-ctp-mantle/80 text-ctp-subtext" : "bg-ctp-mantle text-ctp-text"
           }`}
           onClick={() => {
             if (isViewed) {
@@ -985,7 +1009,7 @@ function App() {
                 <span className="text-green-400">Added: {file.newPath}</span>
               )}
               {file.type === "modify" && (
-                <span className="text-blue-400">Modified: {file.newPath}</span>
+                <span className="text-ctp-blue">Modified: {file.newPath}</span>
               )}
               {file.type === "rename" && (
                 <span className="text-yellow-400">
@@ -996,39 +1020,20 @@ function App() {
           </div>
           <div className="flex items-center gap-2">
             <label
-              className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-300 cursor-pointer"
+              className="flex items-center gap-2 text-xs uppercase tracking-wide text-ctp-subtext cursor-pointer"
               onClick={(event) => event.stopPropagation()}
             >
               <input
                 type="checkbox"
                 checked={isViewed}
                 onChange={() => toggleViewed(fileName)}
-                className="h-4 w-4 rounded border-gray-500 bg-gray-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                className="h-4 w-4 rounded border-ctp-surface1 bg-ctp-mantle text-ctp-blue focus:ring-ctp-blue focus:ring-offset-0"
               />
               Viewed
             </label>
-            <span className="text-xs text-gray-300">
+            <span className="text-xs text-ctp-subtext">
               +{file.additions ?? 0} / -{file.deletions ?? 0}
             </span>
-            {!isViewed && (
-              <button
-                onClick={(event) => {
-                  event.stopPropagation();
-                  // Find the first changed line in this file's hunks
-                  let firstLine = 1;
-                  if (file.hunks && file.hunks.length > 0) {
-                    const firstHunk = file.hunks[0];
-                    // Use the first new line number from the hunk
-                    firstLine = firstHunk.newStart || 1;
-                  }
-                  setLastFocusedLine({ file: fileName, line: firstLine, side: "new" });
-                  handleLineClick(fileName, firstLine, "new");
-                }}
-                className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
-              >
-                + Add Comment
-              </button>
-            )}
           </div>
         </div>
         {!isViewed && (
@@ -1049,7 +1054,7 @@ function App() {
               <span className="relative inline-flex items-center w-full">
                 {showButton && (
                   <span
-                    className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 hover:bg-blue-500 cursor-pointer text-white opacity-80 hover:opacity-100 transition-all"
+                    className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-ctp-mauve hover:opacity-90 cursor-pointer text-ctp-base opacity-80 hover:opacity-100 transition-all"
                     title="Add comment"
                     onMouseDown={(e) => {
                       e.stopPropagation();
@@ -1235,8 +1240,8 @@ function App() {
   if (!workingDir || !isGitRepo) {
     if (repoManager.loading) {
       return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-          <div className="text-gray-400 text-lg">Loading...</div>
+        <div className="min-h-screen bg-ctp-base flex items-center justify-center">
+          <div className="text-ctp-subtext text-lg">Loading...</div>
         </div>
       );
     }
@@ -1251,9 +1256,18 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-2">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-ctp-base text-ctp-text">
+      {/* Header */}
+      <div
+        className="flex items-center justify-between px-4 py-2.5 bg-ctp-mantle border-b border-ctp-surface1 flex-shrink-0"
+        style={theme === 'dark' ? { boxShadow: '0 4px 16px -4px rgba(250,179,135,0.15)' } : undefined}
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col leading-none">
+            <span className="text-sm font-semibold text-ctp-text tracking-wide">
+              <span className="text-ctp-peach mr-1">●</span>ai-review
+            </span>
+          </div>
           <RepoSwitcher
             currentPath={workingDir}
             repos={repoManager.repos}
@@ -1261,96 +1275,103 @@ function App() {
             onAddRepo={handleAddRepo}
             onRemoveRepo={handleRemoveRepo}
           />
-          <div className="text-sm text-gray-400">
-            Press <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">Shift</kbd>{" "}
-            <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">Shift</kbd> to search files
-          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-ctp-overlay0 hidden md:block">
+            Press <kbd className="px-2 py-1 bg-ctp-surface1 rounded text-xs">Shift</kbd>{" "}
+            <kbd className="px-2 py-1 bg-ctp-surface1 rounded text-xs">Shift</kbd> to search files
+          </span>
+
+          {/* Theme toggle button */}
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface0 transition-colors"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-3 flex items-center gap-4 flex-wrap">
-        <div className="flex gap-2">
+      <div className="flex items-center gap-1 px-3 py-2 bg-ctp-mantle border-b border-ctp-surface1 flex-shrink-0 flex-wrap">
+        {/* Group 1: View mode */}
+        <div className="flex gap-1">
           <button
             onClick={() => setViewType("split")}
-            className={`px-4 py-2 rounded transition-colors ${
-              viewType === "split"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-            }`}
+            className={viewType === "split" ? btnActive : btnDefault}
           >
-            Split View
+            Split
           </button>
           <button
             onClick={() => setViewType("unified")}
-            className={`px-4 py-2 rounded transition-colors ${
-              viewType === "unified"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-            }`}
+            className={viewType === "unified" ? btnActive : btnDefault}
           >
-            Unified View
+            Unified
           </button>
         </div>
 
         {isGitRepo && (
           <>
-            <div className="h-6 w-px bg-gray-600" />
-            <div className="flex gap-2 items-center">
+            {/* Divider between group 1 and group 2 */}
+            <div className="w-px h-5 bg-ctp-surface1 mx-1" />
+
+            {/* Group 2: Diff target */}
+            <div className="flex gap-1 items-center">
               <button
                 onClick={() => handleModeChange({ mode: "unstaged" })}
-                className={`px-4 py-2 rounded transition-colors ${
-                  diffMode.mode === "unstaged"
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                }`}
+                className={diffMode.mode === "unstaged" ? btnActive : btnDefault}
               >
                 Unstaged
               </button>
               <button
                 onClick={() => handleModeChange({ mode: "staged" })}
-                className={`px-4 py-2 rounded transition-colors ${
-                  diffMode.mode === "staged"
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                }`}
+                className={diffMode.mode === "staged" ? btnActive : btnDefault}
               >
                 Staged
               </button>
-            </div>
-            <button
-              onClick={commitSelector.openSelector}
-              className="px-4 py-2 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center gap-2"
-              title="Browse commits (Ctrl+K)"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+              {renderableFiles.length > 0 && <button
+                onClick={commitSelector.openSelector}
+                className={btnDefault + " flex items-center gap-1.5"}
+                title="Browse commits (Ctrl+K)"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-              Browse Commits
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+                Browse Commits
+              </button>}
+            </div>
           </>
         )}
 
-        <div className="ml-auto flex items-center gap-3">
-          {renderableFiles.length > 0 && (
-            <div className="px-2.5 py-1 rounded bg-gray-700 text-xs text-gray-300 border border-gray-600">
-              {viewedCount}/{renderableFiles.length} viewed
-            </div>
-          )}
+        {/* Divider between group 2 and group 3 */}
+        <div className="w-px h-5 bg-ctp-surface1 mx-1" />
+
+        {/* Group 3: Tools */}
+        <div className="ml-auto flex items-center gap-1">
           {changedFiles.length > 0 && (
             <button
               onClick={() => setIsSidebarVisible((prev) => !prev)}
-              className="p-2 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+              className={isSidebarVisible ? btnIconActive : btnIcon}
               title={isSidebarVisible ? "Hide changed files sidebar" : "Show changed files sidebar"}
               aria-label={isSidebarVisible ? "Hide changed files sidebar" : "Show changed files sidebar"}
             >
@@ -1360,7 +1381,7 @@ function App() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={2}
-                className="w-5 h-5"
+                className="w-4 h-4"
               >
                 <rect x="3" y="4" width="18" height="16" rx="2" />
                 <path d="M9 4v16" />
@@ -1372,31 +1393,27 @@ function App() {
             <>
               <button
                 onClick={() => setShowCommentOverview(true)}
-                className="px-4 py-2 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-500 transition-colors cursor-pointer"
+                className={btnDefault + " flex items-center gap-1"}
               >
                 {comments.length} comment{comments.length !== 1 ? "s" : ""}
                 {comments.length > 10 ? " 🫠" : comments.length >= 3 ? " 🔥" : ""}
               </button>
               <button
                 onClick={handleGeneratePrompt}
-                className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                className={btnActive + " flex items-center gap-1"}
               >
                 Generate Prompt
               </button>
             </>
           )}
-          <div className="relative">
+          {(cliInstalled === false || cliJustInstalled) && <div className="relative">
             <button
               onClick={handleInstallCli}
-              disabled={cliInstalled}
-              className={`px-4 py-2 rounded text-sm transition-colors flex items-center gap-2 ${
-                cliInstalled
-                  ? "bg-green-700 text-white cursor-not-allowed"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-              }`}
-              title={cliInstalled ? "CLI is already installed" : "Install CLI command"}
+              disabled={cliJustInstalled}
+              className={`${cliJustInstalled ? btnActive + " cursor-not-allowed" : btnDefault} flex items-center gap-1.5`}
+              title={cliJustInstalled ? "CLI installed" : "Install CLI command"}
             >
-              {cliInstalled ? (
+              {cliJustInstalled ? (
                 <>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -1412,7 +1429,7 @@ function App() {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  CLI Installed ✓
+                  CLI
                 </>
               ) : (
                 <>
@@ -1436,38 +1453,34 @@ function App() {
                       d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
-                  Install CLI
+                  CLI
                 </>
               )}
             </button>
             {installMessage && (
-              <div className="absolute top-full mt-2 right-0 bg-gray-800 border border-gray-600 rounded px-4 py-2 text-sm whitespace-pre-wrap max-w-md shadow-lg z-50">
+              <div className="absolute top-full mt-2 right-0 bg-ctp-surface0 border border-ctp-surface1 rounded-sm px-4 py-2 text-sm text-ctp-text whitespace-pre-wrap max-w-md shadow-lg z-50">
                 {installMessage}
               </div>
             )}
-          </div>
+          </div>}
         </div>
       </div>
 
       {selectedCommit && (
-        <div className="bg-blue-900 border-b border-blue-700 px-6 py-2">
-          <div className="flex items-center gap-3 text-sm">
-            <span className="font-mono bg-blue-800 text-blue-100 px-2 py-0.5 rounded">
-              {selectedCommit.short_hash}
-            </span>
-            <span className="font-semibold text-white">{selectedCommit.message}</span>
-          </div>
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-ctp-surface0 border-b border-ctp-surface1 text-xs text-ctp-subtext flex-shrink-0">
+          <span className="font-mono bg-ctp-surface1 text-ctp-text px-2 py-0.5 rounded-sm">
+            {selectedCommit.short_hash}
+          </span>
+          <span className="font-medium text-ctp-text">{selectedCommit.message}</span>
         </div>
       )}
 
       {selectedBranch && (
-        <div className="bg-purple-900 border-b border-purple-700 px-6 py-2">
-          <div className="flex items-center gap-3 text-sm">
-            <span className="font-mono bg-purple-800 text-purple-100 px-2 py-0.5 rounded">
-              {selectedBranch.short_hash}
-            </span>
-            <span className="font-semibold text-white">Branch: {selectedBranch.name}</span>
-          </div>
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-ctp-surface0 border-b border-ctp-surface1 text-xs text-ctp-subtext flex-shrink-0">
+          <span className="font-mono bg-ctp-surface1 text-ctp-text px-2 py-0.5 rounded-sm">
+            {selectedBranch.short_hash}
+          </span>
+          <span className="font-medium text-ctp-text">Branch: {selectedBranch.name}</span>
         </div>
       )}
 
@@ -1475,11 +1488,19 @@ function App() {
       <div className="flex h-[calc(100vh-140px)]">
         {changedFiles.length > 0 && isSidebarVisible && (
           <div
-            className="border-r border-gray-700 flex flex-col bg-gray-800 relative"
+            className="border-r border-ctp-surface1 flex flex-col bg-ctp-mantle relative"
             style={{ width: `${sidebarWidth}px` }}
           >
-            <div className="px-4 py-2 border-b border-gray-700 font-semibold">
-              Changed Files ({changedFiles.length})
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-ctp-surface1">
+              <div className="w-0.5 h-3.5 bg-ctp-peach rounded-full flex-shrink-0" />
+              <span className="text-[10px] font-semibold tracking-widest text-ctp-overlay0 uppercase">
+                Changed Files
+              </span>
+              {renderableFiles.length > 0 && (
+                <span className="ml-auto text-[10px] text-ctp-overlay0">
+                  {viewedCount}/{renderableFiles.length} viewed
+                </span>
+              )}
             </div>
             <div className="flex-1 overflow-auto">
               <FileList
@@ -1496,18 +1517,21 @@ function App() {
                 if (filesWithComments.length > 0) {
                   return (
                     <>
-                      <div className="px-4 py-2 border-t border-gray-700 font-semibold bg-gray-800 sticky top-0">
-                        Files with Comments ({filesWithComments.length})
+                      <div className="flex items-center gap-2 px-3 py-2 border-t border-b border-ctp-surface1 bg-ctp-mantle sticky top-0">
+                        <div className="w-0.5 h-3.5 bg-ctp-peach rounded-full flex-shrink-0" />
+                        <span className="text-[10px] font-semibold tracking-widest text-ctp-overlay0 uppercase">
+                          Commented Files
+                        </span>
                       </div>
                       <div className="space-y-1">
                         {filesWithComments.map((file) => (
                           <button
                             key={file}
                             onClick={() => handleFileSelect(file)}
-                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-700 transition-colors ${
+                            className={`w-full px-4 py-2 text-left text-sm transition-colors rounded-sm ${
                               selectedFile === file
-                                ? "bg-blue-600 text-white"
-                                : "text-gray-300"
+                                ? "bg-ctp-surface0 border-l-2 border-ctp-peach text-ctp-text"
+                                : "text-ctp-subtext hover:bg-ctp-surface0"
                             }`}
                           >
                             {file.split("/").pop()}
@@ -1531,7 +1555,7 @@ function App() {
                 event.preventDefault();
                 setIsResizingSidebar(true);
               }}
-              className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-blue-500/40 transition-colors"
+              className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-ctp-peach/30 transition-colors"
             />
           </div>
         )}
@@ -1539,7 +1563,7 @@ function App() {
         <div ref={mainContentRef} className="flex-1 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-gray-400 text-lg">Loading...</div>
+              <div className="text-ctp-subtext text-lg">Loading...</div>
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-full">
@@ -1547,10 +1571,10 @@ function App() {
             </div>
           ) : viewMode === "file" && currentFile ? (
             <div className="p-6">
-              <div className="bg-gray-800 px-4 py-2 mb-4 rounded">
+              <div className="bg-ctp-mantle px-4 py-2 mb-4 rounded">
                 <button
                   onClick={() => setViewMode("diff")}
-                  className="text-blue-400 hover:text-blue-300 text-sm"
+                  className="text-ctp-blue hover:opacity-80 text-sm"
                 >
                   ← Back to diff
                 </button>
@@ -1589,18 +1613,27 @@ function App() {
                 highlightedWord={wordHighlight.highlightedWord}
               />
             </div>
+          ) : renderableFiles.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center aperture-grid bg-ctp-base h-full">
+              <div className="text-center">
+                <div className="text-ctp-surface1 text-4xl mb-4 select-none">⊕</div>
+                <p className="text-ctp-subtext text-sm mb-4">No changes to review</p>
+                {isGitRepo && (
+                  <button
+                    onClick={commitSelector.openSelector}
+                    className={btnDefault + " flex items-center gap-1.5 mx-auto"}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Browse Commits
+                  </button>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="p-6">
-              {files.length === 0 ? (
-                <div className="text-center text-gray-500 mt-20">
-                  <p className="text-lg">No diff to display</p>
-                  <p className="text-sm mt-2">
-                    No changes detected in this mode
-                  </p>
-                </div>
-              ) : (
-                files.map(renderFile)
-              )}
+              {files.map(renderFile)}
             </div>
           )}
         </div>
