@@ -90,8 +90,6 @@ function App() {
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
 
   const { theme, toggle: toggleTheme } = useTheme();
-  // theme and toggleTheme will be consumed by the header redesign (Task 6)
-  void theme; void toggleTheme;
 
   const repoManager = useRepoManager();
   const search = useSearch();
@@ -1256,8 +1254,17 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-2">
-        <div className="flex items-center justify-between">
+      {/* Header */}
+      <div
+        className="flex items-center justify-between px-4 py-2.5 bg-ctp-mantle border-b border-ctp-surface1 flex-shrink-0"
+        style={theme === 'dark' ? { boxShadow: '0 4px 16px -4px rgba(250,179,135,0.15)' } : undefined}
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col leading-none">
+            <span className="text-sm font-semibold text-ctp-text tracking-wide">
+              <span className="text-ctp-peach mr-1">●</span>ai-review
+            </span>
+          </div>
           <RepoSwitcher
             currentPath={workingDir}
             repos={repoManager.repos}
@@ -1265,10 +1272,30 @@ function App() {
             onAddRepo={handleAddRepo}
             onRemoveRepo={handleRemoveRepo}
           />
-          <div className="text-sm text-gray-400">
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-ctp-overlay0 hidden md:block">
             Press <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">Shift</kbd>{" "}
             <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">Shift</kbd> to search files
-          </div>
+          </span>
+
+          {/* Theme toggle button */}
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface0 transition-colors"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 
