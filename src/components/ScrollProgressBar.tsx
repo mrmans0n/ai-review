@@ -16,11 +16,8 @@ export function ScrollProgressBar({ containerRef }: ScrollProgressBarProps) {
       aria-hidden="true"
     >
       <div
-        className="h-full transition-[width] duration-100 ease-out opacity-60"
-        style={{
-          width: `${progress}%`,
-          backgroundColor: 'var(--ctp-peach)',
-        }}
+        className="h-full bg-ctp-peach transition-[width] duration-100 ease-out"
+        style={{ width: `${progress}%` }}
       />
     </div>
   );
