@@ -9,25 +9,25 @@
 
 /* ─── Catppuccin Latte (light mode) ─── */
 :root {
-  --ctp-base:     #eff1f5;
-  --ctp-mantle:   #e6e9ef;
-  --ctp-surface0: #ccd0da;
-  --ctp-surface1: #bcc0cc;
-  --ctp-overlay0: #9ca0b0;
-  --ctp-text:     #4c4f69;
-  --ctp-subtext:  #6c6f85;
-  --ctp-blue:     #1e66f5;
-  --ctp-mauve:    #8839ef;
-  --ctp-peach:    #fe640b;
-  --ctp-green:    #40a02b;
-  --ctp-red:      #d20f39;
-  --ctp-yellow:   #df8e1d;
-  --ctp-teal:     #179299;
+  --ctp-base:     239 241 245;
+  --ctp-mantle:   230 233 239;
+  --ctp-surface0: 204 208 218;
+  --ctp-surface1: 188 192 204;
+  --ctp-overlay0: 156 160 176;
+  --ctp-text:     76 79 105;
+  --ctp-subtext:  108 111 133;
+  --ctp-blue:     30 102 245;
+  --ctp-mauve:    136 57 239;
+  --ctp-peach:    254 100 11;
+  --ctp-green:    64 160 43;
+  --ctp-red:      210 15 57;
+  --ctp-yellow:   223 142 29;
+  --ctp-teal:     23 146 153;
 
   /* Diff semantic tokens — Latte values */
-  --diff-bg:               var(--ctp-base);
-  --diff-gutter-bg:        var(--ctp-mantle);
-  --diff-text:             var(--ctp-text);
+  --diff-bg:               rgb(var(--ctp-base));
+  --diff-gutter-bg:        rgb(var(--ctp-mantle));
+  --diff-text:             rgb(var(--ctp-text));
   --diff-insert-bg:        rgba(64, 160, 43, 0.18);
   --diff-insert-gutter:    rgba(64, 160, 43, 0.32);
   --diff-delete-bg:        rgba(210, 15, 57, 0.14);
@@ -40,25 +40,25 @@
 
 /* ─── One Dark (dark mode) ─── */
 [data-theme="dark"] {
-  --ctp-base:     #282c34;
-  --ctp-mantle:   #21252b;
-  --ctp-surface0: #2c313c;
-  --ctp-surface1: #3e4451;
-  --ctp-overlay0: #5c6370;
-  --ctp-text:     #abb2bf;
-  --ctp-subtext:  #828997;
-  --ctp-blue:     #61afef;
-  --ctp-mauve:    #c678dd;
-  --ctp-peach:    #d19a66;
-  --ctp-green:    #98c379;
-  --ctp-red:      #e06c75;
-  --ctp-yellow:   #e5c07b;
-  --ctp-teal:     #56b6c2;
+  --ctp-base:     40 44 52;
+  --ctp-mantle:   33 37 43;
+  --ctp-surface0: 44 49 60;
+  --ctp-surface1: 62 68 81;
+  --ctp-overlay0: 92 99 112;
+  --ctp-text:     171 178 191;
+  --ctp-subtext:  130 137 151;
+  --ctp-blue:     97 175 239;
+  --ctp-mauve:    198 120 221;
+  --ctp-peach:    209 154 102;
+  --ctp-green:    152 195 121;
+  --ctp-red:      224 108 117;
+  --ctp-yellow:   229 192 123;
+  --ctp-teal:     86 182 194;
 
   /* Diff semantic tokens — One Dark values */
-  --diff-bg:               var(--ctp-base);
-  --diff-gutter-bg:        var(--ctp-mantle);
-  --diff-text:             var(--ctp-text);
+  --diff-bg:               rgb(var(--ctp-base));
+  --diff-gutter-bg:        rgb(var(--ctp-mantle));
+  --diff-text:             rgb(var(--ctp-text));
   --diff-insert-bg:        rgba(152, 195, 121, 0.20);
   --diff-insert-gutter:    rgba(152, 195, 121, 0.32);
   --diff-delete-bg:        rgba(224, 108, 117, 0.18);
@@ -71,13 +71,13 @@
 
 /* ─── Base styles ─── */
 html {
-  background-color: var(--ctp-base);
-  color: var(--ctp-text);
+  background-color: rgb(var(--ctp-base));
+  color: rgb(var(--ctp-text));
 }
 
 body {
-  background-color: var(--ctp-base);
-  color: var(--ctp-text);
+  background-color: rgb(var(--ctp-base));
+  color: rgb(var(--ctp-text));
   font-family: 'Geist', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -93,18 +93,18 @@ code, pre, .font-mono {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--ctp-mantle);
+  background: rgb(var(--ctp-mantle));
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--ctp-surface1);
+  background: rgb(var(--ctp-surface1));
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--ctp-overlay0);
+  background: rgb(var(--ctp-overlay0));
 }
 
 /* ─── Aperture crosshair grid ─── */
 .aperture-grid {
-  background-image: radial-gradient(circle, var(--ctp-surface1) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgb(var(--ctp-surface1)) 1px, transparent 1px);
   background-size: 24px 24px;
 }
