@@ -7,16 +7,104 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark theme by default */
+/* ─── Catppuccin Latte (light mode) ─── */
+:root {
+  --ctp-base:     #eff1f5;
+  --ctp-mantle:   #e6e9ef;
+  --ctp-surface0: #ccd0da;
+  --ctp-surface1: #bcc0cc;
+  --ctp-overlay0: #9ca0b0;
+  --ctp-text:     #4c4f69;
+  --ctp-subtext:  #6c6f85;
+  --ctp-blue:     #1e66f5;
+  --ctp-mauve:    #8839ef;
+  --ctp-peach:    #fe640b;
+  --ctp-green:    #40a02b;
+  --ctp-red:      #d20f39;
+  --ctp-yellow:   #df8e1d;
+  --ctp-teal:     #179299;
+
+  /* Diff semantic tokens — Latte values */
+  --diff-bg:               var(--ctp-base);
+  --diff-gutter-bg:        var(--ctp-mantle);
+  --diff-text:             var(--ctp-text);
+  --diff-insert-bg:        rgba(64, 160, 43, 0.12);
+  --diff-insert-gutter:    rgba(64, 160, 43, 0.20);
+  --diff-delete-bg:        rgba(210, 15, 57, 0.10);
+  --diff-delete-gutter:    rgba(210, 15, 57, 0.18);
+  --diff-insert-edit-bg:   rgba(64, 160, 43, 0.22);
+  --diff-delete-edit-bg:   rgba(210, 15, 57, 0.18);
+  --diff-selection-bg:     rgba(136, 57, 239, 0.20);
+  --diff-gutter-selected:  rgba(136, 57, 239, 0.15);
+}
+
+/* ─── Catppuccin Mocha (dark mode) ─── */
+[data-theme="dark"] {
+  --ctp-base:     #1e1e2e;
+  --ctp-mantle:   #181825;
+  --ctp-surface0: #313244;
+  --ctp-surface1: #45475a;
+  --ctp-overlay0: #6c7086;
+  --ctp-text:     #cdd6f4;
+  --ctp-subtext:  #a6adc8;
+  --ctp-blue:     #89b4fa;
+  --ctp-mauve:    #cba6f7;
+  --ctp-peach:    #fab387;
+  --ctp-green:    #a6e3a1;
+  --ctp-red:      #f38ba8;
+  --ctp-yellow:   #f9e2af;
+  --ctp-teal:     #94e2d5;
+
+  /* Diff semantic tokens — Mocha values */
+  --diff-bg:               var(--ctp-base);
+  --diff-gutter-bg:        var(--ctp-mantle);
+  --diff-text:             var(--ctp-text);
+  --diff-insert-bg:        rgba(166, 227, 161, 0.10);
+  --diff-insert-gutter:    rgba(166, 227, 161, 0.15);
+  --diff-delete-bg:        rgba(243, 139, 168, 0.10);
+  --diff-delete-gutter:    rgba(243, 139, 168, 0.15);
+  --diff-insert-edit-bg:   rgba(166, 227, 161, 0.20);
+  --diff-delete-edit-bg:   rgba(243, 139, 168, 0.20);
+  --diff-selection-bg:     rgba(203, 166, 247, 0.20);
+  --diff-gutter-selected:  rgba(203, 166, 247, 0.15);
+}
+
+/* ─── Base styles ─── */
+html {
+  background-color: var(--ctp-base);
+  color: var(--ctp-text);
+}
+
 body {
-  @apply bg-gray-900 text-gray-100;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  background-color: var(--ctp-base);
+  color: var(--ctp-text);
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-code, pre {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+code, pre, .font-mono {
+  font-family: 'Geist Mono', ui-monospace, 'Fira Code', monospace;
+}
+
+/* ─── Scrollbars ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ctp-mantle);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ctp-surface1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ctp-overlay0);
+}
+
+/* ─── Aperture crosshair grid ─── */
+.aperture-grid {
+  background-image: radial-gradient(circle, var(--ctp-surface1) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
