@@ -170,6 +170,7 @@ td[colspan="4"].diff-widget-content .split-widget-new {
 }
 
 .word-highlight {
-  background-color: color-mix(in srgb, var(--ctp-yellow) 35%, transparent);
+  background-color: color-mix(in srgb, var(--ctp-yellow) 55%, transparent);
   border-radius: 2px;
+  outline: 1px solid color-mix(in srgb, var(--ctp-yellow) 60%, transparent);
 }
