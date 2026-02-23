@@ -89,6 +89,26 @@ code, pre, .font-mono {
   font-family: 'Geist Mono', ui-monospace, 'Fira Code', monospace;
 }
 
+/* ─── Middle ellipsis ─── */
+.middle-ellipsis {
+  display: inline-flex;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.middle-ellipsis-start {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 1.5em;
+}
+
+.middle-ellipsis-end {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* ─── Scrollbars ─── */
 ::-webkit-scrollbar {
   width: 6px;
