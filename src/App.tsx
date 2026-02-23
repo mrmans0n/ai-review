@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { parseDiff, Diff, Hunk, Decoration, getChangeKey, getCollapsedLinesCountBetween, expandFromRawCode } from "react-diff-view";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { listen } from "@tauri-apps/api/event";
 import "react-diff-view/style/index.css";
 import "./diff.css";
 import { highlight } from "./highlight";
@@ -165,6 +166,16 @@ function App() {
     if (savedSidebarVisibility !== null) {
       setIsSidebarVisible(savedSidebarVisibility === "true");
     }
+  }, []);
+
+  // Listen for native menu "Install CLI" event
+  useEffect(() => {
+    const unlisten = listen("menu-install-cli", () => {
+      handleInstallCli();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
   }, []);
 
   useEffect(() => {

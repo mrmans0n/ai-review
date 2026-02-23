@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::Manager;
+use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
+use tauri::{Emitter, Manager};
 
 mod config;
 mod files;
@@ -427,6 +428,40 @@ pub fn run() {
                 working_dir: Mutex::new(working_dir),
                 wait_mode: Mutex::new(wait_mode),
                 initial_diff_mode: Mutex::new(initial_diff_mode.clone()),
+            });
+
+            // Build native menu with Install CLI option under File
+            let install_cli_item = MenuItemBuilder::new("Install CLI...")
+                .id("install_cli")
+                .build(app)?;
+
+            let file_menu = SubmenuBuilder::new(app, "File")
+                .item(&install_cli_item)
+                .separator()
+                .close_window()
+                .build()?;
+
+            let edit_menu = SubmenuBuilder::new(app, "Edit")
+                .undo()
+                .redo()
+                .separator()
+                .cut()
+                .copy()
+                .paste()
+                .select_all()
+                .build()?;
+
+            let menu = MenuBuilder::new(app)
+                .item(&file_menu)
+                .item(&edit_menu)
+                .build()?;
+
+            app.set_menu(menu)?;
+
+            app.on_menu_event(move |app_handle, event| {
+                if event.id().as_ref() == "install_cli" {
+                    let _ = app_handle.emit("menu-install-cli", ());
+                }
             });
 
             Ok(())
