@@ -1003,7 +1003,7 @@ function App() {
       <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={file.newPath || file.oldPath}>
         <div
           className={`px-4 py-2 font-medium border-b border-ctp-surface1 flex justify-between items-center transition-colors text-sm ${
-            isViewed ? "bg-ctp-mantle/80 text-ctp-subtext" : "bg-ctp-mantle text-ctp-text"
+            isViewed ? "bg-ctp-surface0/80 text-ctp-subtext" : "bg-ctp-surface0 text-ctp-text"
           }`}
           onClick={() => {
             if (isViewed) {
@@ -1014,16 +1014,16 @@ function App() {
           <div className="flex items-center gap-3">
             <div>
               {file.type === "delete" && (
-                <span className="text-red-400">Deleted: {file.oldPath}</span>
+                <span className="text-ctp-red font-semibold">Deleted: {file.oldPath}</span>
               )}
               {file.type === "add" && (
-                <span className="text-green-400">Added: {file.newPath}</span>
+                <span className="text-ctp-green font-semibold">Added: {file.newPath}</span>
               )}
               {file.type === "modify" && (
-                <span className="text-ctp-blue">Modified: {file.newPath}</span>
+                <span className="text-ctp-blue font-semibold">Modified: {file.newPath}</span>
               )}
               {file.type === "rename" && (
-                <span className="text-yellow-400">
+                <span className="text-ctp-yellow font-semibold">
                   Renamed: {file.oldPath} → {file.newPath}
                 </span>
               )}
