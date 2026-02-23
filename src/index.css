@@ -73,11 +73,13 @@
 html {
   background-color: rgb(var(--ctp-base));
   color: rgb(var(--ctp-text));
+  overscroll-behavior: none;
 }
 
 body {
   background-color: rgb(var(--ctp-base));
   color: rgb(var(--ctp-text));
+  overscroll-behavior: none;
   font-family: 'Geist', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
