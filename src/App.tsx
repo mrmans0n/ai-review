@@ -1187,10 +1187,14 @@ function App() {
             const cachedSource = sourceCache.current[fileName];
             const lastHunk = hunks[hunks.length - 1];
             const estimatedTotalLines = cachedSource?.length
-              ?? (lastHunk ? lastHunk.oldStart + lastHunk.oldLines + 20 : 0);
+              ?? (lastHunk
+                ? (lastHunk.oldLines === 0 && lastHunk.oldStart === 0)
+                  ? lastHunk.newStart + lastHunk.newLines - 1
+                  : lastHunk.oldStart + lastHunk.oldLines + 20
+                : 0);
 
             // Top-of-file expand control
-            if (hunks.length > 0 && hunks[0].oldStart > 1) {
+            if (hunks.length > 0 && (hunks[0].oldStart > 1 || (hunks[0].oldStart === 0 && hunks[0].newStart > 1))) {
               elements.push(
                 <Decoration key="expand-top">
                   <HunkExpandControl
@@ -1225,7 +1229,9 @@ function App() {
 
             // Bottom-of-file expand control
             if (hunks.length > 0 && estimatedTotalLines > 0) {
-              const lastHunkEnd = lastHunk.oldStart + lastHunk.oldLines - 1;
+              const lastHunkEnd = (lastHunk.oldLines === 0 && lastHunk.oldStart === 0)
+                ? lastHunk.newStart + lastHunk.newLines - 1
+                : lastHunk.oldStart + lastHunk.oldLines - 1;
               if (lastHunkEnd < estimatedTotalLines) {
                 elements.push(
                   <Decoration key="expand-bottom">
