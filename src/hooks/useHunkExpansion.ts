@@ -39,19 +39,35 @@ export function useHunkExpansion(
           filePath: file,
         });
       } else if (diffMode === "staged") {
-        content = await invoke<string>("get_file_at_ref", {
-          path: workingDir,
-          gitRef: ":0",
-          filePath: file,
-        });
+        try {
+          content = await invoke<string>("get_file_at_ref", {
+            path: workingDir,
+            gitRef: ":0",
+            filePath: file,
+          });
+        } catch {
+          // Fallback for edge cases where index lookup fails
+          content = await invoke<string>("read_file_content", {
+            path: workingDir,
+            filePath: file,
+          });
+        }
       } else {
         // commit mode — use the commitRef
         const ref = commitRef || "HEAD";
-        content = await invoke<string>("get_file_at_ref", {
-          path: workingDir,
-          gitRef: ref,
-          filePath: file,
-        });
+        try {
+          content = await invoke<string>("get_file_at_ref", {
+            path: workingDir,
+            gitRef: ref,
+            filePath: file,
+          });
+        } catch {
+          // Fallback for paths not present at the requested ref (e.g. newly added files)
+          content = await invoke<string>("read_file_content", {
+            path: workingDir,
+            filePath: file,
+          });
+        }
       }
 
       const lines = content.split("\n");

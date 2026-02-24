@@ -110,6 +110,32 @@ describe("useHunkExpansion", () => {
     });
   });
 
+  it("should fallback to read_file_content when get_file_at_ref fails", async () => {
+    const fileContent = "line 1\nline 2\nline 3";
+    vi.mocked(invoke)
+      .mockRejectedValueOnce(new Error("not found"))
+      .mockResolvedValueOnce(fileContent);
+
+    const hunks = [makeHunk(2, 1, 2, 1)];
+    const { result } = renderHook(() =>
+      useHunkExpansion("test.ts", hunks, "/repo", "commit", "abc123")
+    );
+
+    await act(async () => {
+      await result.current.expandRange("test.ts", 1, 1);
+    });
+
+    expect(invoke).toHaveBeenNthCalledWith(1, "get_file_at_ref", {
+      path: "/repo",
+      gitRef: "abc123",
+      filePath: "test.ts",
+    });
+    expect(invoke).toHaveBeenNthCalledWith(2, "read_file_content", {
+      path: "/repo",
+      filePath: "test.ts",
+    });
+  });
+
   it("should cache file source across multiple expansions", async () => {
     const fileContent = "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\nline 14\nline 15\nline 16\nline 17\nline 18\nline 19\nline 20\nline 21\nline 22\nline 23\nline 24\nline 25\nline 26\nline 27\nline 28\nline 29\nline 30";
     vi.mocked(invoke).mockResolvedValue(fileContent);
