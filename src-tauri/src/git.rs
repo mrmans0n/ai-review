@@ -208,13 +208,23 @@ fn generate_untracked_files_diff(dir: &Path, files: &[String]) -> Result<String,
             continue;
         }
 
-        let content = fs::read_to_string(&path)
+        let bytes = fs::read(&path)
             .map_err(|e| format!("Failed to read untracked file '{}': {}", file, e))?;
 
-        diff.push_str(&build_new_file_diff(file, &content));
+        match String::from_utf8(bytes) {
+            Ok(content) => diff.push_str(&build_new_file_diff(file, &content)),
+            Err(_) => diff.push_str(&build_binary_file_diff(file)),
+        }
     }
 
     Ok(diff)
+}
+
+fn build_binary_file_diff(file_path: &str) -> String {
+    format!(
+        "diff --git a/{0} b/{0}\nnew file mode 100644\nBinary file {0} added\n",
+        file_path
+    )
 }
 
 fn build_new_file_diff(file_path: &str, content: &str) -> String {
@@ -1144,6 +1154,16 @@ mod tests {
 
         assert!(diff.contains("@@ -0,0 +1,1 @@"));
         assert!(diff.contains("+hello\n"));
+    }
+
+    #[test]
+    fn test_build_binary_file_diff() {
+        let diff = build_binary_file_diff("assets/logo.png");
+
+        assert!(diff.contains("diff --git a/assets/logo.png b/assets/logo.png"));
+        assert!(diff.contains("new file mode 100644"));
+        assert!(diff.contains("Binary file assets/logo.png added"));
+        assert!(!diff.contains("--- /dev/null"));
     }
 
     #[test]
