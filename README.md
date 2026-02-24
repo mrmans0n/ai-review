@@ -4,7 +4,9 @@ AI Review (`air`) is a desktop code review tool for reviewing diffs, adding inli
 
 It brings a pull-request-style review experience to the human → AI feedback loop.
 
-![A code review with air](art/air.png)
+| Light | Dark |
+|-------|-------------|
+| ![A code review with air with light theme](art/air-light.png) | ![A code review with air with dark theme](art/air-dark.png) |
 
 ## Features
 
