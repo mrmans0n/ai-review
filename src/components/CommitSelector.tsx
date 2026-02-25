@@ -16,6 +16,7 @@ interface CommitSelectorProps {
   ggStackEntries: GgStackEntry[];
   selectedStack: string | null;
   onSelectCommit: (commit: CommitInfo) => void;
+  onSelectRange: (fromHash: string, toHash: string) => void;
   onSelectBranch: (branch: BranchInfo) => void;
   onSelectStack: (stack: GgStackInfo) => void;
   onSelectStackEntry: (entry: GgStackEntry) => void;
@@ -64,6 +65,7 @@ export function CommitSelector({
   ggStackEntries,
   selectedStack,
   onSelectCommit,
+  onSelectRange,
   onSelectBranch,
   onSelectStack,
   onSelectStackEntry,
@@ -79,6 +81,9 @@ export function CommitSelector({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [stackView, setStackView] = useState<StackView>("list");
   const [refValue, setRefValue] = useState("");
+  const [rangeAnchor, setRangeAnchor] = useState<number | null>(null);
+  const [hoveredCommitIndex, setHoveredCommitIndex] = useState<number | null>(null);
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const refInputRef = useRef<HTMLInputElement>(null);
   const selectedRef = useRef<HTMLDivElement>(null);
@@ -131,6 +136,11 @@ export function CommitSelector({
 
   useEffect(() => {
     setSelectedIndex(0);
+  }, [searchQuery, tab, stackView]);
+
+  useEffect(() => {
+    setRangeAnchor(null);
+    setHoveredCommitIndex(null);
   }, [searchQuery, tab, stackView]);
 
   useEffect(() => {
@@ -207,6 +217,9 @@ export function CommitSelector({
       setTab("commits");
       setStackView("list");
       setRefValue("");
+      setRangeAnchor(null);
+      setHoveredCommitIndex(null);
+      setIsShiftPressed(false);
     }
   }, [isOpen]);
 
@@ -217,10 +230,57 @@ export function CommitSelector({
   }, [tab]);
 
   useEffect(() => {
-    if (selectedRef.current) {
+    if (selectedRef.current && typeof selectedRef.current.scrollIntoView === "function") {
       selectedRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
   }, [selectedIndex]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleShiftKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Shift") {
+        setIsShiftPressed(true);
+      }
+    };
+
+    const handleShiftKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Shift") {
+        setIsShiftPressed(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleShiftKeyDown);
+    window.addEventListener("keyup", handleShiftKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleShiftKeyDown);
+      window.removeEventListener("keyup", handleShiftKeyUp);
+    };
+  }, [isOpen]);
+
+  const getRangeBounds = (anchorIndex: number, targetIndex: number) => {
+    const minIndex = Math.min(anchorIndex, targetIndex);
+    const maxIndex = Math.max(anchorIndex, targetIndex);
+
+    return {
+      minIndex,
+      maxIndex,
+      fromHash: filteredCommits[maxIndex].hash,
+      toHash: filteredCommits[minIndex].hash,
+    };
+  };
+
+  const handleCommitClick = (index: number, commit: CommitInfo, shiftKey: boolean) => {
+    if (shiftKey && rangeAnchor !== null && filteredCommits[rangeAnchor]) {
+      const { fromHash, toHash } = getRangeBounds(rangeAnchor, index);
+      onSelectRange(fromHash, toHash);
+      return;
+    }
+
+    setRangeAnchor(index);
+    onSelectCommit(commit);
+  };
 
   if (!isOpen) return null;
 
@@ -302,7 +362,7 @@ export function CommitSelector({
           )}
         </div>
 
-        <div className="max-h-96 overflow-y-auto">
+        <div className="max-h-96 overflow-y-auto" onMouseLeave={() => setHoveredCommitIndex(null)}>
           {loading ? (
             <div className="p-8 text-center text-ctp-subtext">Loading {tab}...</div>
           ) : tab === "commits" ? (
@@ -313,23 +373,40 @@ export function CommitSelector({
             ) : (
               filteredCommits.map((commit, index) => {
                 const isSelected = index === selectedIndex;
+                const isAnchor = rangeAnchor === index;
+                const isRangePreviewActive = isShiftPressed && rangeAnchor !== null && hoveredCommitIndex !== null;
+                const isInRangePreview =
+                  isRangePreviewActive &&
+                  index >= Math.min(rangeAnchor, hoveredCommitIndex) &&
+                  index <= Math.max(rangeAnchor, hoveredCommitIndex);
+
                 return (
                   <div
                     key={commit.hash}
                     ref={isSelected ? selectedRef : null}
-                    onClick={() => onSelectCommit(commit)}
-                    className={`cursor-pointer transition-colors ${
+                    onClick={(event) => handleCommitClick(index, commit, event.shiftKey)}
+                    onMouseEnter={() => setHoveredCommitIndex(index)}
+                    className={`cursor-pointer transition-colors px-4 py-3 ${
                       isSelected
-                        ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
-                        : "px-4 py-3 hover:bg-ctp-surface0"
-                    }`}
+                        ? "bg-ctp-surface0 border-l-2 border-ctp-peach"
+                        : isAnchor
+                          ? "border-l-2 border-ctp-blue/70"
+                          : "border-l-2 border-transparent hover:bg-ctp-surface0"
+                    } ${isInRangePreview ? "bg-ctp-blue/10" : ""}`}
                   >
                     <div className="flex items-start gap-3">
                       <div className="font-mono text-xs px-2 py-1 rounded-sm bg-ctp-base text-ctp-overlay0 border border-ctp-surface1">
                         {commit.short_hash}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm truncate text-ctp-text">{commit.message}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="font-semibold text-sm truncate text-ctp-text">{commit.message}</div>
+                          {isAnchor && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-ctp-blue/15 text-ctp-blue border border-ctp-blue/30">
+                              start
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-3 mt-1 text-xs text-ctp-overlay0">
                           <span>{commit.author}</span>
                           <span>•</span>
@@ -589,6 +666,7 @@ export function CommitSelector({
             <>
               <span className="mr-4">↑↓ Navigate</span>
               <span className="mr-4">Enter Select</span>
+              <span className="mr-4">Shift+click to select a range</span>
               <span>Esc {tab === "stacks" && stackView === "entries" ? "Back" : "Close"}</span>
             </>
           )}

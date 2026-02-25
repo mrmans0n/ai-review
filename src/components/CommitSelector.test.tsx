@@ -98,6 +98,87 @@ describe("CommitSelector fuzzy search", () => {
   });
 });
 
+describe("CommitSelector range selection", () => {
+  const commits: CommitInfo[] = [
+    {
+      hash: "newest-hash",
+      short_hash: "newest",
+      message: "Newest commit",
+      author: "Dev",
+      date: "today",
+      refs: "HEAD -> main",
+    },
+    {
+      hash: "middle-hash",
+      short_hash: "middle",
+      message: "Middle commit",
+      author: "Dev",
+      date: "yesterday",
+      refs: "",
+    },
+    {
+      hash: "oldest-hash",
+      short_hash: "oldest",
+      message: "Oldest commit",
+      author: "Dev",
+      date: "2 days ago",
+      refs: "",
+    },
+  ];
+
+  const makeProps = (overrides: Partial<Parameters<typeof CommitSelector>[0]> = {}) => ({
+    isOpen: true,
+    commits,
+    branches: [] as BranchInfo[],
+    loading: false,
+    hasGgStacks: false,
+    ggStacks: [] as GgStackInfo[],
+    hasWorktrees: false,
+    worktrees: [] as WorktreeInfo[],
+    ggStackEntries: [] as GgStackEntry[],
+    selectedStack: null,
+    onSelectCommit: vi.fn(),
+    onSelectRange: vi.fn(),
+    onSelectBranch: vi.fn(),
+    onSelectStack: vi.fn(),
+    onSelectStackEntry: vi.fn(),
+    onSelectStackDiff: vi.fn(),
+    onSelectWorktree: vi.fn(),
+    onSelectRef: vi.fn(),
+    refError: null,
+    onBackToStacks: vi.fn(),
+    onClose: vi.fn(),
+    ...overrides,
+  });
+
+  it("calls onSelectRange with older..newer hashes on shift+click", () => {
+    const onSelectCommit = vi.fn();
+    const onSelectRange = vi.fn();
+
+    render(<CommitSelector {...makeProps({ onSelectCommit, onSelectRange })} />);
+
+    fireEvent.click(screen.getByText("Newest commit"));
+    fireEvent.click(screen.getByText("Oldest commit"), { shiftKey: true });
+
+    expect(onSelectCommit).toHaveBeenCalledTimes(1);
+    expect(onSelectRange).toHaveBeenCalledWith("oldest-hash", "newest-hash");
+  });
+
+  it("shows a start badge after first click", () => {
+    render(<CommitSelector {...makeProps()} />);
+
+    fireEvent.click(screen.getByText("Middle commit"));
+
+    expect(screen.getByText("start")).toBeInTheDocument();
+  });
+
+  it("shows range hint in footer", () => {
+    render(<CommitSelector {...makeProps()} />);
+
+    expect(screen.getByText("Shift+click to select a range")).toBeInTheDocument();
+  });
+});
+
 describe("CommitSelector worktrees tab", () => {
   const makeProps = (overrides: Partial<Parameters<typeof CommitSelector>[0]> = {}) => ({
     isOpen: true,
@@ -111,6 +192,7 @@ describe("CommitSelector worktrees tab", () => {
     ggStackEntries: [] as GgStackEntry[],
     selectedStack: null,
     onSelectCommit: vi.fn(),
+    onSelectRange: vi.fn(),
     onSelectBranch: vi.fn(),
     onSelectStack: vi.fn(),
     onSelectStackEntry: vi.fn(),
