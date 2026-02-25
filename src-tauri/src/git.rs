@@ -59,6 +59,7 @@ pub struct WorktreeInfo {
     pub branch: String,
     pub commit_hash: String,
     pub is_main: bool,
+    pub last_activity: i64,
 }
 
 /// Check if a directory is a git repository
@@ -81,6 +82,23 @@ pub fn get_git_root(dir: &Path) -> Option<PathBuf> {
         Some(PathBuf::from(path))
     } else {
         None
+    }
+}
+
+/// Get the Unix timestamp of the most recent commit in a repo.
+/// Returns 0 if the repo has no commits or on error.
+pub fn last_commit_timestamp(dir: &Path) -> i64 {
+    let output = Command::new("git")
+        .args(["log", "-1", "--format=%ct"])
+        .current_dir(dir)
+        .output();
+
+    match output {
+        Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout)
+            .trim()
+            .parse::<i64>()
+            .unwrap_or(0),
+        _ => 0,
     }
 }
 
@@ -526,6 +544,7 @@ fn parse_worktree_list(output: &str) -> Vec<WorktreeInfo> {
                 branch,
                 commit_hash,
                 is_main: worktrees.is_empty(),
+                last_activity: 0,
             });
         }
     }
@@ -545,12 +564,17 @@ pub fn list_worktrees(dir: &Path) -> Result<Vec<WorktreeInfo>, String> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let parsed = parse_worktree_list(&stdout);
+    let mut worktrees = parse_worktree_list(&stdout);
 
-    if parsed.len() <= 1 {
+    for wt in &mut worktrees {
+        wt.last_activity = last_commit_timestamp(Path::new(&wt.path));
+    }
+    worktrees.sort_by(|a, b| b.last_activity.cmp(&a.last_activity));
+
+    if worktrees.len() <= 1 {
         Ok(Vec::new())
     } else {
-        Ok(parsed)
+        Ok(worktrees)
     }
 }
 
@@ -1432,11 +1456,13 @@ mod tests {
         assert_eq!(worktrees[0].branch, "main");
         assert_eq!(worktrees[0].commit_hash, "abc1234");
         assert!(worktrees[0].is_main);
+        assert_eq!(worktrees[0].last_activity, 0);
 
         assert_eq!(worktrees[1].path, "/repo/wt1");
         assert_eq!(worktrees[1].branch, "feature-x");
         assert_eq!(worktrees[1].commit_hash, "def5678");
         assert!(!worktrees[1].is_main);
+        assert_eq!(worktrees[1].last_activity, 0);
     }
 
     #[test]
@@ -1447,6 +1473,7 @@ mod tests {
         assert_eq!(worktrees.len(), 2);
         assert_eq!(worktrees[1].branch, "(detached)");
         assert_eq!(worktrees[1].commit_hash, "1234567");
+        assert_eq!(worktrees[1].last_activity, 0);
     }
 
     #[test]
@@ -1457,5 +1484,6 @@ mod tests {
         assert_eq!(worktrees.len(), 1);
         assert_eq!(worktrees[0].path, "/repo/wt1");
         assert!(worktrees[0].is_main);
+        assert_eq!(worktrees[0].last_activity, 0);
     }
 }

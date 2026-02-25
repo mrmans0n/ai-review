@@ -213,6 +213,7 @@ describe("CommitSelector worktrees tab", () => {
         branch: "feature/worktrees",
         commit_hash: "abc1234",
         is_main: false,
+        last_activity: 0,
       },
     ];
 

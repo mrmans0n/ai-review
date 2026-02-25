@@ -71,6 +71,7 @@ export interface WorktreeInfo {
   branch: string;
   commit_hash: string;
   is_main: boolean;
+  last_activity: number;
 }
 
 export interface PromptContext {
@@ -83,4 +84,5 @@ export interface PromptContext {
 export interface RepoInfo {
   name: string;
   path: string;
+  last_activity: number;
 }

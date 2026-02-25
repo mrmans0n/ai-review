@@ -202,6 +202,7 @@ struct InstallCliResult {
 struct RepoInfo {
     name: String,
     path: String,
+    last_activity: i64,
 }
 
 #[tauri::command]
@@ -324,10 +325,19 @@ fn install_cli() -> Result<InstallCliResult, String> {
 #[tauri::command]
 fn list_repos() -> Result<Vec<RepoInfo>, String> {
     let repos = config::list_repos()?;
-    Ok(repos
+    let mut result: Vec<RepoInfo> = repos
         .into_iter()
-        .map(|(name, path)| RepoInfo { name, path })
-        .collect())
+        .map(|(name, path)| {
+            let ts = git::last_commit_timestamp(&PathBuf::from(&path));
+            RepoInfo {
+                name,
+                path,
+                last_activity: ts,
+            }
+        })
+        .collect();
+    result.sort_by(|a, b| b.last_activity.cmp(&a.last_activity));
+    Ok(result)
 }
 
 #[tauri::command]
@@ -341,7 +351,11 @@ fn add_repo(path: String) -> Result<RepoInfo, String> {
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_else(|| path.clone());
-    Ok(RepoInfo { name, path })
+    Ok(RepoInfo {
+        name,
+        path: path.clone(),
+        last_activity: git::last_commit_timestamp(&dir),
+    })
 }
 
 #[tauri::command]
