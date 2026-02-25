@@ -689,6 +689,28 @@ function App() {
     }
   };
 
+  const handleRangeSelect = async (fromHash: string, toHash: string) => {
+    if (!workingDir) return;
+
+    try {
+      const range = `${fromHash}..${toHash}`;
+      const result = await invoke<GitDiffResult>("get_range_diff", {
+        path: workingDir,
+        range,
+      });
+      setDiffText(result.diff || "No changes in this range");
+      setChangedFiles(result.files);
+      setDiffMode({ mode: "range", range });
+      setSelectedCommit(null);
+      setSelectedBranch(null);
+      setReviewingLabel(range);
+      setViewMode("diff");
+      commitSelector.closeSelector();
+    } catch (err) {
+      console.error("Failed to load range diff:", err);
+    }
+  };
+
   const handleBranchSelect = async (branch: BranchInfo) => {
     if (!workingDir) return;
 
@@ -1744,6 +1766,7 @@ function App() {
         ggStackEntries={commitSelector.ggStackEntries}
         selectedStack={commitSelector.selectedStack}
         onSelectCommit={handleCommitSelect}
+        onSelectRange={handleRangeSelect}
         onSelectBranch={handleBranchSelect}
         onSelectStack={handleStackSelect}
         onSelectStackEntry={handleStackEntrySelect}
