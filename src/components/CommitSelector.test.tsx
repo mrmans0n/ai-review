@@ -117,6 +117,7 @@ describe("CommitSelector worktrees tab", () => {
     onSelectStackDiff: vi.fn(),
     onSelectWorktree: vi.fn(),
     onSelectRef: vi.fn(),
+    refError: null,
     onBackToStacks: vi.fn(),
     onClose: vi.fn(),
     ...overrides,

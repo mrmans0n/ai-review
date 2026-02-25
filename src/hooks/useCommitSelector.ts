@@ -13,6 +13,7 @@ export function useCommitSelector(workingDir: string | null) {
   const [ggStackEntries, setGgStackEntries] = useState<GgStackEntry[]>([]);
   const [selectedStack, setSelectedStack] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [refError, setRefError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     if (!workingDir) return;
@@ -84,6 +85,7 @@ export function useCommitSelector(workingDir: string | null) {
     setIsOpen(true);
     setSelectedStack(null);
     setGgStackEntries([]);
+    setRefError(null);
     loadData();
   }, [loadData]);
 
@@ -145,6 +147,8 @@ export function useCommitSelector(workingDir: string | null) {
     ggStackEntries,
     selectedStack,
     loading,
+    refError,
+    setRefError,
     openSelector,
     closeSelector,
     selectStack,
