@@ -22,6 +22,7 @@ interface CommitSelectorProps {
   onSelectStackDiff: (stack: GgStackInfo) => void;
   onSelectWorktree: (worktree: WorktreeInfo) => void;
   onSelectRef: (ref: string) => void;
+  refError: string | null;
   onBackToStacks: () => void;
   onClose: () => void;
 }
@@ -69,6 +70,7 @@ export function CommitSelector({
   onSelectStackDiff,
   onSelectWorktree,
   onSelectRef,
+  refError,
   onBackToStacks,
   onClose,
 }: CommitSelectorProps) {
@@ -568,6 +570,11 @@ export function CommitSelector({
                   Compare
                 </button>
               </div>
+              {refError && (
+                <div className="mt-3 px-3 py-2 rounded-sm bg-ctp-red/10 border border-ctp-red/30 text-ctp-red text-sm">
+                  {refError}
+                </div>
+              )}
             </div>
           ) : null}
         </div>

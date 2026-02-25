@@ -770,11 +770,12 @@ function App() {
     if (!workingDir) return;
 
     try {
-      const result = await invoke<string>("get_commit_diff", {
+      const result = await invoke<GitDiffResult>("get_commit_ref_diff", {
         path: workingDir,
-        hash: ref,
+        commit: ref,
       });
-      setDiffText(result || "No changes for this ref");
+      setDiffText(result.diff || "No changes for this ref");
+      setChangedFiles(result.files);
       setDiffMode({ mode: "commit", commitRef: ref });
       setSelectedCommit(null);
       setSelectedBranch(null);
@@ -783,6 +784,9 @@ function App() {
       commitSelector.closeSelector();
     } catch (err) {
       console.error("Failed to load ref diff:", err);
+      commitSelector.setRefError(
+        `Invalid ref "${ref}". Please enter a valid commit hash, branch name, or ref expression (e.g. HEAD~3).`
+      );
     }
   };
 
@@ -1746,6 +1750,7 @@ function App() {
         onSelectStackDiff={handleStackDiffSelect}
         onSelectWorktree={handleWorktreeSelect}
         onSelectRef={handleRefSelect}
+        refError={commitSelector.refError}
         onBackToStacks={commitSelector.backToStacks}
         onClose={commitSelector.closeSelector}
       />
