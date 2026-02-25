@@ -60,7 +60,8 @@ export function useWordHighlight(searchIsActive: boolean) {
       }
     };
 
-    const handleClick = () => {
+    const handleClick = (event: MouseEvent) => {
+      if (event.detail !== 1) return;
       setHighlightedWord(null);
     };
 

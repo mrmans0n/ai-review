@@ -35,7 +35,7 @@ describe("useWordHighlight", () => {
     expect(Array.from(marks).every((m) => m.textContent === "value")).toBe(true);
 
     act(() => {
-      document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      document.body.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 }));
     });
 
     expect(document.querySelectorAll("mark.word-highlight")).toHaveLength(0);
@@ -76,5 +76,33 @@ describe("useWordHighlight", () => {
     });
 
     expect(document.querySelectorAll("mark.word-highlight")).toHaveLength(0);
+  });
+
+  it("does not clear on non-single click events", () => {
+    document.body.innerHTML = `<div class="diff-code">const value = value;</div>`;
+
+    renderHook(() => useWordHighlight(false));
+
+    const cell = document.querySelector(".diff-code") as HTMLElement;
+
+    act(() => {
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      const range = document.createRange();
+      const textNode = cell.firstChild as Text;
+      const start = textNode.textContent!.indexOf("value");
+      range.setStart(textNode, start);
+      range.setEnd(textNode, start + "value".length);
+      selection?.addRange(range);
+      cell.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    });
+
+    expect(document.querySelectorAll("mark.word-highlight")).toHaveLength(2);
+
+    act(() => {
+      document.body.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 2 }));
+    });
+
+    expect(document.querySelectorAll("mark.word-highlight")).toHaveLength(2);
   });
 });

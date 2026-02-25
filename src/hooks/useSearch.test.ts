@@ -71,6 +71,22 @@ describe("useSearch", () => {
     expect(result.current.currentMatchIndex).toBe(0);
   });
 
+  it("marks matches that span across nested elements", () => {
+    document.body.innerHTML = `
+      <div class="diff-code"><span>val</span><span>ue</span> + another value</div>
+    `;
+
+    const { result } = renderHook(() => useSearch());
+
+    act(() => {
+      result.current.open();
+      result.current.setQuery("value");
+    });
+
+    expect(result.current.matches).toHaveLength(2);
+    expect(document.querySelectorAll("mark.search-match")).toHaveLength(2);
+  });
+
   it("closes with Escape and clears matches", () => {
     document.body.innerHTML = `<div class="diff-code">const value = 1;</div>`;
 
