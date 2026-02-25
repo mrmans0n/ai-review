@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { BranchInfo, CommitInfo, GgStackInfo, GgStackEntry } from "../types";
+import type { BranchInfo, CommitInfo, GgStackInfo, GgStackEntry, WorktreeInfo } from "../types";
 
-type SelectorTab = "commits" | "branches" | "stacks" | "ref";
+type SelectorTab = "commits" | "branches" | "stacks" | "worktrees" | "ref";
 type StackView = "list" | "entries";
 
 interface CommitSelectorProps {
@@ -11,6 +11,8 @@ interface CommitSelectorProps {
   loading: boolean;
   hasGgStacks: boolean;
   ggStacks: GgStackInfo[];
+  hasWorktrees: boolean;
+  worktrees: WorktreeInfo[];
   ggStackEntries: GgStackEntry[];
   selectedStack: string | null;
   onSelectCommit: (commit: CommitInfo) => void;
@@ -18,6 +20,7 @@ interface CommitSelectorProps {
   onSelectStack: (stack: GgStackInfo) => void;
   onSelectStackEntry: (entry: GgStackEntry) => void;
   onSelectStackDiff: (stack: GgStackInfo) => void;
+  onSelectWorktree: (worktree: WorktreeInfo) => void;
   onSelectRef: (ref: string) => void;
   onBackToStacks: () => void;
   onClose: () => void;
@@ -39,6 +42,15 @@ function fuzzyMatch(text: string, query: string): boolean {
   return queryIndex === q.length;
 }
 
+function shortenPath(path: string, segments: number = 3): string {
+  const normalized = path.replace(/\\/g, "/");
+  const parts = normalized.split("/").filter(Boolean);
+  if (parts.length <= segments) {
+    return normalized;
+  }
+  return `…/${parts.slice(-segments).join("/")}`;
+}
+
 export function CommitSelector({
   isOpen,
   commits,
@@ -46,6 +58,8 @@ export function CommitSelector({
   loading,
   hasGgStacks,
   ggStacks,
+  hasWorktrees,
+  worktrees,
   ggStackEntries,
   selectedStack,
   onSelectCommit,
@@ -53,6 +67,7 @@ export function CommitSelector({
   onSelectStack,
   onSelectStackEntry,
   onSelectStackDiff,
+  onSelectWorktree,
   onSelectRef,
   onBackToStacks,
   onClose,
@@ -94,12 +109,23 @@ export function CommitSelector({
     }
   }, [ggStacks, ggStackEntries, stackView, searchQuery]);
 
+  const filteredWorktrees = useMemo(() => {
+    return worktrees.filter((worktree) => {
+      const searchableText = `${worktree.branch} ${worktree.path}`;
+      return fuzzyMatch(searchableText, searchQuery);
+    });
+  }, [worktrees, searchQuery]);
+
   const activeCount =
     tab === "commits"
       ? filteredCommits.length
       : tab === "branches"
         ? filteredBranches.length
-        : filteredStacks.length;
+        : tab === "stacks"
+          ? filteredStacks.length
+          : tab === "worktrees"
+            ? filteredWorktrees.length
+            : 0;
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -141,6 +167,8 @@ export function CommitSelector({
           } else if (stackView === "entries" && filteredStacks[selectedIndex]) {
             onSelectStackEntry(filteredStacks[selectedIndex] as GgStackEntry);
           }
+        } else if (tab === "worktrees" && filteredWorktrees[selectedIndex]) {
+          onSelectWorktree(filteredWorktrees[selectedIndex]);
         } else if (tab === "ref" && refValue.trim()) {
           onSelectRef(refValue.trim());
         }
@@ -158,10 +186,12 @@ export function CommitSelector({
     filteredCommits,
     filteredBranches,
     filteredStacks,
+    filteredWorktrees,
     onSelectCommit,
     onSelectBranch,
     onSelectStack,
     onSelectStackEntry,
+    onSelectWorktree,
     onSelectRef,
     refValue,
     onBackToStacks,
@@ -228,6 +258,16 @@ export function CommitSelector({
                 Stacks
               </button>
             )}
+            {hasWorktrees && (
+              <button
+                onClick={() => setTab("worktrees")}
+                className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
+                  tab === "worktrees" ? "bg-ctp-mauve text-ctp-base" : "text-ctp-subtext hover:bg-ctp-surface0"
+                }`}
+              >
+                Worktrees
+              </button>
+            )}
             <button
               onClick={() => setTab("ref")}
               className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
@@ -249,9 +289,11 @@ export function CommitSelector({
                   ? "Search commits... (message, hash, author, refs)"
                   : tab === "branches"
                     ? "Search branches... (name, hash, subject, author)"
-                    : stackView === "list"
-                      ? "Search stacks... (name, base, username)"
-                      : "Search entries... (title, hash, gg-id)"
+                    : tab === "stacks"
+                      ? stackView === "list"
+                        ? "Search stacks... (name, base, username)"
+                        : "Search entries... (title, hash, gg-id)"
+                      : "Search worktrees... (branch, path)"
               }
               className="w-full bg-ctp-base border border-ctp-surface1 rounded-sm text-ctp-text text-sm px-3 py-2 placeholder:text-ctp-overlay0 focus:border-ctp-mauve focus:outline-none"
             />
@@ -459,6 +501,47 @@ export function CommitSelector({
               )}
             </>
           )
+          ) : tab === "worktrees" ? (
+            filteredWorktrees.length === 0 ? (
+              <div className="p-8 text-center text-ctp-subtext">
+                {searchQuery ? "No matching worktrees" : "No worktrees found"}
+              </div>
+            ) : (
+              filteredWorktrees.map((worktree, index) => {
+                const isSelected = index === selectedIndex;
+                return (
+                  <div
+                    key={worktree.path}
+                    ref={isSelected ? selectedRef : null}
+                    onClick={() => onSelectWorktree(worktree)}
+                    className={`cursor-pointer transition-colors ${
+                      isSelected
+                        ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
+                        : "px-4 py-3 hover:bg-ctp-surface0"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="font-mono text-xs px-2 py-1 rounded-sm bg-ctp-base text-ctp-overlay0 border border-ctp-surface1">
+                        {worktree.commit_hash}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm truncate text-ctp-text">{worktree.branch}</span>
+                          {worktree.is_main && (
+                            <span className="text-xs px-1.5 py-0.5 rounded-sm bg-ctp-teal/20 text-ctp-teal border border-ctp-teal/30">
+                              main
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs mt-1 text-ctp-overlay0 font-mono truncate">
+                          {shortenPath(worktree.path)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )
           ) : tab === "ref" ? (
             <div className="p-6">
               <div className="text-ctp-subtext text-sm mb-4">

@@ -66,6 +66,13 @@ export interface GgStackEntry {
   position: number;
 }
 
+export interface WorktreeInfo {
+  path: string;
+  branch: string;
+  commit_hash: string;
+  is_main: boolean;
+}
+
 export interface PromptContext {
   mode: DiffMode;
   commitRef?: string;
