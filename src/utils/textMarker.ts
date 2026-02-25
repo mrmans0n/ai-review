@@ -27,6 +27,28 @@ type MarkTextOptions = {
   wholeWord?: boolean;
 };
 
+type TextNodeSegment = {
+  node: Text;
+  start: number;
+  end: number;
+};
+
+const findBoundaryPoint = (
+  segments: TextNodeSegment[],
+  position: number,
+): { node: Text; offset: number } | null => {
+  for (const segment of segments) {
+    if (position >= segment.start && position <= segment.end) {
+      return {
+        node: segment.node,
+        offset: position - segment.start,
+      };
+    }
+  }
+
+  return null;
+};
+
 export function markText(
   container: HTMLElement,
   text: string,
@@ -50,49 +72,64 @@ export function markText(
     },
   });
 
-  const textNodes: Text[] = [];
+  const segments: TextNodeSegment[] = [];
+  let fullText = "";
+
   let currentNode = walker.nextNode();
   while (currentNode) {
-    textNodes.push(currentNode as Text);
+    const textNode = currentNode as Text;
+    const value = textNode.textContent || "";
+
+    segments.push({
+      node: textNode,
+      start: fullText.length,
+      end: fullText.length + value.length,
+    });
+
+    fullText += value;
     currentNode = walker.nextNode();
   }
 
-  textNodes.forEach((textNode) => {
-    const value = textNode.textContent || "";
-    matcher.lastIndex = 0;
+  if (!fullText) return [];
 
-    const matches: Array<{ start: number; end: number }> = [];
-    let match = matcher.exec(value);
-    while (match) {
-      matches.push({ start: match.index, end: match.index + match[0].length });
-      match = matcher.exec(value);
-    }
+  const matches: Array<{ start: number; end: number }> = [];
+  let match = matcher.exec(fullText);
 
-    if (matches.length === 0) return;
-
-    const fragment = document.createDocumentFragment();
-    let cursor = 0;
-
-    matches.forEach(({ start, end }) => {
-      if (start > cursor) {
-        fragment.appendChild(document.createTextNode(value.slice(cursor, start)));
-      }
-
-      const mark = document.createElement("mark");
-      mark.className = className;
-      mark.textContent = value.slice(start, end);
-      fragment.appendChild(mark);
-      marks.push(mark);
-
-      cursor = end;
+  while (match) {
+    matches.push({
+      start: match.index,
+      end: match.index + match[0].length,
     });
 
-    if (cursor < value.length) {
-      fragment.appendChild(document.createTextNode(value.slice(cursor)));
+    if (match[0].length === 0) {
+      matcher.lastIndex += 1;
     }
 
-    textNode.parentNode?.replaceChild(fragment, textNode);
-  });
+    match = matcher.exec(fullText);
+  }
+
+  if (matches.length === 0) return [];
+
+  for (let index = matches.length - 1; index >= 0; index -= 1) {
+    const currentMatch = matches[index];
+    const startPoint = findBoundaryPoint(segments, currentMatch.start);
+    const endPoint = findBoundaryPoint(segments, currentMatch.end);
+
+    if (!startPoint || !endPoint) continue;
+
+    const range = document.createRange();
+    range.setStart(startPoint.node, startPoint.offset);
+    range.setEnd(endPoint.node, endPoint.offset);
+
+    const contents = range.extractContents();
+    const mark = document.createElement("mark");
+    mark.className = className;
+    mark.appendChild(contents);
+    range.insertNode(mark);
+
+    marks.unshift(mark);
+    range.detach();
+  }
 
   return marks;
 }
