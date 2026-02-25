@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { fuzzyMatch } from "./CommitSelector";
-import type { BranchInfo, CommitInfo } from "../types";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { CommitSelector, fuzzyMatch } from "./CommitSelector";
+import type { BranchInfo, CommitInfo, GgStackInfo, GgStackEntry, WorktreeInfo } from "../types";
 
 describe("CommitSelector fuzzy search", () => {
   const testCommits: CommitInfo[] = [
@@ -94,5 +95,62 @@ describe("CommitSelector fuzzy search", () => {
 
   it("should match empty query", () => {
     expect(fuzzyMatch("anything", "")).toBe(true);
+  });
+});
+
+describe("CommitSelector worktrees tab", () => {
+  const makeProps = (overrides: Partial<Parameters<typeof CommitSelector>[0]> = {}) => ({
+    isOpen: true,
+    commits: [] as CommitInfo[],
+    branches: [] as BranchInfo[],
+    loading: false,
+    hasGgStacks: false,
+    ggStacks: [] as GgStackInfo[],
+    hasWorktrees: false,
+    worktrees: [] as WorktreeInfo[],
+    ggStackEntries: [] as GgStackEntry[],
+    selectedStack: null,
+    onSelectCommit: vi.fn(),
+    onSelectBranch: vi.fn(),
+    onSelectStack: vi.fn(),
+    onSelectStackEntry: vi.fn(),
+    onSelectStackDiff: vi.fn(),
+    onSelectWorktree: vi.fn(),
+    onSelectRef: vi.fn(),
+    onBackToStacks: vi.fn(),
+    onClose: vi.fn(),
+    ...overrides,
+  });
+
+  it("shows worktrees tab only when hasWorktrees is true and calls onSelectWorktree", () => {
+    const onSelectWorktree = vi.fn();
+    const worktrees: WorktreeInfo[] = [
+      {
+        path: "/Users/dev/repos/ai-review/wt-feature",
+        branch: "feature/worktrees",
+        commit_hash: "abc1234",
+        is_main: false,
+      },
+    ];
+
+    render(
+      <CommitSelector
+        {...makeProps({
+          hasWorktrees: true,
+          worktrees,
+          onSelectWorktree,
+        })}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Worktrees" }));
+    fireEvent.click(screen.getByText("feature/worktrees"));
+
+    expect(onSelectWorktree).toHaveBeenCalledWith(worktrees[0]);
+  });
+
+  it("does not show worktrees tab when hasWorktrees is false", () => {
+    render(<CommitSelector {...makeProps({ hasWorktrees: false, worktrees: [] })} />);
+    expect(screen.queryByRole("button", { name: "Worktrees" })).not.toBeInTheDocument();
   });
 });

@@ -31,7 +31,7 @@ import { generatePrompt } from "./lib/promptGenerator";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
 import { extractLinesFromHunks } from "./lib/extractLinesFromHunks";
 import { HunkExpandControl } from "./components/HunkExpandControl";
-import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, GitDiffResult, ChangedFile } from "./types";
+import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile } from "./types";
 
 type InitialDiffMode = {
   type: "commit" | "range" | "branch";
@@ -493,6 +493,7 @@ function App() {
       clearAll();
       setViewedFiles(new Set());
       setPendingSwitchPath(null);
+      commitSelector.closeSelector();
     } catch (err) {
       console.error("Failed to switch repo:", err);
     }
@@ -749,6 +750,20 @@ function App() {
     } catch (err) {
       console.error("Failed to load stack diff:", err);
     }
+  };
+
+  const handleWorktreeSelect = async (worktree: WorktreeInfo) => {
+    if (worktree.path === workingDir) {
+      commitSelector.closeSelector();
+      return;
+    }
+
+    if (comments.length > 0) {
+      setPendingSwitchPath(worktree.path);
+      return;
+    }
+
+    await performSwitch(worktree.path);
   };
 
   const handleRefSelect = async (ref: string) => {
@@ -1720,6 +1735,8 @@ function App() {
         loading={commitSelector.loading}
         hasGgStacks={commitSelector.hasGgStacks}
         ggStacks={commitSelector.ggStacks}
+        hasWorktrees={commitSelector.hasWorktrees}
+        worktrees={commitSelector.worktrees}
         ggStackEntries={commitSelector.ggStackEntries}
         selectedStack={commitSelector.selectedStack}
         onSelectCommit={handleCommitSelect}
@@ -1727,6 +1744,7 @@ function App() {
         onSelectStack={handleStackSelect}
         onSelectStackEntry={handleStackEntrySelect}
         onSelectStackDiff={handleStackDiffSelect}
+        onSelectWorktree={handleWorktreeSelect}
         onSelectRef={handleRefSelect}
         onBackToStacks={commitSelector.backToStacks}
         onClose={commitSelector.closeSelector}

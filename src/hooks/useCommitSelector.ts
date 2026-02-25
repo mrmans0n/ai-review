@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import type { CommitInfo, BranchInfo, GgStackInfo, GgStackEntry } from "../types";
+import type { CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo } from "../types";
 
 export function useCommitSelector(workingDir: string | null) {
   const [isOpen, setIsOpen] = useState(false);
@@ -8,6 +8,8 @@ export function useCommitSelector(workingDir: string | null) {
   const [branches, setBranches] = useState<BranchInfo[]>([]);
   const [hasGgStacks, setHasGgStacks] = useState(false);
   const [ggStacks, setGgStacks] = useState<GgStackInfo[]>([]);
+  const [hasWorktrees, setHasWorktrees] = useState(false);
+  const [worktrees, setWorktrees] = useState<WorktreeInfo[]>([]);
   const [ggStackEntries, setGgStackEntries] = useState<GgStackEntry[]>([]);
   const [selectedStack, setSelectedStack] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -17,10 +19,16 @@ export function useCommitSelector(workingDir: string | null) {
 
     setLoading(true);
     try {
-      const hasStacks = await invoke<boolean>("has_gg_stacks", {
-        path: workingDir,
-      });
+      const [hasStacks, hasWt] = await Promise.all([
+        invoke<boolean>("has_gg_stacks", {
+          path: workingDir,
+        }),
+        invoke<boolean>("has_worktrees", {
+          path: workingDir,
+        }),
+      ]);
       setHasGgStacks(hasStacks);
+      setHasWorktrees(hasWt);
 
       const promises: Promise<any>[] = [
         invoke<CommitInfo[]>("list_commits", {
@@ -40,11 +48,30 @@ export function useCommitSelector(workingDir: string | null) {
         );
       }
 
+      if (hasWt) {
+        promises.push(
+          invoke<WorktreeInfo[]>("list_worktrees", {
+            path: workingDir,
+          })
+        );
+      }
+
       const results = await Promise.all(promises);
       setCommits(results[0]);
       setBranches(results[1]);
-      if (hasStacks && results[2]) {
-        setGgStacks(results[2]);
+
+      let cursor = 2;
+      if (hasStacks) {
+        setGgStacks(results[cursor] || []);
+        cursor += 1;
+      } else {
+        setGgStacks([]);
+      }
+
+      if (hasWt) {
+        setWorktrees(results[cursor] || []);
+      } else {
+        setWorktrees([]);
       }
     } catch (err) {
       console.error("Failed to load selector data:", err);
@@ -113,6 +140,8 @@ export function useCommitSelector(workingDir: string | null) {
     branches,
     hasGgStacks,
     ggStacks,
+    hasWorktrees,
+    worktrees,
     ggStackEntries,
     selectedStack,
     loading,

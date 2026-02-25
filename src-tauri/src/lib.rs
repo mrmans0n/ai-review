@@ -153,6 +153,18 @@ fn has_gg_stacks(path: String) -> bool {
 }
 
 #[tauri::command]
+fn list_worktrees(path: String) -> Result<Vec<git::WorktreeInfo>, String> {
+    let dir = PathBuf::from(path);
+    git::list_worktrees(&dir)
+}
+
+#[tauri::command]
+fn has_worktrees(path: String) -> bool {
+    let dir = PathBuf::from(path);
+    git::has_worktrees(&dir)
+}
+
+#[tauri::command]
 fn list_gg_stacks(path: String) -> Result<Vec<git::GgStackInfo>, String> {
     let dir = PathBuf::from(path);
     git::list_gg_stacks(&dir)
@@ -486,6 +498,8 @@ pub fn run() {
             get_branch_base,
             list_files_at_ref,
             has_gg_stacks,
+            list_worktrees,
+            has_worktrees,
             list_gg_stacks,
             get_gg_stack_entries,
             get_gg_stack_diff,

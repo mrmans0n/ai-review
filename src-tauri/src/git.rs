@@ -53,6 +53,14 @@ pub struct GgStackEntry {
     pub position: usize,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WorktreeInfo {
+    pub path: String,
+    pub branch: String,
+    pub commit_hash: String,
+    pub is_main: bool,
+}
+
 /// Check if a directory is a git repository
 pub fn is_git_repo(dir: &Path) -> bool {
     dir.join(".git").exists()
@@ -485,6 +493,71 @@ fn parse_branch_list(output: &str) -> Vec<BranchInfo> {
             })
         })
         .collect()
+}
+
+fn parse_worktree_list(output: &str) -> Vec<WorktreeInfo> {
+    let mut worktrees = Vec::new();
+
+    for block in output.split("\n\n").filter(|b| !b.trim().is_empty()) {
+        let mut path: Option<String> = None;
+        let mut branch = String::from("(detached)");
+        let mut commit_hash = String::new();
+
+        for line in block.lines() {
+            if let Some(value) = line.strip_prefix("worktree ") {
+                path = Some(value.trim().to_string());
+            } else if let Some(value) = line.strip_prefix("HEAD ") {
+                let head = value.trim();
+                commit_hash = head.chars().take(7).collect();
+            } else if let Some(value) = line.strip_prefix("branch ") {
+                branch = value
+                    .trim()
+                    .strip_prefix("refs/heads/")
+                    .unwrap_or(value.trim())
+                    .to_string();
+            } else if line.trim() == "detached" {
+                branch = String::from("(detached)");
+            }
+        }
+
+        if let Some(path) = path {
+            worktrees.push(WorktreeInfo {
+                path,
+                branch,
+                commit_hash,
+                is_main: worktrees.is_empty(),
+            });
+        }
+    }
+
+    worktrees
+}
+
+pub fn list_worktrees(dir: &Path) -> Result<Vec<WorktreeInfo>, String> {
+    let output = Command::new("git")
+        .args(["worktree", "list", "--porcelain"])
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to execute git worktree list: {}", e))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let parsed = parse_worktree_list(&stdout);
+
+    if parsed.len() <= 1 {
+        Ok(Vec::new())
+    } else {
+        Ok(parsed)
+    }
+}
+
+pub fn has_worktrees(dir: &Path) -> bool {
+    list_worktrees(dir)
+        .map(|worktrees| !worktrees.is_empty())
+        .unwrap_or(false)
 }
 
 /// Get diff and changed files for a specific commit by hash
@@ -1347,5 +1420,42 @@ mod tests {
     fn test_parse_branch_list_invalid_line() {
         let branches = parse_branch_list("main|abc123\n");
         assert_eq!(branches.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_worktree_list_with_branches() {
+        let output = "worktree /repo/main\nHEAD abc1234def5678\nbranch refs/heads/main\n\nworktree /repo/wt1\nHEAD def5678abc1234\nbranch refs/heads/feature-x\n";
+        let worktrees = parse_worktree_list(output);
+
+        assert_eq!(worktrees.len(), 2);
+        assert_eq!(worktrees[0].path, "/repo/main");
+        assert_eq!(worktrees[0].branch, "main");
+        assert_eq!(worktrees[0].commit_hash, "abc1234");
+        assert!(worktrees[0].is_main);
+
+        assert_eq!(worktrees[1].path, "/repo/wt1");
+        assert_eq!(worktrees[1].branch, "feature-x");
+        assert_eq!(worktrees[1].commit_hash, "def5678");
+        assert!(!worktrees[1].is_main);
+    }
+
+    #[test]
+    fn test_parse_worktree_list_detached() {
+        let output = "worktree /repo/main\nHEAD abc1234def5678\nbranch refs/heads/main\n\nworktree /repo/wt-detached\nHEAD 1234567890abcd\ndetached\n";
+        let worktrees = parse_worktree_list(output);
+
+        assert_eq!(worktrees.len(), 2);
+        assert_eq!(worktrees[1].branch, "(detached)");
+        assert_eq!(worktrees[1].commit_hash, "1234567");
+    }
+
+    #[test]
+    fn test_parse_worktree_list_ignores_invalid_blocks() {
+        let output = "HEAD abc1234def5678\nbranch refs/heads/main\n\nworktree /repo/wt1\nHEAD def5678abc1234\nbranch refs/heads/feature-x\n";
+        let worktrees = parse_worktree_list(output);
+
+        assert_eq!(worktrees.len(), 1);
+        assert_eq!(worktrees[0].path, "/repo/wt1");
+        assert!(worktrees[0].is_main);
     }
 }
