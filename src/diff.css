@@ -161,6 +161,7 @@ td[colspan="4"].diff-widget-content .split-widget-new {
 .search-match {
   background-color: color-mix(in srgb, var(--ctp-yellow) 35%, transparent);
   border-radius: 2px;
+  outline: 1px solid color-mix(in srgb, var(--ctp-yellow) 60%, transparent);
 }
 
 .search-match-current {
@@ -172,5 +173,5 @@ td[colspan="4"].diff-widget-content .split-widget-new {
 .word-highlight {
   background-color: color-mix(in srgb, var(--ctp-yellow) 55%, transparent);
   border-radius: 2px;
-  outline: 1px solid color-mix(in srgb, var(--ctp-yellow) 60%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--ctp-yellow) 75%, transparent);
 }
