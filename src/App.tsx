@@ -693,7 +693,7 @@ function App() {
     if (!workingDir) return;
 
     try {
-      const range = `${fromHash}..${toHash}`;
+      const range = `${fromHash}^..${toHash}`;
       const result = await invoke<GitDiffResult>("get_range_diff", {
         path: workingDir,
         range,
