@@ -151,31 +151,31 @@ describe("CommitSelector range selection", () => {
     ...overrides,
   });
 
-  it("calls onSelectRange with older..newer hashes on shift+click", () => {
+  it("calls onSelectRange with older..newer hashes when anchor is set and another commit is clicked", () => {
     const onSelectCommit = vi.fn();
     const onSelectRange = vi.fn();
 
     render(<CommitSelector {...makeProps({ onSelectCommit, onSelectRange })} />);
 
-    fireEvent.click(screen.getByText("Newest commit"));
-    fireEvent.click(screen.getByText("Oldest commit"), { shiftKey: true });
+    fireEvent.click(screen.getByRole("button", { name: "Set range start at Newest commit" }));
+    fireEvent.click(screen.getByText("Oldest commit"));
 
-    expect(onSelectCommit).toHaveBeenCalledTimes(1);
+    expect(onSelectCommit).not.toHaveBeenCalled();
     expect(onSelectRange).toHaveBeenCalledWith("oldest-hash", "newest-hash");
   });
 
-  it("shows a start badge after first click", () => {
+  it("shows a start badge after setting anchor", () => {
     render(<CommitSelector {...makeProps()} />);
 
-    fireEvent.click(screen.getByText("Middle commit"));
+    fireEvent.click(screen.getByRole("button", { name: "Set range start at Middle commit" }));
 
     expect(screen.getByText("start")).toBeInTheDocument();
   });
 
-  it("shows range hint in footer", () => {
+  it("shows anchor hint in footer", () => {
     render(<CommitSelector {...makeProps()} />);
 
-    expect(screen.getByText("Shift+click to select a range")).toBeInTheDocument();
+    expect(screen.getByText("Use ⊙ to set range start")).toBeInTheDocument();
   });
 });
 
