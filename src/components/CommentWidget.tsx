@@ -79,9 +79,19 @@ export function CommentWidget({
               <textarea
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    handleSaveEdit(comment.id);
+                  } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    handleCancelEdit();
+                  }
+                }}
                 className="w-full bg-ctp-mantle border border-ctp-surface1 rounded-sm text-ctp-text text-sm p-2 placeholder:text-ctp-overlay0 focus:border-ctp-mauve focus:outline-none focus:ring-1 focus:ring-ctp-mauve/30 resize-none"
                 rows={3}
                 autoFocus
+                placeholder="Edit comment... (Ctrl+Enter to save, Esc to cancel)"
               />
               <div className="flex gap-2 mt-2">
                 <button
