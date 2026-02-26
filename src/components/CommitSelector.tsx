@@ -83,7 +83,6 @@ export function CommitSelector({
   const [refValue, setRefValue] = useState("");
   const [rangeAnchor, setRangeAnchor] = useState<number | null>(null);
   const [hoveredCommitIndex, setHoveredCommitIndex] = useState<number | null>(null);
-  const [isShiftPressed, setIsShiftPressed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const refInputRef = useRef<HTMLInputElement>(null);
   const selectedRef = useRef<HTMLDivElement>(null);
@@ -219,7 +218,6 @@ export function CommitSelector({
       setRefValue("");
       setRangeAnchor(null);
       setHoveredCommitIndex(null);
-      setIsShiftPressed(false);
     }
   }, [isOpen]);
 
@@ -235,30 +233,6 @@ export function CommitSelector({
     }
   }, [selectedIndex]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleShiftKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Shift") {
-        setIsShiftPressed(true);
-      }
-    };
-
-    const handleShiftKeyUp = (event: KeyboardEvent) => {
-      if (event.key === "Shift") {
-        setIsShiftPressed(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleShiftKeyDown);
-    window.addEventListener("keyup", handleShiftKeyUp);
-
-    return () => {
-      window.removeEventListener("keydown", handleShiftKeyDown);
-      window.removeEventListener("keyup", handleShiftKeyUp);
-    };
-  }, [isOpen]);
-
   const getRangeBounds = (anchorIndex: number, targetIndex: number) => {
     const minIndex = Math.min(anchorIndex, targetIndex);
     const maxIndex = Math.max(anchorIndex, targetIndex);
@@ -271,8 +245,8 @@ export function CommitSelector({
     };
   };
 
-  const handleCommitClick = (index: number, commit: CommitInfo, shiftKey: boolean) => {
-    if (shiftKey && rangeAnchor !== null && filteredCommits[rangeAnchor]) {
+  const handleCommitClick = (index: number, commit: CommitInfo) => {
+    if (rangeAnchor !== null && filteredCommits[rangeAnchor]) {
       const { fromHash, toHash } = getRangeBounds(rangeAnchor, index);
       onSelectRange(fromHash, toHash);
       return;
@@ -280,6 +254,18 @@ export function CommitSelector({
 
     setRangeAnchor(index);
     onSelectCommit(commit);
+  };
+
+  const handleSetRangeAnchor = (index: number) => {
+    if (rangeAnchor !== null && filteredCommits[rangeAnchor]) {
+      const { fromHash, toHash } = getRangeBounds(rangeAnchor, index);
+      onSelectRange(fromHash, toHash);
+      return;
+    }
+
+    setRangeAnchor(index);
+    setHoveredCommitIndex(index);
+    setSelectedIndex(index);
   };
 
   if (!isOpen) return null;
@@ -374,7 +360,7 @@ export function CommitSelector({
               filteredCommits.map((commit, index) => {
                 const isSelected = index === selectedIndex;
                 const isAnchor = rangeAnchor === index;
-                const isRangePreviewActive = isShiftPressed && rangeAnchor !== null && hoveredCommitIndex !== null;
+                const isRangePreviewActive = rangeAnchor !== null && hoveredCommitIndex !== null;
                 const isInRangePreview =
                   isRangePreviewActive &&
                   index >= Math.min(rangeAnchor, hoveredCommitIndex) &&
@@ -384,7 +370,7 @@ export function CommitSelector({
                   <div
                     key={commit.hash}
                     ref={isSelected ? selectedRef : null}
-                    onClick={(event) => handleCommitClick(index, commit, event.shiftKey)}
+                    onClick={() => handleCommitClick(index, commit)}
                     onMouseEnter={() => setHoveredCommitIndex(index)}
                     className={`cursor-pointer transition-colors px-4 py-3 ${
                       isSelected
@@ -428,6 +414,22 @@ export function CommitSelector({
                           )}
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleSetRangeAnchor(index);
+                        }}
+                        className={`flex-shrink-0 w-6 h-6 mt-0.5 rounded-sm border text-xs transition-colors ${
+                          isAnchor
+                            ? "bg-ctp-blue/15 border-ctp-blue/40 text-ctp-blue"
+                            : "bg-ctp-base border-ctp-surface1 text-ctp-overlay0 hover:text-ctp-blue hover:border-ctp-blue/30"
+                        }`}
+                        title={rangeAnchor === null ? "Set range start" : "Select range to this commit"}
+                        aria-label={rangeAnchor === null ? `Set range start at ${commit.message}` : `Select range to ${commit.message}`}
+                      >
+                        ⊙
+                      </button>
                     </div>
                   </div>
                 );
@@ -666,7 +668,7 @@ export function CommitSelector({
             <>
               <span className="mr-4">↑↓ Navigate</span>
               <span className="mr-4">Enter Select</span>
-              <span className="mr-4">Shift+click to select a range</span>
+              <span className="mr-4">Use ⊙ to set range start</span>
               <span>Esc {tab === "stacks" && stackView === "entries" ? "Back" : "Close"}</span>
             </>
           )}
