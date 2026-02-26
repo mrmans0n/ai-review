@@ -477,7 +477,14 @@ pub fn run() {
                 .select_all()
                 .build()?;
 
+            let app_menu = SubmenuBuilder::new(app, "ai-review")
+                .about(None)
+                .separator()
+                .quit()
+                .build()?;
+
             let menu = MenuBuilder::new(app)
+                .item(&app_menu)
                 .item(&file_menu)
                 .item(&edit_menu)
                 .build()?;
