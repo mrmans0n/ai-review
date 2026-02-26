@@ -13,9 +13,9 @@ You have finished writing code and need the human to review it before proceeding
       Run `air --wait` with no branch/commit flags. This reviews the working directory diff.
 
    b. **All changes are committed, on a feature branch** (not main/master):
-      Determine the base branch (`main` or `master`, whichever exists). Run:
+      Determine the base branch (`main` or `master`, whichever exists). Find the merge-base commit and use `--commit`:
       ```
-      air --wait --branch <base-branch>
+      air --wait --commit $(git merge-base <base-branch> HEAD)
       ```
 
    c. **All changes are committed, on main/master itself:**
