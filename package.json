@@ -11,6 +11,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "tauri:build:install": "bash ./cli/build-install-macos.sh",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run"
