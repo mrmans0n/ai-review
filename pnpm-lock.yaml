@@ -85,8 +85,8 @@ importers:
         specifier: ^3.4.19
         version: 3.4.19
       typescript:
-        specifier: ~5.8.3
-        version: 5.8.3
+        specifier: ~5.9.0
+        version: 5.9.3
       vite:
         specifier: ^7.0.4
         version: 7.3.1(jiti@1.21.7)
@@ -1380,8 +1380,8 @@ packages:
   ts-interface-checker@0.1.13:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
 
-  typescript@5.8.3:
-    resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
+  typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -2665,7 +2665,7 @@ snapshots:
 
   ts-interface-checker@0.1.13: {}
 
-  typescript@5.8.3: {}
+  typescript@5.9.3: {}
 
   undici@7.21.0: {}
 
