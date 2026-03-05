@@ -626,8 +626,6 @@ function App() {
 
     if (!workingDir) return;
 
-    setCurrentFile(filePath);
-    setViewMode("file");
     setImagePreviewError(null);
     setImagePreviewLoading(false);
     setOldImageSrc(null);
@@ -637,6 +635,8 @@ function App() {
     const fileStatus = selectedChangedFile?.status || "modified";
 
     if (isImageFile(filePath)) {
+      setCurrentFile(filePath);
+      setViewMode("file");
       setIsImagePreview(true);
       setImagePreviewStatus(fileStatus);
       setImagePreviewLoading(true);
@@ -734,6 +734,8 @@ function App() {
         });
       }
 
+      setCurrentFile(filePath);
+      setViewMode("file");
       setFileContent(content);
     } catch (err) {
       console.error("Failed to read file:", err);
