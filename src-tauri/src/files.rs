@@ -1,3 +1,4 @@
+use base64::Engine as _;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -13,6 +14,12 @@ pub struct FileEntry {
 /// Read file contents
 pub fn read_file(path: &str) -> Result<String, String> {
     fs::read_to_string(path).map_err(|e| format!("Failed to read file {}: {}", path, e))
+}
+
+/// Read file contents as base64 (binary-safe)
+pub fn read_file_base64(path: &str) -> Result<String, String> {
+    let bytes = fs::read(path).map_err(|e| format!("Failed to read file {}: {}", path, e))?;
+    Ok(base64::engine::general_purpose::STANDARD.encode(bytes))
 }
 
 /// List files in a directory (recursive, respecting .gitignore if in git repo)
