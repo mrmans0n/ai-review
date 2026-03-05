@@ -18,6 +18,7 @@ import { FileExplorer } from "./components/FileExplorer";
 import { CommitSelector } from "./components/CommitSelector";
 import { FileList } from "./components/FileList";
 import { FileViewer } from "./components/FileViewer";
+import { ImagePreview } from "./components/ImagePreview";
 import { SearchBar } from "./components/SearchBar";
 import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
@@ -46,6 +47,12 @@ function App() {
   const [viewMode, setViewMode] = useState<"diff" | "file">("diff");
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState("");
+  const [isImagePreview, setIsImagePreview] = useState(false);
+  const [imagePreviewLoading, setImagePreviewLoading] = useState(false);
+  const [imagePreviewError, setImagePreviewError] = useState<string | null>(null);
+  const [imagePreviewStatus, setImagePreviewStatus] = useState("modified");
+  const [oldImageSrc, setOldImageSrc] = useState<string | null>(null);
+  const [newImageSrc, setNewImageSrc] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | undefined>();
   const [addingCommentAt, setAddingCommentAt] = useState<{
     file: string;
@@ -619,6 +626,86 @@ function App() {
 
     if (!workingDir) return;
 
+    setCurrentFile(filePath);
+    setViewMode("file");
+    setImagePreviewError(null);
+    setImagePreviewLoading(false);
+    setOldImageSrc(null);
+    setNewImageSrc(null);
+
+    const selectedChangedFile = changedFiles.find((file) => file.path === filePath);
+    const fileStatus = selectedChangedFile?.status || "modified";
+
+    if (isImageFile(filePath)) {
+      setIsImagePreview(true);
+      setImagePreviewStatus(fileStatus);
+      setImagePreviewLoading(true);
+
+      const mimeType = getImageMimeType(filePath);
+      const makeDataUrl = (base64: string) => `data:${mimeType};base64,${base64}`;
+
+      try {
+        const refs = await resolvePreviewRefs({
+          workingDir,
+          diffMode,
+          selectedCommit,
+          selectedBranch,
+        });
+
+        if (fileStatus === "added") {
+          let base64: string;
+          if (refs.readNewFromWorkingTree) {
+            base64 = await invoke<string>("read_file_content_base64", {
+              path: workingDir,
+              filePath,
+            });
+          } else {
+            base64 = await invoke<string>("get_file_at_ref_base64", {
+              path: workingDir,
+              gitRef: refs.newRef,
+              filePath,
+            });
+          }
+          setNewImageSrc(makeDataUrl(base64));
+        } else if (fileStatus === "deleted") {
+          const base64 = await invoke<string>("get_file_at_ref_base64", {
+            path: workingDir,
+            gitRef: refs.oldRef,
+            filePath,
+          });
+          setOldImageSrc(makeDataUrl(base64));
+        } else {
+          const [oldBase64, newBase64] = await Promise.all([
+            invoke<string>("get_file_at_ref_base64", {
+              path: workingDir,
+              gitRef: refs.oldRef,
+              filePath,
+            }),
+            refs.readNewFromWorkingTree
+              ? invoke<string>("read_file_content_base64", {
+                path: workingDir,
+                filePath,
+              })
+              : invoke<string>("get_file_at_ref_base64", {
+                path: workingDir,
+                gitRef: refs.newRef,
+                filePath,
+              }),
+          ]);
+          setOldImageSrc(makeDataUrl(oldBase64));
+          setNewImageSrc(makeDataUrl(newBase64));
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        setImagePreviewError(message);
+      } finally {
+        setImagePreviewLoading(false);
+      }
+      return;
+    }
+
+    setIsImagePreview(false);
+
     try {
       let content: string;
 
@@ -648,8 +735,6 @@ function App() {
       }
 
       setFileContent(content);
-      setCurrentFile(filePath);
-      setViewMode("file");
     } catch (err) {
       console.error("Failed to read file:", err);
     }
@@ -1638,38 +1723,49 @@ function App() {
                 </button>
                 <h2 className="text-xl font-semibold mt-2">{currentFile}</h2>
               </div>
-              <FileViewer
-                fileName={currentFile}
-                content={fileContent}
-                language={detectLanguage(currentFile)}
-                isViewed={viewedFiles.has(currentFile)}
-                onToggleViewed={() => toggleViewed(currentFile)}
-                onLineClick={handleLineClick}
-                addingCommentAt={addingCommentAt}
-                onAddComment={handleAddComment}
-                onCancelComment={() => setAddingCommentAt(null)}
-                comments={comments}
-                onEditComment={updateComment}
-                onDeleteComment={deleteComment}
-                editingCommentId={editingCommentId}
-                onStartEditComment={startEditing}
-                onStopEditComment={stopEditing}
-                hoveredLine={hoveredLine}
-                onHoverLine={setHoveredLine}
-                lastFocusedLine={lastFocusedLine}
-                selectingRange={selectingRange}
-                onStartSelectingRange={setSelectingRange}
-                selectedRange={selectedRange}
-                onSelectedRangeChange={setSelectedRange}
-                hoveredCommentIds={hoveredCommentIds}
-                onHoverCommentIds={setHoveredCommentIds}
-                onShiftClickLine={(file, startLine, endLine, side) => {
-                  setAddingCommentAt({ file, startLine, endLine, side });
-                }}
-                suppressNextClick={suppressNextClickRef}
-                searchQuery={search.query}
-                highlightedWord={wordHighlight.highlightedWord}
-              />
+              {isImagePreview ? (
+                <ImagePreview
+                  fileName={currentFile}
+                  status={imagePreviewStatus}
+                  oldImageSrc={oldImageSrc}
+                  newImageSrc={newImageSrc}
+                  loading={imagePreviewLoading}
+                  error={imagePreviewError}
+                />
+              ) : (
+                <FileViewer
+                  fileName={currentFile}
+                  content={fileContent}
+                  language={detectLanguage(currentFile)}
+                  isViewed={viewedFiles.has(currentFile)}
+                  onToggleViewed={() => toggleViewed(currentFile)}
+                  onLineClick={handleLineClick}
+                  addingCommentAt={addingCommentAt}
+                  onAddComment={handleAddComment}
+                  onCancelComment={() => setAddingCommentAt(null)}
+                  comments={comments}
+                  onEditComment={updateComment}
+                  onDeleteComment={deleteComment}
+                  editingCommentId={editingCommentId}
+                  onStartEditComment={startEditing}
+                  onStopEditComment={stopEditing}
+                  hoveredLine={hoveredLine}
+                  onHoverLine={setHoveredLine}
+                  lastFocusedLine={lastFocusedLine}
+                  selectingRange={selectingRange}
+                  onStartSelectingRange={setSelectingRange}
+                  selectedRange={selectedRange}
+                  onSelectedRangeChange={setSelectedRange}
+                  hoveredCommentIds={hoveredCommentIds}
+                  onHoverCommentIds={setHoveredCommentIds}
+                  onShiftClickLine={(file, startLine, endLine, side) => {
+                    setAddingCommentAt({ file, startLine, endLine, side });
+                  }}
+                  suppressNextClick={suppressNextClickRef}
+                  searchQuery={search.query}
+                  highlightedWord={wordHighlight.highlightedWord}
+                />
+              )}
             </div>
           ) : renderableFiles.length === 0 ? (
             <div className="flex-1 flex items-center justify-center aperture-grid bg-ctp-base h-full">
@@ -1832,6 +1928,123 @@ function detectLanguage(filename: string): string {
     yml: "yaml",
   };
   return langMap[ext || ""] || "plaintext";
+}
+
+const IMAGE_EXTENSIONS = new Set([
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "svg",
+  "webp",
+  "bmp",
+  "ico",
+  "tiff",
+]);
+
+function isImageFile(filename: string): boolean {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  return ext ? IMAGE_EXTENSIONS.has(ext) : false;
+}
+
+function getImageMimeType(filename: string): string {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  const mimeMap: Record<string, string> = {
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    svg: "image/svg+xml",
+    webp: "image/webp",
+    bmp: "image/bmp",
+    ico: "image/x-icon",
+    tiff: "image/tiff",
+  };
+  return ext ? mimeMap[ext] || "application/octet-stream" : "application/octet-stream";
+}
+
+async function resolvePreviewRefs({
+  workingDir,
+  diffMode,
+  selectedCommit,
+  selectedBranch,
+}: {
+  workingDir: string;
+  diffMode: DiffModeConfig;
+  selectedCommit: CommitInfo | null;
+  selectedBranch: BranchInfo | null;
+}): Promise<{ oldRef: string; newRef: string; readNewFromWorkingTree: boolean }> {
+  if (selectedCommit) {
+    return {
+      oldRef: `${selectedCommit.hash}~1`,
+      newRef: selectedCommit.hash,
+      readNewFromWorkingTree: false,
+    };
+  }
+
+  if (selectedBranch) {
+    const oldRef = await invoke<string>("get_branch_base", {
+      path: workingDir,
+      branch: selectedBranch.name,
+    });
+    return {
+      oldRef,
+      newRef: selectedBranch.name,
+      readNewFromWorkingTree: false,
+    };
+  }
+
+  if (diffMode.mode === "unstaged") {
+    return {
+      oldRef: ":0",
+      newRef: "HEAD",
+      readNewFromWorkingTree: true,
+    };
+  }
+
+  if (diffMode.mode === "staged") {
+    return {
+      oldRef: "HEAD",
+      newRef: ":0",
+      readNewFromWorkingTree: false,
+    };
+  }
+
+  if (diffMode.mode === "commit") {
+    const commitRef = diffMode.commitRef || "HEAD";
+    return {
+      oldRef: `${commitRef}~1`,
+      newRef: commitRef,
+      readNewFromWorkingTree: false,
+    };
+  }
+
+  if (diffMode.mode === "range" && diffMode.range) {
+    const [fromRef, toRef] = diffMode.range.split("..");
+    return {
+      oldRef: fromRef || "HEAD",
+      newRef: toRef || "HEAD",
+      readNewFromWorkingTree: false,
+    };
+  }
+
+  if (diffMode.mode === "branch" && diffMode.branchName) {
+    const oldRef = await invoke<string>("get_branch_base", {
+      path: workingDir,
+      branch: diffMode.branchName,
+    });
+    return {
+      oldRef,
+      newRef: diffMode.branchName,
+      readNewFromWorkingTree: false,
+    };
+  }
+
+  return {
+    oldRef: "HEAD",
+    newRef: "HEAD",
+    readNewFromWorkingTree: false,
+  };
 }
 
 export default App;

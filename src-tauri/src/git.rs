@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use base64::Engine as _;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -400,6 +401,23 @@ pub fn get_file_at_ref(dir: &Path, git_ref: &str, file_path: &str) -> Result<Str
     }
 
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+/// Get file content at a specific git ref and return it as base64.
+pub fn get_file_at_ref_base64(dir: &Path, git_ref: &str, file_path: &str) -> Result<String, String> {
+    let ref_path = format!("{}:{}", git_ref, file_path);
+    let output = Command::new("git")
+        .arg("show")
+        .arg(&ref_path)
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to execute git show: {}", e))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+
+    Ok(base64::engine::general_purpose::STANDARD.encode(output.stdout))
 }
 
 /// List all files in the repository at a given ref
