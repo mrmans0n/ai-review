@@ -93,6 +93,7 @@ function App() {
   const mainContentRef = useRef<HTMLDivElement>(null);
   const [expandedHunksMap, setExpandedHunksMap] = useState<Record<string, any[]>>({});
   const sourceCache = useRef<Record<string, string[]>>({});
+  const imageRequestIdRef = useRef(0);
   const [changedFiles, setChangedFiles] = useState<ChangedFile[]>([]);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(256);
@@ -635,6 +636,7 @@ function App() {
     const fileStatus = selectedChangedFile?.status || "modified";
 
     if (isImageFile(filePath)) {
+      const requestId = ++imageRequestIdRef.current;
       setCurrentFile(filePath);
       setViewMode("file");
       setIsImagePreview(true);
@@ -643,6 +645,7 @@ function App() {
 
       const mimeType = getImageMimeType(filePath);
       const makeDataUrl = (base64: string) => `data:${mimeType};base64,${base64}`;
+      const isStale = () => imageRequestIdRef.current !== requestId;
 
       try {
         const refs = await resolvePreviewRefs({
@@ -651,6 +654,8 @@ function App() {
           selectedCommit,
           selectedBranch,
         });
+
+        if (isStale()) return;
 
         if (fileStatus === "added") {
           let base64: string;
@@ -666,6 +671,7 @@ function App() {
               filePath,
             });
           }
+          if (isStale()) return;
           setNewImageSrc(makeDataUrl(base64));
         } else if (fileStatus === "deleted") {
           const base64 = await invoke<string>("get_file_at_ref_base64", {
@@ -673,6 +679,7 @@ function App() {
             gitRef: refs.oldRef,
             filePath,
           });
+          if (isStale()) return;
           setOldImageSrc(makeDataUrl(base64));
         } else {
           const [oldBase64, newBase64] = await Promise.all([
@@ -692,14 +699,16 @@ function App() {
                 filePath,
               }),
           ]);
+          if (isStale()) return;
           setOldImageSrc(makeDataUrl(oldBase64));
           setNewImageSrc(makeDataUrl(newBase64));
         }
       } catch (err) {
+        if (isStale()) return;
         const message = err instanceof Error ? err.message : String(err);
         setImagePreviewError(message);
       } finally {
-        setImagePreviewLoading(false);
+        if (!isStale()) setImagePreviewLoading(false);
       }
       return;
     }
