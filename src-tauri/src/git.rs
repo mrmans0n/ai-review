@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use base64::Engine as _;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -404,7 +404,11 @@ pub fn get_file_at_ref(dir: &Path, git_ref: &str, file_path: &str) -> Result<Str
 }
 
 /// Get file content at a specific git ref and return it as base64.
-pub fn get_file_at_ref_base64(dir: &Path, git_ref: &str, file_path: &str) -> Result<String, String> {
+pub fn get_file_at_ref_base64(
+    dir: &Path,
+    git_ref: &str,
+    file_path: &str,
+) -> Result<String, String> {
     let ref_path = format!("{}:{}", git_ref, file_path);
     let output = Command::new("git")
         .arg("show")

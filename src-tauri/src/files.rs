@@ -1,8 +1,8 @@
+use base64::Engine as _;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 use std::process::Command;
-use base64::Engine as _;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FileEntry {
