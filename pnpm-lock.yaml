@@ -46,7 +46,7 @@ importers:
         version: 13.0.0
     devDependencies:
       '@tauri-apps/cli':
-        specifier: ^2.10.1
+        specifier: ^2
         version: 2.10.1
       '@testing-library/jest-dom':
         specifier: ^6.9.1
