@@ -186,11 +186,13 @@ code, pre, .font-mono {
 }
 
 .hljs-type,
-.hljs-class .hljs-title,
-.hljs-title,
-.hljs-title\.class_,
-.hljs-title\.function_ {
+.hljs-title {
   color: var(--ctp-yellow);
+}
+
+.hljs-title.hljs-function_,
+.hljs-title.hljs-function {
+  color: var(--ctp-blue);
 }
 
 .hljs-function,
