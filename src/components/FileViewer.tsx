@@ -181,9 +181,9 @@ export function FileViewer({
   };
 
   return (
-    <div className="bg-ctp-mantle rounded overflow-hidden border border-ctp-surface1" data-file-viewer={fileName} data-search-query={searchQuery} data-highlighted-word={highlightedWord || ""}>
+    <div className="bg-ctp-mantle rounded border border-ctp-surface1" data-file-viewer={fileName} data-search-query={searchQuery} data-highlighted-word={highlightedWord || ""}>
       <div
-        className={`sticky top-0 z-10 px-4 py-2 border-b border-ctp-surface1 flex items-center justify-between transition-colors ${
+        className={`sticky top-0 z-10 rounded-t px-4 py-2 border-b border-ctp-surface1 flex items-center justify-between transition-colors ${
           isViewed ? "bg-ctp-base/80 text-ctp-subtext cursor-pointer" : "bg-ctp-base"
         }`}
         onClick={() => {
