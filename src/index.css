@@ -155,3 +155,83 @@ code, pre, .font-mono {
   background-image: radial-gradient(circle, var(--ctp-surface1) 1px, transparent 1px);
   background-size: 24px 24px;
 }
+
+/* ─── Syntax highlighting (highlight.js + Catppuccin) ─── */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-name {
+  color: var(--ctp-mauve);
+}
+
+.hljs-string,
+.hljs-attr,
+.hljs-template-tag,
+.hljs-template-variable {
+  color: var(--ctp-green);
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-tag .hljs-attr {
+  color: var(--ctp-peach);
+}
+
+.hljs-comment,
+.hljs-doctag,
+.hljs-quote {
+  color: var(--ctp-overlay0);
+  font-style: italic;
+}
+
+.hljs-type,
+.hljs-title {
+  color: var(--ctp-yellow);
+}
+
+.hljs-title.hljs-function_,
+.hljs-title.hljs-function {
+  color: var(--ctp-blue);
+}
+
+.hljs-function,
+.hljs-symbol,
+.hljs-bullet {
+  color: var(--ctp-blue);
+}
+
+.hljs-meta,
+.hljs-meta .hljs-keyword {
+  color: var(--ctp-teal);
+}
+
+.hljs-property {
+  color: var(--ctp-blue);
+}
+
+.hljs-regexp,
+.hljs-link {
+  color: var(--ctp-peach);
+}
+
+.hljs-operator,
+.hljs-punctuation {
+  color: var(--ctp-text);
+}
+
+.hljs-deletion {
+  color: var(--ctp-red);
+}
+
+.hljs-addition {
+  color: var(--ctp-green);
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
