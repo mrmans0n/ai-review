@@ -77,6 +77,14 @@ Download the latest release from [GitHub Releases](https://github.com/mrmans0n/a
 - **macOS** — `.dmg` (Apple Silicon)
 - **Linux** — `.AppImage` or `.deb`
 
+> **macOS note:** The app is not code-signed with an Apple Developer certificate. When opening for the first time, macOS Gatekeeper may show an error saying the app is "damaged" or "can't be opened." To fix this, run:
+>
+> ```bash
+> xattr -cr /Applications/AI\ Review.app
+> ```
+>
+> If you installed via Homebrew, this is handled automatically.
+
 ### From Source
 
 ```bash

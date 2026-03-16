@@ -21,6 +21,12 @@ cask "ai-review" do
   app "AI Review.app"
   binary "#{{appdir}}/AI Review.app/Contents/MacOS/ai-review", target: "air"
 
+  postflight do
+    system_command "/usr/bin/xattr",
+                   args: ["-cr", "#{{appdir}}/AI Review.app"],
+                   sudo: false
+  end
+
   zap trash: [
     "~/Library/Application Support/com.nacholopez.ai-review",
     "~/Library/Caches/com.nacholopez.ai-review",
