@@ -49,16 +49,16 @@ export function HunkExpandControl({
   // so we pass gapEnd + 1 to include the last line in the gap.
 
   const handleExpandUp = () => {
+    // Expand EXPAND_LINES from the bottom of the gap (closer to nextHunk)
+    const start = Math.max(gapEnd - EXPAND_LINES + 1, gapStart);
+    onExpand(start, gapEnd + 1);
+  };
+
+  const handleExpandDown = () => {
     // Expand EXPAND_LINES from the top of the gap (closer to previousHunk)
     const start = gapStart;
     const end = Math.min(gapStart + EXPAND_LINES, gapEnd + 1);
     onExpand(start, end);
-  };
-
-  const handleExpandDown = () => {
-    // Expand EXPAND_LINES from the bottom of the gap (closer to nextHunk)
-    const start = Math.max(gapEnd - EXPAND_LINES + 1, gapStart);
-    onExpand(start, gapEnd + 1);
   };
 
   const handleExpandAll = () => {
