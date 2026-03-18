@@ -34,10 +34,11 @@ hljs.registerLanguage("yaml", yaml);
 interface HighlightOptions {
   language?: string;
   enhance?: boolean;
+  oldSource?: string;
 }
 
 export function highlight(hunks: any[], options: HighlightOptions = {}) {
-  const { language = "plaintext", enhance = true } = options;
+  const { language = "plaintext", enhance = true, oldSource } = options;
 
   if (!language || language === "plaintext") {
     return undefined;
@@ -62,6 +63,7 @@ export function highlight(hunks: any[], options: HighlightOptions = {}) {
       enhancers: enhance ? [markEdits(hunks, { type: "block" })] : [],
       language,
       refractor: refractor as any,
+      ...(oldSource !== undefined ? { oldSource } : {}),
     });
 
     return tokens;

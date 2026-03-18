@@ -94,6 +94,7 @@ function App() {
   const [expandedHunksMap, setExpandedHunksMap] = useState<Record<string, any[]>>({});
   const sourceCache = useRef<Record<string, string[]>>({});
   const imageRequestIdRef = useRef(0);
+  const [oldSourceMap, setOldSourceMap] = useState<Record<string, string>>({});
   const [changedFiles, setChangedFiles] = useState<ChangedFile[]>([]);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(256);
@@ -454,6 +455,8 @@ function App() {
 
   const handleModeChange = (newMode: DiffModeConfig) => {
     setDiffMode(newMode);
+    setSelectedCommit(null);
+    setSelectedBranch(null);
     loadDiff(newMode);
     setReviewingLabel(null);
   };
@@ -491,6 +494,7 @@ function App() {
       setReviewingLabel(null);
       setExpandedHunksMap({});
       sourceCache.current = {};
+      setOldSourceMap({});
       setViewMode("diff");
       setSelectedFile(undefined);
       setCurrentFile(null);
@@ -536,6 +540,7 @@ function App() {
   useEffect(() => {
     setExpandedHunksMap({});
     sourceCache.current = {};
+    setOldSourceMap({});
   }, [diffMode, selectedCommit, selectedBranch]);
 
   const fetchFileSource = async (filePath: string): Promise<string[]> => {
@@ -610,6 +615,97 @@ function App() {
     sourceCache.current[filePath] = lines;
     return lines;
   };
+
+  // Fetch old-side source for all changed files to enable full-file syntax highlighting.
+  // Without this, multi-line constructs (block comments, template literals) break
+  // because highlight.js processes each line independently.
+  useEffect(() => {
+    if (!workingDir || !diffText) return;
+
+    const files = parseDiff(diffText);
+    let cancelled = false;
+
+    const fetchOldSources = async () => {
+      const results: Record<string, string> = {};
+
+      // Determine oldRef based on actual state, not just diffMode.
+      // handleCommitSelect/handleBranchSelect set selectedCommit/selectedBranch
+      // but don't update diffMode, so we derive the ref from actual state.
+      let oldRef: string;
+
+      if (selectedCommit) {
+        oldRef = `${selectedCommit.hash}~1`;
+      } else if (selectedBranch) {
+        try {
+          oldRef = await invoke<string>("get_branch_base", {
+            path: workingDir,
+            branch: selectedBranch.name,
+          });
+        } catch {
+          return; // can't determine merge-base
+        }
+      } else if (diffMode.mode === "unstaged") {
+        oldRef = ":0"; // index — unstaged compares index vs working tree
+      } else if (diffMode.mode === "staged") {
+        oldRef = "HEAD";
+      } else if (diffMode.mode === "commit" && diffMode.commitRef) {
+        // Handles handleRefSelect (sets diffMode but not selectedCommit)
+        // and handleStackEntrySelect (also sets diffMode.commitRef)
+        oldRef = `${diffMode.commitRef}~1`;
+      } else if (diffMode.mode === "range" && diffMode.range) {
+        if (diffMode.range.includes("...")) {
+          // Three-dot range: git diff A...B uses the merge-base as old side
+          const parts = diffMode.range.split("...");
+          try {
+            oldRef = await invoke<string>("get_merge_base_refs", {
+              path: workingDir,
+              ref1: parts[0],
+              ref2: parts[1],
+            });
+          } catch {
+            oldRef = parts[0];
+          }
+        } else {
+          // Two-dot range: A..B — old side is A
+          const parts = diffMode.range.split("..");
+          oldRef = parts[0];
+        }
+      } else {
+        oldRef = "HEAD";
+      }
+
+      await Promise.all(
+        files.map(async (file: any) => {
+          const oldPath = file.oldPath;
+          // For new/untracked files, old side is empty — still need oldSource
+          // so react-diff-view uses full-file highlighting path
+          if (!oldPath || oldPath === "/dev/null") {
+            const newPath = file.newPath;
+            if (newPath) results[newPath] = "";
+            return;
+          }
+
+          try {
+            const content = await invoke<string>("get_file_at_ref", {
+              path: workingDir,
+              gitRef: oldRef,
+              filePath: oldPath,
+            });
+            results[oldPath] = content;
+          } catch {
+            // File may not exist in old ref (e.g., root commit) — skip
+          }
+        })
+      );
+
+      if (!cancelled) {
+        setOldSourceMap(results);
+      }
+    };
+
+    fetchOldSources();
+    return () => { cancelled = true; };
+  }, [workingDir, diffText, diffMode, selectedCommit, selectedBranch]);
 
   const handleExpandRange = async (filePath: string, originalHunks: any[], start: number, end: number) => {
     try {
@@ -840,7 +936,13 @@ function App() {
         stackName: commitSelector.selectedStack,
         hash: entry.hash,
       });
-      setDiffText(result || "No changes in this entry");
+      const diffContent = result || "No changes in this entry";
+      setDiffText(diffContent);
+      setChangedFiles(parseDiff(diffContent).map((f: any) => ({
+        path: f.newPath || f.oldPath,
+        status: f.type === "add" ? "A" : f.type === "delete" ? "D" : "M",
+      })));
+      setDiffMode({ mode: "commit", commitRef: entry.hash });
       setSelectedCommit(null);
       setSelectedBranch(null);
       setReviewingLabel(`${entry.short_hash} ${entry.title}`);
@@ -855,11 +957,23 @@ function App() {
     if (!workingDir) return;
 
     try {
-      const result = await invoke<string>("get_gg_stack_diff", {
-        path: workingDir,
-        stackName: stack.name,
-      });
-      setDiffText(result || "No changes in this stack");
+      const [result, stackBaseInfo] = await Promise.all([
+        invoke<string>("get_gg_stack_diff", {
+          path: workingDir,
+          stackName: stack.name,
+        }),
+        invoke<{ base: string; branch: string }>("get_gg_stack_base", {
+          path: workingDir,
+          stackName: stack.name,
+        }).catch(() => ({ base: "HEAD", branch: "HEAD" })),
+      ]);
+      const diffContent = result || "No changes in this stack";
+      setDiffText(diffContent);
+      setChangedFiles(parseDiff(diffContent).map((f: any) => ({
+        path: f.newPath || f.oldPath,
+        status: f.type === "add" ? "A" : f.type === "delete" ? "D" : "M",
+      })));
+      setDiffMode({ mode: "range", range: `${stackBaseInfo.base}..${stackBaseInfo.branch}` });
       setSelectedCommit(null);
       setSelectedBranch(null);
       setReviewingLabel(stack.name);
@@ -1112,8 +1226,14 @@ function App() {
     const isViewed = viewedFiles.has(fileName);
     const fileHunks = expandedHunksMap[fileName] || file.hunks;
     if (!fileHunks || fileHunks.length === 0) return null;
+    // For existing files, look up by oldPath; for new files (oldPath is /dev/null),
+    // look up by newPath where we stored empty string as oldSource
+    const oldSource = (file.oldPath && file.oldPath !== "/dev/null")
+      ? oldSourceMap[file.oldPath]
+      : oldSourceMap[file.newPath];
     const tokens = highlight(fileHunks, {
       language: detectLanguage(fileName),
+      oldSource,
     });
     const fileComments = comments.filter((c) => c.file === fileName);
     const fileWidgets = buildFileWidgets(file, fileComments, fileHunks);

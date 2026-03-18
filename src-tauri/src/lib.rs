@@ -197,6 +197,18 @@ fn get_gg_stack_entries(
 }
 
 #[tauri::command]
+fn get_merge_base_refs(path: String, ref1: String, ref2: String) -> Result<String, String> {
+    let dir = PathBuf::from(path);
+    git::get_merge_base_refs(&dir, &ref1, &ref2)
+}
+
+#[tauri::command]
+fn get_gg_stack_base(path: String, stack_name: String) -> Result<git::GgStackBaseInfo, String> {
+    let dir = PathBuf::from(path);
+    git::get_gg_stack_base(&dir, &stack_name)
+}
+
+#[tauri::command]
 fn get_gg_stack_diff(path: String, stack_name: String) -> Result<String, String> {
     let dir = PathBuf::from(path);
     git::get_gg_stack_diff(&dir, &stack_name)
@@ -542,6 +554,8 @@ pub fn run() {
             has_worktrees,
             list_gg_stacks,
             get_gg_stack_entries,
+            get_merge_base_refs,
+            get_gg_stack_base,
             get_gg_stack_diff,
             get_gg_entry_diff,
             check_cli_installed,
