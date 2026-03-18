@@ -1099,6 +1099,59 @@ pub fn get_gg_stack_entries(dir: &Path, stack_name: &str) -> Result<Vec<GgStackE
     Ok(entries)
 }
 
+/// Get the merge-base between two arbitrary refs
+pub fn get_merge_base_refs(dir: &Path, ref1: &str, ref2: &str) -> Result<String, String> {
+    let output = Command::new("git")
+        .args(["merge-base", ref1, ref2])
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to find merge-base: {}", e))?;
+
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+    }
+}
+
+/// Get the base ref for a git-gud stack
+#[derive(Clone, serde::Serialize)]
+pub struct GgStackBaseInfo {
+    pub base: String,
+    pub branch: String,
+}
+
+pub fn get_gg_stack_base(dir: &Path, stack_name: &str) -> Result<GgStackBaseInfo, String> {
+    let config = read_gg_config(dir)?;
+    let default_base = get_default_base(&config);
+
+    let base = config
+        .get("stacks")
+        .and_then(|s| s.get(stack_name))
+        .and_then(|s| s.get("base"))
+        .and_then(|b| b.as_str())
+        .map(|s| s.to_string())
+        .unwrap_or(default_base);
+
+    // Find the stack branch name
+    let branches_output = Command::new("git")
+        .arg("for-each-ref")
+        .arg("--format=%(refname:short)")
+        .arg("refs/heads/")
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to list branches: {}", e))?;
+
+    let branches_str = String::from_utf8_lossy(&branches_output.stdout);
+    let branch = branches_str
+        .lines()
+        .find(|b| is_stack_branch(b) && extract_stack_name(b).as_deref() == Some(stack_name))
+        .unwrap_or(stack_name)
+        .to_string();
+
+    Ok(GgStackBaseInfo { base, branch })
+}
+
 /// Get diff for entire git-gud stack (base..stack-head)
 pub fn get_gg_stack_diff(dir: &Path, stack_name: &str) -> Result<String, String> {
     let config = read_gg_config(dir)?;
