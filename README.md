@@ -46,7 +46,11 @@ That's it — Claude Code will discover the skills and can invoke `air` during c
 
 ### Other Agents (OpenClaw, Codex CLI, etc.)
 
-Copy the skill files from [`skills/`](skills/) into your agent's skills directory and reference them in your agent configuration. Each skill is a standalone Markdown file with instructions the agent can follow.
+Use the [Skills](https://github.com/vercel-labs/skills) tool to install:
+
+```bash
+npx skills add mrmans0n/ai-review
+```
 
 ## Tech Stack
 
