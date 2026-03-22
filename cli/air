@@ -48,6 +48,7 @@ if [ ! -f "$APP_PATH" ]; then
 fi
 
 WAIT_MODE=false
+JSON_OUTPUT=false
 WORKING_DIR="."
 DIFF_ARGS=()
 
@@ -55,6 +56,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --wait)
             WAIT_MODE=true
+            shift
+            ;;
+        --json)
+            JSON_OUTPUT=true
             shift
             ;;
         --commit)
@@ -95,8 +100,13 @@ done
 WORKING_DIR="$(cd "$WORKING_DIR" && pwd)"
 
 # Launch the app with the working directory
+JSON_FLAG=()
+if [ "$JSON_OUTPUT" = true ]; then
+    JSON_FLAG=("--json-output")
+fi
+
 if [ "$WAIT_MODE" = true ]; then
-    "$APP_PATH" "$WORKING_DIR" "${DIFF_ARGS[@]}" "--wait-mode"
+    "$APP_PATH" "$WORKING_DIR" "${DIFF_ARGS[@]}" "${JSON_FLAG[@]}" "--wait-mode"
 else
-    "$APP_PATH" "$WORKING_DIR" "${DIFF_ARGS[@]}" &
+    "$APP_PATH" "$WORKING_DIR" "${DIFF_ARGS[@]}" "${JSON_FLAG[@]}" &
 fi

@@ -22,6 +22,7 @@ enum InitialDiffMode {
 struct AppState {
     working_dir: Mutex<PathBuf>,
     wait_mode: Mutex<bool>,
+    json_output: Mutex<bool>,
     initial_diff_mode: Mutex<Option<InitialDiffMode>>,
 }
 
@@ -38,6 +39,11 @@ fn get_working_directory(state: tauri::State<AppState>) -> String {
 #[tauri::command]
 fn is_wait_mode(state: tauri::State<AppState>) -> bool {
     *state.wait_mode.lock().unwrap()
+}
+
+#[tauri::command]
+fn is_json_output(state: tauri::State<AppState>) -> bool {
+    *state.json_output.lock().unwrap()
 }
 
 #[tauri::command]
@@ -414,6 +420,7 @@ pub fn run() {
 
     let args: Vec<String> = std::env::args().collect();
     let mut wait_mode = false;
+    let mut json_output = false;
     let mut initial_diff_mode: Option<InitialDiffMode> = None;
     let mut dir_arg: Option<String> = None;
 
@@ -422,6 +429,10 @@ pub fn run() {
         match args[i].as_str() {
             "--wait-mode" | "--wait" => {
                 wait_mode = true;
+                i += 1;
+            }
+            "--json-output" | "--json" => {
+                json_output = true;
                 i += 1;
             }
             "--diff-commit" | "--commit" => {
@@ -482,6 +493,7 @@ pub fn run() {
             app.manage(AppState {
                 working_dir: Mutex::new(working_dir),
                 wait_mode: Mutex::new(wait_mode),
+                json_output: Mutex::new(json_output),
                 initial_diff_mode: Mutex::new(initial_diff_mode.clone()),
             });
 
@@ -531,6 +543,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_working_directory,
             is_wait_mode,
+            is_json_output,
             submit_feedback,
             get_initial_diff_mode,
             is_git_repo,

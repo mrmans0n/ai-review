@@ -29,6 +29,7 @@ import { RepoSwitcher } from "./components/RepoSwitcher";
 import { ConfirmModal } from "./components/ConfirmModal";
 import { ScrollProgressBar } from "./components/ScrollProgressBar";
 import { generatePrompt } from "./lib/promptGenerator";
+import { buildJsonFeedback } from "./lib/jsonFeedback";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
 import { extractLinesFromHunks } from "./lib/extractLinesFromHunks";
 import { HunkExpandControl } from "./components/HunkExpandControl";
@@ -83,6 +84,7 @@ function App() {
   } | null>(null);
   const [showPromptPreview, setShowPromptPreview] = useState(false);
   const [waitMode, setWaitMode] = useState(false);
+  const [jsonOutput, setJsonOutput] = useState(false);
   const [initialDiffMode, setInitialDiffMode] = useState<InitialDiffMode | null>(null);
   const [cliInstalled, setCliInstalled] = useState<boolean | null>(null);
   const [cliJustInstalled, setCliJustInstalled] = useState(false);
@@ -144,6 +146,14 @@ function App() {
       })
       .catch((err) => {
         console.error("Failed to read wait mode:", err);
+      });
+
+    invoke<boolean>("is_json_output")
+      .then((enabled) => {
+        setJsonOutput(enabled);
+      })
+      .catch((err) => {
+        console.error("Failed to read json output mode:", err);
       });
 
     invoke<InitialDiffMode | null>("get_initial_diff_mode")
@@ -1045,7 +1055,21 @@ function App() {
     }
   };
 
-  const handleGeneratePrompt = () => {
+  const handleGeneratePrompt = async () => {
+    if (jsonOutput) {
+      const feedback = buildJsonFeedback(comments, {
+        mode: diffMode.mode,
+        commitRef: diffMode.commitRef,
+        selectedCommit,
+        selectedBranch,
+      });
+      try {
+        await invoke("submit_feedback", { feedback: JSON.stringify(feedback) });
+      } catch (err) {
+        console.error("Failed to submit JSON feedback:", err);
+      }
+      return;
+    }
     setShowPromptPreview(true);
   };
 
