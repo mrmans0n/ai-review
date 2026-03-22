@@ -86,3 +86,26 @@ export interface RepoInfo {
   path: string;
   last_activity: number;
 }
+
+export interface JsonFeedbackContext {
+  mode: DiffMode;
+  commitRef?: string;
+  selectedCommit?: CommitInfo | null;
+  selectedBranch?: BranchInfo | null;
+}
+
+export interface JsonFeedbackComment {
+  id: string;
+  file: string;
+  startLine: number;
+  endLine: number;
+  side: "old" | "new";
+  text: string;
+  createdAt: string;
+}
+
+export interface JsonFeedback {
+  format: "ai-review.feedback/v1";
+  context: JsonFeedbackContext;
+  comments: JsonFeedbackComment[];
+}

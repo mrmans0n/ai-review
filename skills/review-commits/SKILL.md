@@ -11,32 +11,39 @@ Open specific commits or a commit range in ai-review so the human can review exi
 
    a. **A specific commit:**
       ```
-      air --wait --commit <commit-hash>
+      air --wait --json --commit <commit-hash>
       ```
 
    b. **A range of commits** (e.g., "last 3 commits", "commits since Tuesday"):
       Determine the range. For the last N commits, find the Nth parent: `git rev-parse HEAD~N`. Run:
       ```
-      air --wait --commits <start-hash>..<end-hash>
+      air --wait --json --commits <start-hash>..<end-hash>
       ```
 
    c. **A branch diff** (e.g., "what changed on feature-x"):
       ```
-      air --wait --branch <base-branch>
+      air --wait --json --branch <base-branch>
       ```
 
-   The `air --wait` command opens the ai-review desktop app and blocks until the human submits.
+   The `air --wait --json` command opens the ai-review desktop app and blocks until the human submits. The output is structured JSON.
 
 2. **Handle the response.**
 
-   - **If the human submitted comments:** Parse the feedback. The output lists review comments in the format:
-     - `file/path.ts:123` — comment text
-     - `file/path.ts:45-50` — comment text
-     - `file/path.ts:10 (deleted)` — comment about removed code
+   - **If the human submitted comments:** Parse the JSON feedback. The output has the shape:
+
+     ```json
+     {
+       "format": "ai-review.feedback/v1",
+       "context": { "mode": "...", ... },
+       "comments": [
+         { "id": "...", "file": "...", "startLine": 10, "endLine": 12, "side": "old|new", "text": "...", "createdAt": "..." }
+       ]
+     }
+     ```
 
      Present the comments to the user. If the comments suggest code changes and the commits are on the current branch, offer to make the changes.
 
-   - **If the human submitted with no comments:** Acknowledge and move on.
+   - **If the human submitted with no comments:** (empty `comments` array) Acknowledge and move on.
 
 ## Notes
 
