@@ -1624,22 +1624,18 @@ function App() {
 
             {/* Group 2: Diff target */}
             <div className="flex gap-1 items-center">
-              {changedFiles.length > 0 && (
-                <>
-                  <button
-                    onClick={() => handleModeChange({ mode: "unstaged" })}
-                    className={diffMode.mode === "unstaged" ? btnActive : btnDefault}
-                  >
-                    Unstaged
-                  </button>
-                  <button
-                    onClick={() => handleModeChange({ mode: "staged" })}
-                    className={diffMode.mode === "staged" ? btnActive : btnDefault}
-                  >
-                    Staged
-                  </button>
-                </>
-              )}
+              <button
+                onClick={() => handleModeChange({ mode: "unstaged" })}
+                className={diffMode.mode === "unstaged" ? btnActive : btnDefault}
+              >
+                Unstaged
+              </button>
+              <button
+                onClick={() => handleModeChange({ mode: "staged" })}
+                className={diffMode.mode === "staged" ? btnActive : btnDefault}
+              >
+                Staged
+              </button>
               {renderableFiles.length > 0 && <button
                 onClick={commitSelector.openSelector}
                 className={btnDefault + " flex items-center gap-1.5"}
