@@ -7,6 +7,8 @@ mod config;
 mod files;
 mod git;
 
+const MISSION_CONTROL_DB_PATH: &str = "/Volumes/Ambrosio/repos/mission-control/data/mission-control.sqlite";
+
 #[derive(Clone, serde::Serialize)]
 #[serde(tag = "type", content = "value")]
 enum InitialDiffMode {
@@ -238,6 +240,80 @@ struct RepoInfo {
     name: String,
     path: String,
     last_activity: i64,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MissionControlStats {
+    open_tasks: i64,
+    running_tasks: i64,
+    blocked_tasks: i64,
+    waiting_tasks: i64,
+    done_today: i64,
+    active_agents: i64,
+}
+
+#[tauri::command]
+fn get_mission_control_stats() -> Result<MissionControlStats, String> {
+    let connection = rusqlite::Connection::open(MISSION_CONTROL_DB_PATH)
+        .map_err(|error| format!("Failed to open Mission Control database: {}", error))?;
+
+    let open_tasks: i64 = connection
+        .query_row(
+            "SELECT COUNT(*) FROM tasks WHERE hidden = 0 AND status IN ('todo', 'in_progress', 'in_review', 'waiting_for_response', 'blocked')",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|error| format!("Failed to count open Mission Control tasks: {}", error))?;
+
+    let running_tasks: i64 = connection
+        .query_row(
+            "SELECT COUNT(*) FROM tasks WHERE hidden = 0 AND status IN ('in_progress', 'in_review')",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|error| format!("Failed to count running Mission Control tasks: {}", error))?;
+
+    let blocked_tasks: i64 = connection
+        .query_row(
+            "SELECT COUNT(*) FROM tasks WHERE hidden = 0 AND status = 'blocked'",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|error| format!("Failed to count blocked Mission Control tasks: {}", error))?;
+
+    let waiting_tasks: i64 = connection
+        .query_row(
+            "SELECT COUNT(*) FROM tasks WHERE hidden = 0 AND status = 'waiting_for_response'",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|error| format!("Failed to count waiting Mission Control tasks: {}", error))?;
+
+    let done_today: i64 = connection
+        .query_row(
+            "SELECT COUNT(*) FROM agent_activity WHERE activity_type = 'done' AND created_at >= CAST(strftime('%s','now','start of day','localtime') AS INTEGER) * 1000",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|error| format!("Failed to count Mission Control completions: {}", error))?;
+
+    let active_agents: i64 = connection
+        .query_row(
+            "SELECT COUNT(DISTINCT agent_name) FROM agent_activity WHERE created_at >= (CAST(strftime('%s','now') AS INTEGER) - 3600) * 1000 AND status IN ('running', 'completed')",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|error| format!("Failed to count active Mission Control agents: {}", error))?;
+
+    Ok(MissionControlStats {
+        open_tasks,
+        running_tasks,
+        blocked_tasks,
+        waiting_tasks,
+        done_today,
+        active_agents,
+    })
 }
 
 #[tauri::command]
@@ -571,6 +647,7 @@ pub fn run() {
             get_gg_stack_base,
             get_gg_stack_diff,
             get_gg_entry_diff,
+            get_mission_control_stats,
             check_cli_installed,
             install_cli,
             list_repos,

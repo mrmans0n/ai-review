@@ -14,6 +14,7 @@ import { useRepoManager } from "./hooks/useRepoManager";
 import { useSearch } from "./hooks/useSearch";
 import { useWordHighlight } from "./hooks/useWordHighlight";
 import { useTheme } from './hooks/useTheme';
+import { useMissionControlStats } from "./hooks/useMissionControlStats";
 import { FileExplorer } from "./components/FileExplorer";
 import { CommitSelector } from "./components/CommitSelector";
 import { FileList } from "./components/FileList";
@@ -28,6 +29,7 @@ import { RepoLandingPage } from "./components/RepoLandingPage";
 import { RepoSwitcher } from "./components/RepoSwitcher";
 import { ConfirmModal } from "./components/ConfirmModal";
 import { ScrollProgressBar } from "./components/ScrollProgressBar";
+import { MissionControlStatusBar } from "./components/MissionControlStatusBar";
 import { generatePrompt } from "./lib/promptGenerator";
 import { buildJsonFeedback } from "./lib/jsonFeedback";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
@@ -104,6 +106,7 @@ function App() {
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
 
   const { theme, toggle: toggleTheme } = useTheme();
+  const missionControl = useMissionControlStats();
 
   const repoManager = useRepoManager();
   const search = useSearch();
@@ -1782,6 +1785,11 @@ function App() {
         </div>
       )}
 
+      <MissionControlStatusBar
+        stats={missionControl.stats}
+        loading={missionControl.loading}
+        error={missionControl.error}
+      />
       <ScrollProgressBar containerRef={mainContentRef} />
       <div className="flex h-[calc(100vh-140px)]">
         {changedFiles.length > 0 && isSidebarVisible && (
