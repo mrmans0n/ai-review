@@ -33,8 +33,8 @@ importers:
         specifier: ^19.1.0
         version: 19.2.4
       react-diff-view:
-        specifier: ^3.3.2
-        version: 3.3.2(react@19.2.4)
+        specifier: ^3.3.3
+        version: 3.3.3(react@19.2.4)
       react-dom:
         specifier: ^19.1.0
         version: 19.2.4(react@19.2.4)
@@ -886,8 +886,8 @@ packages:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
 
-  react-diff-view@3.3.2:
-    resolution: {integrity: sha512-wPVq4ktTcGOHbhnWKU/gHLtd3N2Xd+OZ/XQWcKA06dsxlSsESePAumQILwHtiak2nMCMiWcIfBpqZ5OiharUPA==}
+  react-diff-view@3.3.3:
+    resolution: {integrity: sha512-CPveApk6n7ZbkW7T6PoptR7LWAvD9hohTHZ7WnKnu3GZkTfUB5rvg486apPo94iYVi4fZd3Nt+rtBZ5877exoQ==}
     peerDependencies:
       react: '>=16.14.0'
 
@@ -1757,7 +1757,7 @@ snapshots:
 
   punycode@2.3.1: {}
 
-  react-diff-view@3.3.2(react@19.2.4):
+  react-diff-view@3.3.3(react@19.2.4):
     dependencies:
       classnames: 2.5.1
       diff-match-patch: 1.0.5
