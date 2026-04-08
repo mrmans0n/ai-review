@@ -1006,7 +1006,7 @@ function App() {
       setChangedFiles(result.files);
       setSelectedBranch({
         name: worktree.branch,
-        short_hash: worktree.commit_hash,
+        short_hash: worktree.commit_hash.slice(0, 7),
         subject: "",
         author: "",
         date: "",
