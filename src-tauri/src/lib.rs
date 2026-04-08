@@ -7,7 +7,8 @@ mod config;
 mod files;
 mod git;
 
-const MISSION_CONTROL_DB_PATH: &str = "/Volumes/Ambrosio/repos/mission-control/data/mission-control.sqlite";
+const MISSION_CONTROL_DB_PATH: &str =
+    "/Volumes/Ambrosio/repos/mission-control/data/mission-control.sqlite";
 
 #[derive(Clone, serde::Serialize)]
 #[serde(tag = "type", content = "value")]
