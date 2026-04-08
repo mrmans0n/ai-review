@@ -238,3 +238,58 @@ describe("CommitSelector worktrees tab", () => {
     expect(screen.queryByRole("button", { name: "Worktrees" })).not.toBeInTheDocument();
   });
 });
+
+describe("CommitSelector stacks tab", () => {
+  const makeProps = (overrides: Partial<Parameters<typeof CommitSelector>[0]> = {}) => ({
+    isOpen: true,
+    commits: [] as CommitInfo[],
+    branches: [] as BranchInfo[],
+    loading: false,
+    hasGgStacks: false,
+    ggStacks: [] as GgStackInfo[],
+    hasWorktrees: false,
+    worktrees: [] as WorktreeInfo[],
+    ggStackEntries: [] as GgStackEntry[],
+    selectedStack: null,
+    onSelectCommit: vi.fn(),
+    onSelectRange: vi.fn(),
+    onSelectBranch: vi.fn(),
+    onSelectStack: vi.fn(),
+    onSelectStackEntry: vi.fn(),
+    onSelectStackDiff: vi.fn(),
+    onSelectWorktree: vi.fn(),
+    onSelectRef: vi.fn(),
+    refError: null,
+    onBackToStacks: vi.fn(),
+    onClose: vi.fn(),
+    ...overrides,
+  });
+
+  it("calls onSelectStack when a stack is clicked", () => {
+    const onSelectStack = vi.fn();
+    const stacks: GgStackInfo[] = [
+      {
+        name: "my-feature",
+        base: "main",
+        commit_count: 3,
+        is_current: true,
+        username: "alice",
+      },
+    ];
+
+    render(
+      <CommitSelector
+        {...makeProps({
+          hasGgStacks: true,
+          ggStacks: stacks,
+          onSelectStack,
+        })}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Stacks" }));
+    fireEvent.click(screen.getByText("my-feature"));
+
+    expect(onSelectStack).toHaveBeenCalledWith(stacks[0]);
+  });
+});
