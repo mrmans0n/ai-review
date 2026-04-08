@@ -996,6 +996,7 @@ function App() {
 
   const handleWorktreeSelect = async (worktree: WorktreeInfo) => {
     if (!workingDir) return;
+    if (worktree.branch === "(detached)") return;
 
     try {
       const result = await invoke<GitDiffResult>("get_branch_diff", {
