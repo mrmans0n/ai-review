@@ -934,7 +934,7 @@ function App() {
   };
 
   const handleStackSelect = async (stack: GgStackInfo) => {
-    await commitSelector.selectStack(stack);
+    await handleStackDiffSelect(stack);
   };
 
   const handleStackEntrySelect = async (entry: GgStackEntry) => {
