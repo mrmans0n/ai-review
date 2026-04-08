@@ -934,7 +934,7 @@ function App() {
   };
 
   const handleStackSelect = async (stack: GgStackInfo) => {
-    await commitSelector.selectStack(stack);
+    await handleStackDiffSelect(stack);
   };
 
   const handleStackEntrySelect = async (entry: GgStackEntry) => {
@@ -995,17 +995,30 @@ function App() {
   };
 
   const handleWorktreeSelect = async (worktree: WorktreeInfo) => {
-    if (worktree.path === workingDir) {
+    if (!workingDir) return;
+    if (worktree.branch === "(detached)") return;
+
+    try {
+      const result = await invoke<GitDiffResult>("get_branch_diff", {
+        path: workingDir,
+        branch: worktree.branch,
+      });
+      setDiffText(result.diff || "No changes in this worktree");
+      setChangedFiles(result.files);
+      setSelectedBranch({
+        name: worktree.branch,
+        short_hash: worktree.commit_hash.slice(0, 7),
+        subject: "",
+        author: "",
+        date: "",
+      });
+      setSelectedCommit(null);
+      setReviewingLabel(worktree.branch);
+      setViewMode("diff");
       commitSelector.closeSelector();
-      return;
+    } catch (err) {
+      console.error("Failed to load worktree diff:", err);
     }
-
-    if (comments.length > 0) {
-      setPendingSwitchPath(worktree.path);
-      return;
-    }
-
-    await performSwitch(worktree.path);
   };
 
   const handleRefSelect = async (ref: string) => {
