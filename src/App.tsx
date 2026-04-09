@@ -489,7 +489,7 @@ function App() {
     setReviewingLabel(null);
   };
 
-  const toggleViewed = (fileName: string) => {
+  function toggleViewed(fileName: string) {
     setViewedFiles((prev) => {
       const next = new Set(prev);
       if (next.has(fileName)) {
@@ -499,7 +499,7 @@ function App() {
       }
       return next;
     });
-  };
+  }
 
   const handleSwitchRepo = async (path: string) => {
     if (path === workingDir) return;
