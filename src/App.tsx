@@ -376,11 +376,25 @@ function App() {
           handleLineClick(fileName, 1, "new");
         }
       }
+
+      if (
+        e.key === "v" &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        document.activeElement?.tagName !== "INPUT" &&
+        document.activeElement?.tagName !== "TEXTAREA"
+      ) {
+        const targetFile = (hoveredLine || lastFocusedLine)?.file;
+        if (targetFile) {
+          e.preventDefault();
+          toggleViewed(targetFile);
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [files, lastFocusedLine, hoveredLine]);
+  }, [files, lastFocusedLine, hoveredLine, toggleViewed]);
 
   // Keep drag selection working even when gutter mouseenter events do not fire
   useEffect(() => {
