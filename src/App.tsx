@@ -273,7 +273,11 @@ function App() {
     applyInitialMode();
   }, [workingDir, isGitRepo, initialDiffMode]);
 
-  const files = diffText ? parseDiff(diffText) : [];
+  const files = (diffText ? parseDiff(diffText) : []).map((f: any) => ({
+    ...f,
+    additions: f.hunks.flatMap((h: any) => h.changes).filter((c: any) => c.isInsert).length,
+    deletions: f.hunks.flatMap((h: any) => h.changes).filter((c: any) => c.isDelete).length,
+  }));
   const renderableFiles = files.filter((file: any) => file.hunks && file.hunks.length > 0);
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
 
