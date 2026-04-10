@@ -273,7 +273,11 @@ function App() {
     applyInitialMode();
   }, [workingDir, isGitRepo, initialDiffMode]);
 
-  const files = diffText ? parseDiff(diffText) : [];
+  const files = (diffText ? parseDiff(diffText) : []).map((f: any) => ({
+    ...f,
+    additions: f.hunks.flatMap((h: any) => h.changes).filter((c: any) => c.isInsert).length,
+    deletions: f.hunks.flatMap((h: any) => h.changes).filter((c: any) => c.isDelete).length,
+  }));
   const renderableFiles = files.filter((file: any) => file.hunks && file.hunks.length > 0);
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
 
@@ -372,11 +376,25 @@ function App() {
           handleLineClick(fileName, 1, "new");
         }
       }
+
+      if (
+        e.key === "v" &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        document.activeElement?.tagName !== "INPUT" &&
+        document.activeElement?.tagName !== "TEXTAREA"
+      ) {
+        const targetFile = (hoveredLine || lastFocusedLine)?.file;
+        if (targetFile) {
+          e.preventDefault();
+          toggleViewed(targetFile);
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [files, lastFocusedLine, hoveredLine]);
+  }, [files, lastFocusedLine, hoveredLine, toggleViewed]);
 
   // Keep drag selection working even when gutter mouseenter events do not fire
   useEffect(() => {
@@ -480,7 +498,7 @@ function App() {
     }
   }, [changeStatus]);
 
-  const toggleViewed = (fileName: string) => {
+  function toggleViewed(fileName: string) {
     setViewedFiles((prev) => {
       const next = new Set(prev);
       if (next.has(fileName)) {
@@ -490,7 +508,7 @@ function App() {
       }
       return next;
     });
-  };
+  }
 
   const handleSwitchRepo = async (path: string) => {
     if (path === workingDir) return;
@@ -1005,6 +1023,7 @@ function App() {
 
   const handleWorktreeSelect = async (worktree: WorktreeInfo) => {
     if (!workingDir) return;
+    if (worktree.branch === "(detached)") return;
 
     try {
       const result = await invoke<GitDiffResult>("get_branch_diff", {
