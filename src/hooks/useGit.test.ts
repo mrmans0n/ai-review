@@ -3,9 +3,13 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { useGit } from "./useGit";
 import type { GitDiffResult } from "../types";
 
-// Mock Tauri invoke
+// Mock Tauri invoke/event
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
+}));
+
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: vi.fn().mockResolvedValue(() => {}),
 }));
 
 import { invoke } from "@tauri-apps/api/core";
