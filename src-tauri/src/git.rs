@@ -17,6 +17,12 @@ pub struct GitDiffResult {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct GitChangeStatus {
+    pub has_staged: bool,
+    pub has_unstaged: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CommitInfo {
     pub hash: String,       // full hash
     pub short_hash: String, // short hash
@@ -204,6 +210,49 @@ fn get_changed_files(dir: &Path, staged: bool) -> Result<Vec<GitFile>, String> {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     Ok(parse_porcelain_status(&stdout, staged))
+}
+
+fn has_staged_changes(porcelain_output: &str) -> bool {
+    porcelain_output.lines().any(|line| {
+        if line.len() < 3 {
+            return false;
+        }
+        let index_status = line.chars().next().unwrap_or(' ');
+        index_status != ' ' && index_status != '?'
+    })
+}
+
+fn has_unstaged_changes(porcelain_output: &str) -> bool {
+    porcelain_output.lines().any(|line| {
+        if line.len() < 3 {
+            return false;
+        }
+        let index_status = line.chars().next().unwrap_or(' ');
+        let worktree_status = line.chars().nth(1).unwrap_or(' ');
+        worktree_status != ' ' || (index_status == '?' && worktree_status == '?')
+    })
+}
+
+fn get_change_status_from_porcelain(porcelain_output: &str) -> GitChangeStatus {
+    GitChangeStatus {
+        has_staged: has_staged_changes(porcelain_output),
+        has_unstaged: has_unstaged_changes(porcelain_output),
+    }
+}
+
+pub fn get_git_change_status(dir: &Path) -> Result<GitChangeStatus, String> {
+    let output = Command::new("git")
+        .args(["status", "--porcelain"])
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to get git change status: {}", e))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(get_change_status_from_porcelain(&stdout))
 }
 
 fn get_untracked_files(dir: &Path) -> Result<Vec<String>, String> {
@@ -1560,5 +1609,42 @@ mod tests {
         assert_eq!(worktrees[0].path, "/repo/wt1");
         assert!(worktrees[0].is_main);
         assert_eq!(worktrees[0].last_activity, 0);
+    }
+
+    #[test]
+    fn test_has_staged_changes() {
+        assert_eq!(has_staged_changes("M  src/main.rs\n"), true);
+        assert_eq!(has_staged_changes(" M src/main.rs\n"), false);
+        assert_eq!(has_staged_changes("?? src/new.rs\n"), false);
+        assert_eq!(has_staged_changes(""), false);
+        assert_eq!(has_staged_changes("MM src/main.rs\n"), true);
+        assert_eq!(has_staged_changes("A  src/new.rs\n"), true);
+        assert_eq!(has_staged_changes("D  src/old.rs\n"), true);
+    }
+
+    #[test]
+    fn test_has_unstaged_changes() {
+        assert_eq!(has_unstaged_changes(" M src/main.rs\n"), true);
+        assert_eq!(has_unstaged_changes("M  src/main.rs\n"), false);
+        assert_eq!(has_unstaged_changes("?? src/new.rs\n"), true);
+        assert_eq!(has_unstaged_changes(""), false);
+        assert_eq!(has_unstaged_changes("MM src/main.rs\n"), true);
+        assert_eq!(has_unstaged_changes(" D src/old.rs\n"), true);
+    }
+
+    #[test]
+    fn test_get_change_status_from_porcelain() {
+        let output = "M  src/staged.rs\n M src/unstaged.rs\n";
+        let status = get_change_status_from_porcelain(output);
+        assert!(status.has_staged);
+        assert!(status.has_unstaged);
+
+        let empty_status = get_change_status_from_porcelain("");
+        assert!(!empty_status.has_staged);
+        assert!(!empty_status.has_unstaged);
+
+        let only_untracked = get_change_status_from_porcelain("?? new.rs\n");
+        assert!(!only_untracked.has_staged);
+        assert!(only_untracked.has_unstaged);
     }
 }

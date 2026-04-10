@@ -1,12 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import type { GitDiffResult, DiffModeConfig } from "../types";
+import { listen } from "@tauri-apps/api/event";
+import type { GitDiffResult, DiffModeConfig, GitChangeStatus } from "../types";
 
 export function useGit(workingDir: string | null) {
   const [isGitRepo, setIsGitRepo] = useState(false);
   const [diffResult, setDiffResult] = useState<GitDiffResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [changeStatus, setChangeStatus] = useState<GitChangeStatus>({
+    has_staged: false,
+    has_unstaged: false,
+  });
+
+  const refreshChangeStatus = useCallback(async () => {
+    if (!workingDir) return;
+    try {
+      const status = await invoke<GitChangeStatus>("get_git_change_status", {
+        path: workingDir,
+      });
+      setChangeStatus(status);
+    } catch (err) {
+      console.error("Failed to get git change status:", err);
+    }
+  }, [workingDir]);
 
   useEffect(() => {
     if (!workingDir) return;
@@ -15,6 +32,7 @@ export function useGit(workingDir: string | null) {
       .then((result) => {
         setIsGitRepo(result);
         if (result) {
+          refreshChangeStatus();
           loadDiff({ mode: "unstaged" });
         }
       })
@@ -23,6 +41,19 @@ export function useGit(workingDir: string | null) {
         setIsGitRepo(false);
       });
   }, [workingDir]);
+
+  // Refresh change status on window focus
+  useEffect(() => {
+    if (!workingDir || !isGitRepo) return;
+
+    const unlistenPromise = listen("tauri://focus", () => {
+      refreshChangeStatus();
+    });
+
+    return () => {
+      unlistenPromise.then((fn) => fn());
+    };
+  }, [workingDir, isGitRepo, refreshChangeStatus]);
 
   const loadDiff = async (config: DiffModeConfig) => {
     if (!workingDir) return;
@@ -67,6 +98,9 @@ export function useGit(workingDir: string | null) {
     } finally {
       setLoading(false);
     }
+
+    // Refresh change status after loading a diff
+    refreshChangeStatus();
   };
 
   return {
@@ -75,5 +109,7 @@ export function useGit(workingDir: string | null) {
     loading,
     error,
     loadDiff,
+    changeStatus,
+    refreshChangeStatus,
   };
 }

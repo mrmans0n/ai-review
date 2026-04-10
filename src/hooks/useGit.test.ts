@@ -8,6 +8,11 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
 }));
 
+// Mock Tauri event listener
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: vi.fn(() => Promise.resolve(() => {})),
+}));
+
 import { invoke } from "@tauri-apps/api/core";
 
 describe("useGit", () => {

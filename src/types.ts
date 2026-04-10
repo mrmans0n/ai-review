@@ -8,6 +8,11 @@ export interface GitDiffResult {
   files: ChangedFile[];
 }
 
+export interface GitChangeStatus {
+  has_staged: boolean;
+  has_unstaged: boolean;
+}
+
 export interface Comment {
   id: string;
   file: string;
