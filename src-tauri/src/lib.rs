@@ -76,6 +76,12 @@ fn get_staged_diff(path: String) -> Result<git::GitDiffResult, String> {
 }
 
 #[tauri::command]
+fn get_git_change_status(path: String) -> Result<git::GitChangeStatus, String> {
+    let dir = PathBuf::from(path);
+    git::get_git_change_status(&dir)
+}
+
+#[tauri::command]
 fn get_commit_ref_diff(path: String, commit: String) -> Result<git::GitDiffResult, String> {
     let dir = PathBuf::from(path);
 
@@ -549,6 +555,7 @@ pub fn run() {
             is_git_repo,
             get_unstaged_diff,
             get_staged_diff,
+            get_git_change_status,
             get_commit_ref_diff,
             get_range_diff,
             list_files,

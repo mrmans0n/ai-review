@@ -125,7 +125,7 @@ function App() {
   const [selectedBranch, setSelectedBranch] = useState<BranchInfo | null>(null);
   const [reviewingLabel, setReviewingLabel] = useState<string | null>(null);
 
-  const { isGitRepo, diffResult, loading, error, loadDiff } = useGit(workingDir);
+  const { isGitRepo, diffResult, loading, error, loadDiff, changeStatus } = useGit(workingDir);
   const fileExplorerRef = selectedCommit?.hash ?? selectedBranch?.name ?? null;
   const fileExplorer = useFileExplorer(workingDir, fileExplorerRef);
   const commitSelector = useCommitSelector(workingDir);
@@ -470,6 +470,23 @@ function App() {
     loadDiff(newMode);
     setReviewingLabel(null);
   };
+
+  // Auto-switch diff mode when current mode becomes unavailable
+  useEffect(() => {
+    if (diffMode.mode === "staged" && !changeStatus.has_staged && changeStatus.has_unstaged) {
+      setDiffMode({ mode: "unstaged" });
+      setSelectedCommit(null);
+      setSelectedBranch(null);
+      loadDiff({ mode: "unstaged" });
+      setReviewingLabel(null);
+    } else if (diffMode.mode === "unstaged" && !changeStatus.has_unstaged && changeStatus.has_staged) {
+      setDiffMode({ mode: "staged" });
+      setSelectedCommit(null);
+      setSelectedBranch(null);
+      loadDiff({ mode: "staged" });
+      setReviewingLabel(null);
+    }
+  }, [changeStatus]);
 
   const toggleViewed = (fileName: string) => {
     setViewedFiles((prev) => {
@@ -1636,18 +1653,22 @@ function App() {
 
             {/* Group 2: Diff target */}
             <div className="flex gap-1 items-center">
-              <button
-                onClick={() => handleModeChange({ mode: "unstaged" })}
-                className={diffMode.mode === "unstaged" ? btnActive : btnDefault}
-              >
-                Unstaged
-              </button>
-              <button
-                onClick={() => handleModeChange({ mode: "staged" })}
-                className={diffMode.mode === "staged" ? btnActive : btnDefault}
-              >
-                Staged
-              </button>
+              {changeStatus.has_unstaged && (
+                <button
+                  onClick={() => handleModeChange({ mode: "unstaged" })}
+                  className={diffMode.mode === "unstaged" ? btnActive : btnDefault}
+                >
+                  Unstaged
+                </button>
+              )}
+              {changeStatus.has_staged && (
+                <button
+                  onClick={() => handleModeChange({ mode: "staged" })}
+                  className={diffMode.mode === "staged" ? btnActive : btnDefault}
+                >
+                  Staged
+                </button>
+              )}
               {renderableFiles.length > 0 && <button
                 onClick={commitSelector.openSelector}
                 className={btnDefault + " flex items-center gap-1.5"}
