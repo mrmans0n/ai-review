@@ -16,7 +16,7 @@ It brings a pull-request-style review experience to the human → AI feedback lo
 - **Split and Unified diff views** with syntax highlighting
 - **Inline comments on lines** — click the gutter or press `C`
 - **Comment editing and deletion**
-- **Fuzzy file search** — press `Shift` + `Shift`
+- **Fuzzy file search** — press `Ctrl/⌘ + O`
 - **Prompt generation from comments** — structured output with code snippets
 - **Expandable hunk context**
 - **Multi-repo management**
@@ -105,7 +105,7 @@ cd cli && ./install.sh
 
 ## Keyboard Shortcuts
 
-- `Shift` + `Shift` — file search
+- `Ctrl/⌘ + O` — file search
 - `C` — add comment
 - `Cmd/Ctrl + Enter` — submit comment
 - `Esc` — close modals
