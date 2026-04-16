@@ -5,6 +5,27 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ai-review</title>
+    <script>
+      // Synchronous theme bootstrap — sets data-theme before the React bundle
+      // loads so the very first paint already matches the intended theme.
+      // MIRROR of getInitialTheme() in src/hooks/useTheme.ts — keep the two in sync.
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          var theme =
+            stored === 'dark' || stored === 'light'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        } catch (_) {
+          // localStorage or matchMedia unavailable (private mode, very old engine) — fall through to light.
+        }
+      })();
+    </script>
   </head>
 
   <body>

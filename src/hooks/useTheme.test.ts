@@ -49,6 +49,28 @@ describe('useTheme', () => {
     expect(document.documentElement.getAttribute('data-theme')).not.toBe('dark');
   });
 
+  it('uses the pre-set data-theme attribute when present (inline-bootstrap path)', () => {
+    // Force OS pref to light and leave localStorage empty, so the ONLY signal
+    // for dark is the pre-set attribute the inline bootstrap would have set.
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+    localStorage.removeItem('theme');
+    document.documentElement.setAttribute('data-theme', 'dark');
+
+    const { result } = renderHook(() => useTheme());
+
+    expect(result.current.theme).toBe('dark');
+    // The hook must not clear the attribute the bootstrap set.
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+  });
+
   it('toggle switches theme and persists', () => {
     const { result } = renderHook(() => useTheme());
     expect(result.current.theme).toBe('dark');
