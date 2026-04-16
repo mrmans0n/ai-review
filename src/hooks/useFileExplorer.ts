@@ -50,17 +50,11 @@ export function useFileExplorer(workingDir: string | null, gitRef?: string | nul
   }, [closeExplorer]);
 
   useEffect(() => {
-    let lastShiftTime = 0;
-    const DOUBLE_SHIFT_THRESHOLD = 300;
-
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Shift") {
-        const now = Date.now();
-        if (now - lastShiftTime < DOUBLE_SHIFT_THRESHOLD) {
-          setIsOpen(true);
-          loadFiles();
-        }
-        lastShiftTime = now;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "o") {
+        e.preventDefault();
+        setIsOpen(true);
+        loadFiles();
       } else if (isOpen && e.key === "Escape") {
         closeExplorer();
       } else if (isOpen && e.key === "ArrowDown") {

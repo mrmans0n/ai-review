@@ -28,7 +28,7 @@ describe("useFileExplorer", () => {
     expect(result.current.loading).toBe(false);
   });
 
-  it("should load files when explorer opens", async () => {
+  it("should open explorer and load files on Ctrl+O", async () => {
     const mockFiles = [
       "src/main.ts",
       "src/app.ts",
@@ -40,15 +40,42 @@ describe("useFileExplorer", () => {
 
     const { result } = renderHook(() => useFileExplorer("/test/dir"));
 
-    // Simulate double shift to open
     await act(async () => {
-      await result.current.closeExplorer(); // Ensure clean state
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "o", ctrlKey: true }),
+      );
     });
 
-    // Wait for any pending effects
-    await waitFor(() => {
-      expect(result.current.isOpen).toBe(false);
+    await waitFor(() => expect(result.current.isOpen).toBe(true));
+    expect(invoke).toHaveBeenCalledWith("list_files", { path: "/test/dir" });
+  });
+
+  it("should also open explorer on Cmd+O (macOS)", async () => {
+    vi.mocked(invoke).mockResolvedValue([]);
+
+    const { result } = renderHook(() => useFileExplorer("/test/dir"));
+
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "o", metaKey: true }),
+      );
     });
+
+    await waitFor(() => expect(result.current.isOpen).toBe(true));
+  });
+
+  it("should NOT open explorer on double Shift (legacy shortcut removed)", async () => {
+    vi.mocked(invoke).mockResolvedValue([]);
+
+    const { result } = renderHook(() => useFileExplorer("/test/dir"));
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Shift" }));
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Shift" }));
+    });
+
+    expect(result.current.isOpen).toBe(false);
+    expect(invoke).not.toHaveBeenCalled();
   });
 
   describe("Fuzzy filtering", () => {
