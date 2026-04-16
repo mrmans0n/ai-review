@@ -23,12 +23,13 @@ const show = () => {
   }
 };
 
-// Arm the reveal paths BEFORE touching React. The static import graph of this
-// file is intentionally minimal (Tauri window API + CSS) so that a throw
-// during React, ReactDOM, or App module initialization cannot prevent the
-// safety timeout from being registered — otherwise the window would stay
-// hidden forever, which is the exact failure this net is meant to catch.
-requestAnimationFrame(() => requestAnimationFrame(show));
+// Safety fallback: if anything prevents React from mounting (async import
+// failure, module-init throw inside the IIFE, or an unexpectedly slow load),
+// show the window anyway after 2s so the user never stares at a hidden one.
+// Armed before the async IIFE so a synchronous throw there doesn't defeat it.
+// The dark native backgroundColor keeps the brief empty frame from flashing
+// white. Normal success path (rAF-after-render, below) fires well before 2s
+// and latches `shown`, turning this into a no-op.
 setTimeout(show, 2000);
 
 // Dynamically import React + App so their module-init failures fall through
@@ -45,10 +46,15 @@ setTimeout(show, 2000);
         <App />
       </StrictMode>,
     );
+    // Reveal only after React has committed and the browser has painted,
+    // so the first visible frame already has the rendered UI. Double rAF:
+    // first fires after layout, second after the browser has painted.
+    requestAnimationFrame(() => requestAnimationFrame(show));
   } catch (err) {
-    // Any failure here is surfaced as an empty (but visible) window via the
-    // reveal safety net above, plus an error in devtools. Better than a
-    // silently-hidden window.
+    // If React can't mount, there's nothing to wait for — reveal immediately
+    // so the user sees something instead of a hidden window until the 2s
+    // fallback kicks in. Error is logged to devtools for diagnosis.
     console.error("ai-review: failed to mount React", err);
+    show();
   }
 })();
