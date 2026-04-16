@@ -14,19 +14,30 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 // the user never sees an empty/white native frame. requestAnimationFrame fires
 // after the browser has laid out and painted at least once.
 //
-// Safety: .catch swallows the rejection in non-Tauri contexts (pnpm dev in a
-// plain browser); a 2s setTimeout safety net guarantees the window appears
-// even if first paint never happens (e.g. a fatal render error). The revealed
-// flag keeps .show() idempotent under HMR and across rAF + setTimeout.
+// Safety:
+// - try/catch guards against getCurrentWindow() throwing synchronously in
+//   non-Tauri contexts (pnpm dev plain-browser preview has no
+//   window.__TAURI_INTERNALS__ and the accessor throws, not rejects).
+// - .catch swallows the async rejection path (already-shown window, IPC
+//   transient failure).
+// - The 2s setTimeout safety net guarantees the window appears even if first
+//   paint never happens (e.g. a fatal render error prevents rAF work).
+// - The revealed flag keeps .show() idempotent under HMR and across rAF +
+//   setTimeout (Tauri path only; non-Tauri throws are deterministic and a
+//   retry won't change the outcome).
 let revealed = false;
 const reveal = () => {
   if (revealed) return;
   revealed = true;
-  getCurrentWindow()
-    .show()
-    .catch(() => {
-      /* non-Tauri preview or already-shown window */
-    });
+  try {
+    getCurrentWindow()
+      .show()
+      .catch(() => {
+        /* already-shown window or IPC transient */
+      });
+  } catch {
+    /* non-Tauri runtime (e.g. pnpm dev browser preview) — no native window */
+  }
 };
 requestAnimationFrame(reveal);
 setTimeout(reveal, 2000);
