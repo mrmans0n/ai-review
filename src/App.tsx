@@ -16,6 +16,7 @@ import { useWordHighlight } from "./hooks/useWordHighlight";
 import { useTheme } from './hooks/useTheme';
 import { FileExplorer } from "./components/FileExplorer";
 import { CommitSelector } from "./components/CommitSelector";
+import { CommitSelectorContent } from "./components/CommitSelectorContent";
 import { FileList } from "./components/FileList";
 import { FileViewer } from "./components/FileViewer";
 import { ImagePreview } from "./components/ImagePreview";
@@ -280,6 +281,35 @@ function App() {
   }));
   const renderableFiles = files.filter((file: any) => file.hunks && file.hunks.length > 0);
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
+  const isEmptyState = renderableFiles.length === 0 && !selectedCommit && !selectedBranch;
+
+  useEffect(() => {
+    if (isEmptyState && isGitRepo) {
+      commitSelector.loadData();
+    }
+  }, [isEmptyState, isGitRepo]);
+
+  // Ctrl+K in empty state: focus inline selector search instead of opening modal
+  useEffect(() => {
+    if (!isEmptyState || !isGitRepo) return;
+
+    const handleCtrlK = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const inlineInput = document.querySelector<HTMLInputElement>(
+          '[data-inline-selector] input[type="text"]'
+        );
+        if (inlineInput) {
+          inlineInput.focus();
+          inlineInput.select();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleCtrlK, true);
+    return () => window.removeEventListener("keydown", handleCtrlK, true);
+  }, [isEmptyState, isGitRepo]);
 
   useEffect(() => {
     getCurrentWindow().setTitle(reviewingLabel ? `Reviewing ${reviewingLabel}` : "ai-review");
@@ -1640,6 +1670,7 @@ function App() {
         </div>
       </div>
 
+      {!isEmptyState && (
       <div className="flex items-center gap-1 px-3 py-2 bg-ctp-mantle border-b border-ctp-surface1 flex-shrink-0 flex-wrap">
         {/* Group 1: View mode */}
         <div className="flex gap-1">
@@ -1807,6 +1838,7 @@ function App() {
           </div>}
         </div>
       </div>
+      )}
 
       {selectedCommit && (
         <div className="flex items-center gap-2 px-4 py-1.5 bg-ctp-surface0 border-b border-ctp-surface1 text-xs text-ctp-subtext flex-shrink-0">
@@ -1967,23 +1999,40 @@ function App() {
               )}
             </div>
           ) : renderableFiles.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center aperture-grid bg-ctp-base h-full">
-              <div className="text-center">
-                <div className="text-ctp-surface1 text-4xl mb-4 select-none">⊕</div>
-                <p className="text-ctp-subtext text-sm mb-4">No changes to review</p>
-                {isGitRepo && (
-                  <button
-                    onClick={commitSelector.openSelector}
-                    className={btnDefault + " flex items-center gap-1.5 mx-auto"}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Browse Commits
-                  </button>
-                )}
+            isGitRepo ? (
+              <div className="flex flex-col h-full bg-ctp-surface0" data-inline-selector>
+                <CommitSelectorContent
+                  commits={commitSelector.commits}
+                  branches={commitSelector.branches}
+                  loading={commitSelector.loading}
+                  hasGgStacks={commitSelector.hasGgStacks}
+                  ggStacks={commitSelector.ggStacks}
+                  hasWorktrees={commitSelector.hasWorktrees}
+                  worktrees={commitSelector.worktrees}
+                  ggStackEntries={commitSelector.ggStackEntries}
+                  selectedStack={commitSelector.selectedStack}
+                  onSelectCommit={handleCommitSelect}
+                  onSelectRange={handleRangeSelect}
+                  onSelectBranch={handleBranchSelect}
+                  onSelectStack={handleStackSelect}
+                  onSelectStackEntry={handleStackEntrySelect}
+                  onSelectStackDiff={handleStackDiffSelect}
+                  onSelectWorktree={handleWorktreeSelect}
+                  onSelectRef={handleRefSelect}
+                  refError={commitSelector.refError}
+                  onBackToStacks={commitSelector.backToStacks}
+                  variant="inline"
+                  autoFocus={false}
+                />
               </div>
-            </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center aperture-grid bg-ctp-base h-full">
+                <div className="text-center">
+                  <div className="text-ctp-surface1 text-4xl mb-4 select-none">⊕</div>
+                  <p className="text-ctp-subtext text-sm mb-4">No changes to review</p>
+                </div>
+              </div>
+            )
           ) : (
             <div className="p-6">
               {files.map(renderFile)}

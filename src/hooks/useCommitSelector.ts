@@ -153,5 +153,6 @@ export function useCommitSelector(workingDir: string | null) {
     closeSelector,
     selectStack,
     backToStacks,
+    loadData,
   };
 }
