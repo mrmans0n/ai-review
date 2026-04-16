@@ -656,14 +656,18 @@ export function CommitSelectorContent({
         {tab === "ref" ? (
           <>
             <span className="mr-4">Enter Compare</span>
-            <span>Esc {isInline ? "" : "Close"}</span>
+            {!isInline && <span>Esc Close</span>}
           </>
         ) : (
           <>
             <span className="mr-4">↑↓ Navigate</span>
             <span className="mr-4">Enter Select</span>
             <span className="mr-4">Use ⊙ to set range start</span>
-            <span>Esc {tab === "stacks" && stackView === "entries" ? "Back" : isInline ? "" : "Close"}</span>
+            {(tab === "stacks" && stackView === "entries") ? (
+              <span>Esc Back</span>
+            ) : !isInline ? (
+              <span>Esc Close</span>
+            ) : null}
           </>
         )}
       </div>

@@ -283,11 +283,12 @@ function App() {
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
   const isEmptyState = renderableFiles.length === 0 && !selectedCommit && !selectedBranch;
 
+  const { loadData } = commitSelector;
   useEffect(() => {
     if (isEmptyState && isGitRepo) {
-      commitSelector.loadData();
+      loadData();
     }
-  }, [isEmptyState, isGitRepo]);
+  }, [isEmptyState, isGitRepo, loadData]);
 
   // Ctrl+K in empty state: focus inline selector search instead of opening modal
   useEffect(() => {
