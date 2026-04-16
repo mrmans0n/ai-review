@@ -4,7 +4,14 @@ import catppuccinLatteCss from '@catppuccin/highlightjs/css/catppuccin-latte.css
 
 export type Theme = 'light' | 'dark';
 
+// Mirrors the synchronous bootstrap in index.html. Both sites must agree on:
+//   - storage key:   'theme'
+//   - attribute:     'data-theme'
+//   - dark value:    'dark' (light is expressed as the attribute being absent)
+//   - media query:   '(prefers-color-scheme: dark)'
+// Keep them in sync.
 function getInitialTheme(): Theme {
+  if (document.documentElement.getAttribute('data-theme') === 'dark') return 'dark';
   const stored = localStorage.getItem('theme');
   if (stored === 'light' || stored === 'dark') return stored;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

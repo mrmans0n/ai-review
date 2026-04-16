@@ -49,6 +49,28 @@ describe('useTheme', () => {
     expect(document.documentElement.getAttribute('data-theme')).not.toBe('dark');
   });
 
+  it('honors pre-set data-theme="dark" from the index.html bootstrap', () => {
+    // Simulate the synchronous bootstrap in index.html: light OS pref,
+    // no stored pref, but the bootstrap set data-theme="dark" first
+    // (e.g. because the user toggled dark in a prior session and we want
+    // to avoid the light->dark flash on cold launch).
+    document.documentElement.setAttribute('data-theme', 'dark');
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+
+    const { result } = renderHook(() => useTheme());
+
+    expect(result.current.theme).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+  });
+
   it('toggle switches theme and persists', () => {
     const { result } = renderHook(() => useTheme());
     expect(result.current.theme).toBe('dark');
