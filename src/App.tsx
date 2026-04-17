@@ -1774,9 +1774,13 @@ function App() {
               </button>
               <button
                 onClick={handleGeneratePrompt}
-                className={btnActive + " flex items-center gap-1"}
+                className={
+                  jsonOutput
+                    ? "px-4 py-2 bg-ctp-green text-ctp-base rounded-sm text-sm hover:opacity-90 transition-opacity font-semibold flex items-center gap-1"
+                    : btnActive + " flex items-center gap-1"
+                }
               >
-                Generate Prompt
+                {jsonOutput ? "Publish comments" : "Generate Prompt"}
               </button>
             </>
           )}
