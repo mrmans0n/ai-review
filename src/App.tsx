@@ -296,12 +296,12 @@ function App() {
 
     const handleCtrlK = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
-        e.stopImmediatePropagation();
         const inlineInput = document.querySelector<HTMLInputElement>(
           '[data-inline-selector] input[type="text"]'
         );
         if (inlineInput) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
           inlineInput.focus();
           inlineInput.select();
         }
@@ -992,7 +992,7 @@ function App() {
   };
 
   const handleStackSelect = async (stack: GgStackInfo) => {
-    await handleStackDiffSelect(stack);
+    await commitSelector.selectStack(stack);
   };
 
   const handleStackEntrySelect = async (entry: GgStackEntry) => {
@@ -1999,7 +1999,7 @@ function App() {
                 />
               )}
             </div>
-          ) : renderableFiles.length === 0 ? (
+          ) : isEmptyState ? (
             isGitRepo ? (
               <div className="flex flex-col h-full bg-ctp-surface0" data-inline-selector>
                 <CommitSelectorContent
