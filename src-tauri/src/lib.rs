@@ -371,7 +371,7 @@ fn list_repos() -> Result<Vec<RepoInfo>, String> {
             }
         })
         .collect();
-    result.sort_by(|a, b| b.last_activity.cmp(&a.last_activity));
+    result.sort_by_key(|r| std::cmp::Reverse(r.last_activity));
     Ok(result)
 }
 

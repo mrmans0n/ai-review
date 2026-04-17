@@ -591,7 +591,7 @@ pub fn list_worktrees(dir: &Path) -> Result<Vec<WorktreeInfo>, String> {
     for wt in &mut worktrees {
         wt.last_activity = last_commit_timestamp(Path::new(&wt.path));
     }
-    worktrees.sort_by(|a, b| b.last_activity.cmp(&a.last_activity));
+    worktrees.sort_by_key(|w| std::cmp::Reverse(w.last_activity));
 
     if worktrees.len() <= 1 {
         Ok(Vec::new())
