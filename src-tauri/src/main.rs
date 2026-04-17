@@ -2,9 +2,16 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    // When launched via the "air" CLI symlink, re-spawn as a detached background
-    // process and exit immediately so the terminal gets control back.
-    // The --foreground flag prevents infinite re-spawn loops.
+    // When launched via the "air" CLI symlink, re-invoke the binary via its
+    // canonical path so macOS applies the .app bundle's activation policy and
+    // the Tauri window actually appears. With argv[0] == "air", LaunchServices
+    // can't walk up to Info.plist and treats the process as a background tool
+    // — the window stays hidden no matter what Tauri does.
+    //
+    // Non-wait mode: spawn detached and exit so the terminal prompt returns.
+    // Wait mode: exec() in place so stdio is inherited and the caller can read
+    // JSON feedback from stdout / detect exit.
+    // The --foreground flag prevents infinite re-invocation loops.
     #[cfg(target_family = "unix")]
     {
         let args: Vec<String> = std::env::args().collect();
@@ -17,9 +24,9 @@ fn main() {
         let is_wait =
             args.contains(&"--wait".to_string()) || args.contains(&"--wait-mode".to_string());
 
-        if exe_name == "air" && !args.contains(&"--foreground".to_string()) && !is_wait {
+        if exe_name == "air" && !args.contains(&"--foreground".to_string()) {
             use std::os::unix::process::CommandExt;
-            use std::process::{Command, Stdio};
+            use std::process::Command;
 
             // Resolve the real executable path (follows symlink)
             let exe = std::env::current_exe()
@@ -30,16 +37,24 @@ fn main() {
             let mut child_args: Vec<String> = args[1..].to_vec();
             child_args.push("--foreground".to_string());
 
-            let _child = Command::new(&exe)
-                .args(&child_args)
-                .stdin(Stdio::null())
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .process_group(0) // Detach from terminal process group
-                .spawn()
-                .expect("Failed to launch ai-review in background");
+            let mut cmd = Command::new(&exe);
+            cmd.args(&child_args);
 
-            std::process::exit(0);
+            if is_wait {
+                // Replace this process so stdio stays connected to the caller.
+                let err = cmd.exec();
+                panic!("Failed to exec ai-review: {}", err);
+            } else {
+                use std::process::Stdio;
+                let _child = cmd
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .process_group(0) // Detach from terminal process group
+                    .spawn()
+                    .expect("Failed to launch ai-review in background");
+                std::process::exit(0);
+            }
         }
     }
 
