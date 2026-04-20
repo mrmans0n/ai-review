@@ -171,6 +171,66 @@ describe("useGit", () => {
     });
   });
 
+  it("should skip auto-loading unstaged diff when skipAutoLoad is true", async () => {
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "is_git_repo") {
+        return Promise.resolve(true);
+      }
+      if (cmd === "get_unstaged_diff") {
+        return Promise.resolve({
+          diff: "should not load",
+          files: [],
+        });
+      }
+      return Promise.reject("Unknown command");
+    });
+
+    const { result } = renderHook(() => useGit("/test/repo", true));
+
+    await waitFor(() => {
+      expect(result.current.isGitRepo).toBe(true);
+    });
+
+    expect(invoke).toHaveBeenCalledWith("is_git_repo", { path: "/test/repo" });
+    expect(invoke).not.toHaveBeenCalledWith("get_unstaged_diff", expect.anything());
+    expect(result.current.diffResult).toBeNull();
+  });
+
+  it("should auto-load unstaged diff when skipAutoLoad transitions from true to false", async () => {
+    const mockDiffResult: GitDiffResult = {
+      diff: "auto-loaded diff",
+      files: [{ path: "file.ts", status: "modified" }],
+    };
+
+    vi.mocked(invoke).mockImplementation((cmd: string) => {
+      if (cmd === "is_git_repo") {
+        return Promise.resolve(true);
+      }
+      if (cmd === "get_unstaged_diff") {
+        return Promise.resolve(mockDiffResult);
+      }
+      return Promise.reject("Unknown command");
+    });
+
+    const { result, rerender } = renderHook(
+      ({ skipAutoLoad }) => useGit("/test/repo", skipAutoLoad),
+      { initialProps: { skipAutoLoad: true } }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isGitRepo).toBe(true);
+    });
+
+    expect(invoke).not.toHaveBeenCalledWith("get_unstaged_diff", expect.anything());
+
+    // Transition skipAutoLoad to false (simulating initialModeResolved + no initialDiffMode)
+    rerender({ skipAutoLoad: false });
+
+    await waitFor(() => {
+      expect(result.current.diffResult).toEqual(mockDiffResult);
+    });
+  });
+
   it("should handle diff load error", async () => {
     const errorMessage = "Failed to get diff";
     

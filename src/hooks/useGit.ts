@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { GitDiffResult, DiffModeConfig, GitChangeStatus } from "../types";
 
-export function useGit(workingDir: string | null) {
+export function useGit(workingDir: string | null, skipAutoLoad = false) {
   const [isGitRepo, setIsGitRepo] = useState(false);
   const [diffResult, setDiffResult] = useState<GitDiffResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -33,14 +33,16 @@ export function useGit(workingDir: string | null) {
         setIsGitRepo(result);
         if (result) {
           refreshChangeStatus();
-          loadDiff({ mode: "unstaged" });
+          if (!skipAutoLoad) {
+            loadDiff({ mode: "unstaged" });
+          }
         }
       })
       .catch((err) => {
         console.error("Failed to check git repo:", err);
         setIsGitRepo(false);
       });
-  }, [workingDir]);
+  }, [workingDir, skipAutoLoad]);
 
   // Refresh change status on window focus
   useEffect(() => {

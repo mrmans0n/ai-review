@@ -87,6 +87,7 @@ function App() {
   const [waitMode, setWaitMode] = useState(false);
   const [jsonOutput, setJsonOutput] = useState(false);
   const [initialDiffMode, setInitialDiffMode] = useState<InitialDiffMode | null>(null);
+  const [initialModeResolved, setInitialModeResolved] = useState(false);
   const [cliInstalled, setCliInstalled] = useState<boolean | null>(null);
   const [cliJustInstalled, setCliJustInstalled] = useState(false);
   const [installMessage, setInstallMessage] = useState<string | null>(null);
@@ -103,6 +104,7 @@ function App() {
   const [sidebarWidth, setSidebarWidth] = useState(256);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
+  const [initError, setInitError] = useState<string | null>(null);
 
   const { theme, toggle: toggleTheme } = useTheme();
 
@@ -126,7 +128,11 @@ function App() {
   const [selectedBranch, setSelectedBranch] = useState<BranchInfo | null>(null);
   const [reviewingLabel, setReviewingLabel] = useState<string | null>(null);
 
-  const { isGitRepo, diffResult, loading, error, loadDiff, changeStatus } = useGit(workingDir);
+  const hadInitialMode = useRef(false);
+  const { isGitRepo, diffResult, loading, error, loadDiff, changeStatus } = useGit(
+    workingDir,
+    !initialModeResolved || hadInitialMode.current
+  );
   const fileExplorerRef = selectedCommit?.hash ?? selectedBranch?.name ?? null;
   const fileExplorer = useFileExplorer(workingDir, fileExplorerRef);
   const commitSelector = useCommitSelector(workingDir);
@@ -139,6 +145,7 @@ function App() {
       })
       .catch((err) => {
         console.error("Failed to get working directory:", err);
+        setInitError(`Failed to detect working directory: ${err}`);
       });
 
     invoke<boolean>("is_wait_mode")
@@ -159,10 +166,13 @@ function App() {
 
     invoke<InitialDiffMode | null>("get_initial_diff_mode")
       .then((mode) => {
+        if (mode) hadInitialMode.current = true;
         setInitialDiffMode(mode);
+        setInitialModeResolved(true);
       })
       .catch((err) => {
         console.error("Failed to read initial diff mode:", err);
+        setInitialModeResolved(true);
       });
 
     // Check if CLI is already installed
@@ -215,19 +225,11 @@ function App() {
     const applyInitialMode = async () => {
       try {
         if (mode.type === "commit") {
-          const [result, commits] = await Promise.all([
-            invoke<GitDiffResult>("get_commit_diff", {
-              path: workingDir,
-              hash: mode.value,
-            }),
-            invoke<CommitInfo[]>("list_commits", {
-              path: workingDir,
-              limit: 200,
-            }),
-          ]);
+          const commits = await invoke<CommitInfo[]>("list_commits", {
+            path: workingDir,
+            limit: 200,
+          });
 
-          setDiffText(result.diff || "No changes in this commit");
-          setChangedFiles(result.files);
           setDiffMode({ mode: "commit", commitRef: mode.value });
           setSelectedCommit(
             commits.find(
@@ -236,33 +238,26 @@ function App() {
             ) || null
           );
           setSelectedBranch(null);
+          setReviewingLabel(mode.value);
+          await loadDiff({ mode: "commit", commitRef: mode.value });
         } else if (mode.type === "range") {
-          const result = await invoke<GitDiffResult>("get_range_diff", {
-            path: workingDir,
-            range: mode.value,
-          });
-          setDiffText(result.diff || "No changes in this range");
-          setChangedFiles(result.files);
           setDiffMode({ mode: "range", range: mode.value });
           setSelectedCommit(null);
           setSelectedBranch(null);
+          setReviewingLabel(mode.value);
+          await loadDiff({ mode: "range", range: mode.value });
         } else if (mode.type === "branch") {
-          const [result, branches] = await Promise.all([
-            invoke<GitDiffResult>("get_branch_diff", {
-              path: workingDir,
-              branch: mode.value,
-            }),
-            invoke<BranchInfo[]>("list_branches", {
-              path: workingDir,
-            }),
-          ]);
-          setDiffText(result.diff || "No changes in this branch comparison");
-          setChangedFiles(result.files);
+          const branches = await invoke<BranchInfo[]>("list_branches", {
+            path: workingDir,
+          });
+
           setDiffMode({ mode: "branch", branchName: mode.value });
           setSelectedBranch(
             branches.find((branch) => branch.name === mode.value) || null
           );
           setSelectedCommit(null);
+          setReviewingLabel(mode.value);
+          await loadDiff({ mode: "branch", branchName: mode.value });
         }
 
         setViewMode("diff");
@@ -1606,6 +1601,24 @@ function App() {
     );
   };
 
+  if (initError) {
+    return (
+      <div className="min-h-screen bg-ctp-base flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-ctp-red text-4xl mb-4 select-none">!</div>
+          <p className="text-ctp-text text-sm mb-2 font-medium">Initialization Error</p>
+          <p className="text-ctp-subtext text-sm mb-4">{initError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 text-sm rounded-sm bg-ctp-surface1 text-ctp-text hover:bg-ctp-surface0 transition-colors border border-ctp-overlay0"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!workingDir || !isGitRepo) {
     if (repoManager.loading) {
       return (
@@ -1712,7 +1725,7 @@ function App() {
                   Staged
                 </button>
               )}
-              {renderableFiles.length > 0 && <button
+              <button
                 onClick={commitSelector.openSelector}
                 className={btnDefault + " flex items-center gap-1.5"}
                 title="Browse commits (Ctrl+K)"
@@ -1732,7 +1745,7 @@ function App() {
                   />
                 </svg>
                 Browse Commits
-              </button>}
+              </button>
             </div>
           </>
         )}
