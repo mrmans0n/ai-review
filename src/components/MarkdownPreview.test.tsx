@@ -19,6 +19,45 @@ vi.mock("../hooks/useMarkdownRenderer", () => ({
           { key: "p", "data-source-start": 3, "data-source-end": 5, "data-source-type": "paragraph" },
           "Paragraph text"
         ),
+        // List with nested listItem to test PRIMARY_ANCHOR_TYPES precedence
+        React.createElement(
+          "ul",
+          { key: "ul", "data-source-start": 7, "data-source-end": 9, "data-source-type": "list" },
+          React.createElement(
+            "li",
+            { key: "li1", "data-source-start": 7, "data-source-end": 7, "data-source-type": "listItem" },
+            "Item one"
+          ),
+          React.createElement(
+            "li",
+            { key: "li2", "data-source-start": 8, "data-source-end": 8, "data-source-type": "listItem" },
+            "Item two"
+          )
+        ),
+        // Blockquote with inner paragraph to test PRIMARY_ANCHOR_TYPES precedence
+        React.createElement(
+          "blockquote",
+          { key: "bq", "data-source-start": 11, "data-source-end": 13, "data-source-type": "blockquote" },
+          React.createElement(
+            "p",
+            { key: "bq-p", "data-source-start": 11, "data-source-end": 12, "data-source-type": "paragraph" },
+            "Quote text"
+          )
+        ),
+        // Table with tableRow to test PRIMARY_ANCHOR_TYPES precedence (tableRow defers to table)
+        React.createElement(
+          "table",
+          { key: "tbl", "data-source-start": 14, "data-source-end": 16, "data-source-type": "table" },
+          React.createElement(
+            "tbody",
+            { key: "tbody" },
+            React.createElement(
+              "tr",
+              { key: "tr1", "data-source-start": 14, "data-source-end": 14, "data-source-type": "tableRow" },
+              React.createElement("td", { key: "td1" }, "Cell A")
+            )
+          )
+        ),
       ]),
       sourceMap: [],
     };
@@ -155,5 +194,48 @@ describe("MarkdownPreview", () => {
     expect(screen.getByTestId("add-comment-form")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("cancel-comment"));
     expect(screen.queryByTestId("add-comment-form")).not.toBeInTheDocument();
+  });
+
+  it("clicking a list item anchors to the listItem, not the list", () => {
+    render(<MarkdownPreview {...baseProps} />);
+    fireEvent.click(screen.getByText("Item one"));
+    const form = screen.getByTestId("add-comment-form");
+    // listItem is primary; the list container is not, so we anchor to the li
+    expect(form.getAttribute("data-start")).toBe("7");
+    expect(form.getAttribute("data-end")).toBe("7");
+  });
+
+  it("clicking blockquote text anchors to the inner paragraph (primary)", () => {
+    render(<MarkdownPreview {...baseProps} />);
+    fireEvent.click(screen.getByText("Quote text"));
+    const form = screen.getByTestId("add-comment-form");
+    // paragraph is primary and innermost, so it wins over blockquote
+    expect(form.getAttribute("data-start")).toBe("11");
+    expect(form.getAttribute("data-end")).toBe("12");
+  });
+
+  it("add-comment form uses containment so nested anchors attach to containing block", () => {
+    render(<MarkdownPreview {...baseProps} />);
+    // Click a list item — anchor is listItem line 7-7, which is contained
+    // within the list block 7-9. The form should still render (containment check).
+    fireEvent.click(screen.getByText("Item one"));
+    expect(screen.getByTestId("add-comment-form")).toBeInTheDocument();
+  });
+
+  it("add-comment form renders exactly once even when containment matches multiple ancestors", () => {
+    render(<MarkdownPreview {...baseProps} />);
+    // Click a list item — its range (7-7) is contained within the list (7-9).
+    // The form must appear only once, not once per matching ancestor.
+    fireEvent.click(screen.getByText("Item one"));
+    expect(screen.getAllByTestId("add-comment-form")).toHaveLength(1);
+  });
+
+  it("clicking a table cell anchors to the table, not the tableRow", () => {
+    render(<MarkdownPreview {...baseProps} />);
+    fireEvent.click(screen.getByText("Cell A"));
+    const form = screen.getByTestId("add-comment-form");
+    // tableRow is not primary, so it defers to the table (14-16)
+    expect(form.getAttribute("data-start")).toBe("14");
+    expect(form.getAttribute("data-end")).toBe("16");
   });
 });

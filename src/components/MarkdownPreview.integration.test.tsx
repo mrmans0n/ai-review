@@ -44,7 +44,8 @@ This is a paragraph with **bold** and *italic*.
 - Item three
 
 > A blockquote
-> with two lines
+>
+> Second paragraph
 
 \`\`\`typescript
 const x = 42;
@@ -136,6 +137,43 @@ describe("MarkdownPreview integration", () => {
     expect(screen.getByTestId("comment-c1")).toHaveTextContent("great title");
   });
 
+  it("rendered blocks have data-source-type attributes", () => {
+    const { container } = render(<MarkdownPreview {...baseProps} />);
+    const h1 = container.querySelector("h1");
+    expect(h1?.getAttribute("data-source-type")).toBe("heading");
+    const h2 = container.querySelector("h2");
+    expect(h2?.getAttribute("data-source-type")).toBe("heading");
+    const blockquote = container.querySelector("blockquote");
+    expect(blockquote?.getAttribute("data-source-type")).toBe("blockquote");
+    // Code blocks: remark `code` node maps to <pre><code>, hProperties land on <code>
+    const code = container.querySelector("pre code");
+    // If the attribute is on <pre> or <code>, check both
+    const codeType =
+      code?.getAttribute("data-source-type") ||
+      container.querySelector("pre")?.getAttribute("data-source-type");
+    expect(codeType).toBe("code");
+  });
+
+  it("clicking a list item anchors to the listItem (primary)", () => {
+    const { container } = render(<MarkdownPreview {...baseProps} />);
+    const li = container.querySelectorAll("li")[0]!;
+    fireEvent.click(li);
+    const form = screen.getByTestId("add-comment-form");
+    // listItem is a primary type; it wins over the non-primary list container
+    expect(form.getAttribute("data-start")).toBe("7");
+    expect(form.getAttribute("data-end")).toBe("7");
+  });
+
+  it("clicking blockquote paragraph anchors to the paragraph (primary), not blockquote", () => {
+    const { container } = render(<MarkdownPreview {...baseProps} />);
+    const bqParagraph = container.querySelector("blockquote p")!;
+    fireEvent.click(bqParagraph);
+    const form = screen.getByTestId("add-comment-form");
+    // Paragraph line 11 should win over the outer blockquote span 11-13.
+    expect(form.getAttribute("data-start")).toBe("11");
+    expect(form.getAttribute("data-end")).toBe("11");
+  });
+
   it("comments on non-existent lines appear in orphaned section", () => {
     const comment: Comment = {
       id: "c-orphan",
@@ -167,9 +205,9 @@ describe("MarkdownPreview integration", () => {
       const bqParagraph = container.querySelector("blockquote p")!;
       fireEvent.click(bqParagraph);
       const form = screen.getByTestId("add-comment-form");
-      // The paragraph inside the blockquote spans lines 11-12
+      // The clicked paragraph should win over the outer blockquote span 11-13.
       expect(form.getAttribute("data-start")).toBe("11");
-      expect(form.getAttribute("data-end")).toBe("12");
+      expect(form.getAttribute("data-end")).toBe("11");
     });
 
     it("comment on a list item is placed after the containing list block", () => {

@@ -36,22 +36,55 @@ interface CommentAnchor {
   endLine: number;
 }
 
-// Element types where we prefer the inner or outer element instead
-const SKIP_TYPES = new Set(["list", "tableRow", "tableCell", "blockquote"]);
+/**
+ * Anchor-selection policy for rendered Markdown nodes.
+ *
+ * When a user clicks (or keyboard-focuses) an element in the preview,
+ * we walk up the DOM collecting every ancestor that carries a
+ * `data-source-*` attribute. From that list we pick the *innermost*
+ * **primary** block-level node.
+ *
+ * Primary types represent self-contained content units (headings,
+ * paragraphs, list items, code blocks, tables, blockquotes, etc.).
+ * Structural containers such as `list` and `tableRow` are *not*
+ * primary — they are skipped in favour of their more granular
+ * children so that a comment anchors to the meaningful rendered
+ * block the user actually interacted with.
+ *
+ * If no primary candidate exists (e.g. the user clicked the padding
+ * area of a `<ul>`) we fall back to the innermost overall candidate.
+ */
+const PRIMARY_ANCHOR_TYPES = new Set([
+  "heading",
+  "paragraph",
+  "code",
+  "blockquote",
+  "listItem",
+  "table",
+  "thematicBreak",
+  "html",
+  "definition",
+]);
+
+interface AnchorCandidate {
+  startLine: number;
+  endLine: number;
+  sourceType: string;
+}
 
 function findSourceAnchor(target: EventTarget): CommentAnchor | null {
-  const candidates: Array<{ start: number; end: number; type: string }> = [];
+  const candidates: AnchorCandidate[] = [];
   let el = target as HTMLElement | null;
 
   while (el) {
     const start = el.getAttribute("data-source-start");
     const end = el.getAttribute("data-source-end");
-    const type = el.getAttribute("data-source-type");
-    if (start && end && type) {
+    const sourceType = el.getAttribute("data-source-type");
+    if (start && end) {
       candidates.push({
-        start: parseInt(start, 10),
-        end: parseInt(end, 10),
-        type,
+        startLine: parseInt(start, 10),
+        endLine: parseInt(end, 10),
+        sourceType: sourceType || "",
       });
     }
     el = el.parentElement;
@@ -59,11 +92,10 @@ function findSourceAnchor(target: EventTarget): CommentAnchor | null {
 
   if (candidates.length === 0) return null;
 
-  // Filter out skip types unless they're the only option
-  const preferred = candidates.filter((c) => !SKIP_TYPES.has(c.type));
-  const winner = preferred.length > 0 ? preferred[0] : candidates[0];
+  const primary = candidates.find((c) => PRIMARY_ANCHOR_TYPES.has(c.sourceType));
+  const chosen = primary || candidates[0];
 
-  return { startLine: winner.start, endLine: winner.end };
+  return { startLine: chosen.startLine, endLine: chosen.endLine };
 }
 
 export function MarkdownPreview({
@@ -126,6 +158,7 @@ export function MarkdownPreview({
     (c) => c.file === fileName && c.side === "new"
   );
   const placedCommentIds = new Set<string>();
+  let addingCommentFormPlaced = false;
 
   // Walk the top-level children of the rendered tree and interleave comments
   const interleaved: ReactNode[] = [];
@@ -166,12 +199,14 @@ export function MarkdownPreview({
             );
           }
 
-          // Show add-comment form after this block if the anchor range is within it
+          // Show add-comment form after the smallest containing block (once only)
           if (
             addingAt &&
+            !addingCommentFormPlaced &&
             addingAt.startLine >= start &&
             addingAt.endLine <= end
           ) {
+            addingCommentFormPlaced = true;
             interleaved.push(
               <div key="add-comment-form" className="ml-4 mr-4 mb-2">
                 <AddCommentForm
@@ -225,21 +260,18 @@ export function MarkdownPreview({
       )}
 
       {/* Fallback: show add-comment form at bottom if it wasn't interleaved */}
-      {addingAt &&
-        !interleaved.some(
-          (n) => isValidElement(n) && n.key === "add-comment-form"
-        ) && (
-          <div className="ml-4 mr-4 mb-2">
-            <AddCommentForm
-              file={fileName}
-              startLine={addingAt.startLine}
-              endLine={addingAt.endLine}
-              side="new"
-              onSubmit={handleSubmitComment}
-              onCancel={() => setAddingAt(null)}
-            />
-          </div>
-        )}
+      {addingAt && !addingCommentFormPlaced && (
+        <div className="ml-4 mr-4 mb-2">
+          <AddCommentForm
+            file={fileName}
+            startLine={addingAt.startLine}
+            endLine={addingAt.endLine}
+            side="new"
+            onSubmit={handleSubmitComment}
+            onCancel={() => setAddingAt(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }

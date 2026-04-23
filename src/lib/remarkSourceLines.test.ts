@@ -108,7 +108,6 @@ describe("remarkSourceLines", () => {
     expect(html).toContain('data-source-type="thematicBreak"');
   });
 
-  // GFM tests
   describe("GFM extensions", () => {
     function processGfm(md: string) {
       const processor = unified()
@@ -142,14 +141,21 @@ describe("remarkSourceLines", () => {
       expect(listItems[1].startLine).toBe(2);
     });
 
+    it("injects data-source-type for GFM tables", () => {
+      const md = "| A | B |\n| --- | --- |\n| 1 | 2 |";
+      const { html } = processGfm(md);
+      expect(html).toContain('data-source-type="table"');
+      expect(html).toContain('data-source-type="tableRow"');
+      // tableCell is not in BLOCK_TYPES — only block-level nodes are annotated
+      expect(html).not.toContain('data-source-type="tableCell"');
+    });
+
     it("does not annotate inline GFM strikethrough (block-level only)", () => {
       const md = "~~deleted text~~";
       const { html, sourceMap } = processGfm(md);
       expect(html).toContain("<del");
-      // strikethrough is inline — should not be in sourceMap
       const del = sourceMap.find((b) => b.nodeType === "delete");
       expect(del).toBeUndefined();
-      // but the containing paragraph should be annotated
       const para = sourceMap.find((b) => b.nodeType === "paragraph");
       expect(para?.startLine).toBe(1);
     });
