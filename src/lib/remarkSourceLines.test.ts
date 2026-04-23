@@ -21,10 +21,11 @@ function processMarkdown(md: string) {
 }
 
 describe("remarkSourceLines", () => {
-  it("adds source lines to a simple heading", () => {
+  it("adds source lines and type to a simple heading", () => {
     const { html, sourceMap } = processMarkdown("# Hello");
     expect(html).toContain('data-source-start="1"');
     expect(html).toContain('data-source-end="1"');
+    expect(html).toContain('data-source-type="heading"');
     expect(sourceMap).toContainEqual({
       startLine: 1,
       endLine: 1,
@@ -79,6 +80,32 @@ describe("remarkSourceLines", () => {
     expect(types).toContain("heading");
     expect(types).toContain("paragraph");
     expect(types).toContain("blockquote");
+  });
+
+  it("propagates data-source-type for all block types", () => {
+    const md = [
+      "# Heading",
+      "",
+      "A paragraph.",
+      "",
+      "- item one",
+      "",
+      "> a quote",
+      "",
+      "```js",
+      "code",
+      "```",
+      "",
+      "---",
+    ].join("\n");
+    const { html } = processMarkdown(md);
+    expect(html).toContain('data-source-type="heading"');
+    expect(html).toContain('data-source-type="paragraph"');
+    expect(html).toContain('data-source-type="listItem"');
+    expect(html).toContain('data-source-type="list"');
+    expect(html).toContain('data-source-type="blockquote"');
+    expect(html).toContain('data-source-type="code"');
+    expect(html).toContain('data-source-type="thematicBreak"');
   });
 
   // GFM tests

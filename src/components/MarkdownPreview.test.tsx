@@ -11,12 +11,12 @@ vi.mock("../hooks/useMarkdownRenderer", () => ({
       content: React.createElement("div", { "data-testid": "md-root" }, [
         React.createElement(
           "h1",
-          { key: "h1", "data-source-start": 1, "data-source-end": 1 },
+          { key: "h1", "data-source-start": 1, "data-source-end": 1, "data-source-type": "heading" },
           "Title"
         ),
         React.createElement(
           "p",
-          { key: "p", "data-source-start": 3, "data-source-end": 5 },
+          { key: "p", "data-source-start": 3, "data-source-end": 5, "data-source-type": "paragraph" },
           "Paragraph text"
         ),
       ]),

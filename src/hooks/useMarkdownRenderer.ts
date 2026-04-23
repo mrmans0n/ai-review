@@ -20,6 +20,7 @@ const sanitizeSchema = {
       ...(defaultSchema.attributes?.["*"] || []),
       "data-source-start",
       "data-source-end",
+      "data-source-type",
     ],
   },
 };

@@ -42,6 +42,7 @@ const remarkSourceLines: Plugin<[], Root> = function () {
       const hProperties = (data.hProperties || (data.hProperties = {})) as Record<string, unknown>;
       hProperties["data-source-start"] = startLine;
       hProperties["data-source-end"] = endLine;
+      hProperties["data-source-type"] = node.type;
 
       sourceMap.push({
         startLine,

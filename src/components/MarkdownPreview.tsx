@@ -36,17 +36,34 @@ interface CommentAnchor {
   endLine: number;
 }
 
+// Element types where we prefer the inner or outer element instead
+const SKIP_TYPES = new Set(["list", "tableRow", "tableCell", "blockquote"]);
+
 function findSourceAnchor(target: EventTarget): CommentAnchor | null {
+  const candidates: Array<{ start: number; end: number; type: string }> = [];
   let el = target as HTMLElement | null;
+
   while (el) {
     const start = el.getAttribute("data-source-start");
     const end = el.getAttribute("data-source-end");
-    if (start && end) {
-      return { startLine: parseInt(start, 10), endLine: parseInt(end, 10) };
+    const type = el.getAttribute("data-source-type");
+    if (start && end && type) {
+      candidates.push({
+        start: parseInt(start, 10),
+        end: parseInt(end, 10),
+        type,
+      });
     }
     el = el.parentElement;
   }
-  return null;
+
+  if (candidates.length === 0) return null;
+
+  // Filter out skip types unless they're the only option
+  const preferred = candidates.filter((c) => !SKIP_TYPES.has(c.type));
+  const winner = preferred.length > 0 ? preferred[0] : candidates[0];
+
+  return { startLine: winner.start, endLine: winner.end };
 }
 
 export function MarkdownPreview({
@@ -149,11 +166,11 @@ export function MarkdownPreview({
             );
           }
 
-          // Show add-comment form after this block if it matches
+          // Show add-comment form after this block if the anchor range is within it
           if (
             addingAt &&
-            addingAt.startLine === start &&
-            addingAt.endLine === end
+            addingAt.startLine >= start &&
+            addingAt.endLine <= end
           ) {
             interleaved.push(
               <div key="add-comment-form" className="ml-4 mr-4 mb-2">
