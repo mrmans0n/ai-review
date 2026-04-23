@@ -1121,6 +1121,10 @@ function App() {
     }
   };
 
+  const handlePreviewPrompt = () => {
+    setShowPromptPreview(true);
+  };
+
   const handleGeneratePrompt = async () => {
     if (jsonOutput) {
       const feedback = buildJsonFeedback(comments, {
@@ -1785,6 +1789,14 @@ function App() {
                 {comments.length} comment{comments.length !== 1 ? "s" : ""}
                 {comments.length > 10 ? " 🫠" : comments.length >= 3 ? " 🔥" : ""}
               </button>
+              {jsonOutput && (
+                <button
+                  onClick={handlePreviewPrompt}
+                  className={btnActive + " flex items-center gap-1"}
+                >
+                  Preview Prompt
+                </button>
+              )}
               <button
                 onClick={handleGeneratePrompt}
                 className={
