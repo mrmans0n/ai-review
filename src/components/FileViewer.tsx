@@ -226,7 +226,7 @@ export function FileViewer({
             <div className={`flex transition-colors ${highlighted ? "bg-ctp-blue/10" : "hover:bg-ctp-base"}`}>
               {/* Line number gutter */}
               <div
-                className={`relative flex-shrink-0 w-16 px-3 py-1 text-right text-ctp-subtext border-r border-ctp-surface1 select-none cursor-pointer transition-colors ${
+                className={`relative flex-shrink-0 w-16 px-3 py-1 text-right font-mono text-[13px] leading-normal text-ctp-subtext border-r border-ctp-surface1 select-none cursor-pointer transition-colors ${
                   highlighted
                     ? "bg-ctp-blue/20 text-ctp-blue"
                     : "bg-ctp-mantle hover:bg-ctp-surface0 hover:text-ctp-text"
@@ -255,7 +255,7 @@ export function FileViewer({
               {/* Code content */}
               <div className="diff-code-cell flex-1 px-4 py-1 overflow-x-auto">
                 <code
-                  className="diff-code font-mono text-sm text-ctp-text whitespace-pre"
+                  className="diff-code font-mono text-[13px] leading-normal text-ctp-text whitespace-pre"
                   dangerouslySetInnerHTML={{
                     __html: highlightedLines[index] || line,
                   }}
