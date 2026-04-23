@@ -1,0 +1,199 @@
+/* ─── Markdown rich preview ─── */
+.markdown-preview {
+  cursor: default;
+  padding: 1.5em 2em;
+  background-color: var(--ctp-base);
+}
+
+.markdown-body {
+  color: var(--ctp-text);
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+/* Block-level elements: clickable appearance */
+.markdown-body [data-source-start] {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  transition: background-color 0.15s;
+}
+
+.markdown-body [data-source-start]:hover {
+  background-color: color-mix(in srgb, var(--ctp-mauve) 8%, transparent);
+}
+
+/* ─── Headings ─── */
+.markdown-body h1 {
+  font-size: 1.75em;
+  font-weight: 700;
+  margin: 1.5em 0 0.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--ctp-surface1);
+  color: var(--ctp-text);
+}
+
+.markdown-body h2 {
+  font-size: 1.4em;
+  font-weight: 600;
+  margin: 1.25em 0 0.4em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--ctp-surface1);
+  color: var(--ctp-text);
+}
+
+.markdown-body h3 {
+  font-size: 1.15em;
+  font-weight: 600;
+  margin: 1em 0 0.3em;
+  color: var(--ctp-text);
+}
+
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 0.8em 0 0.25em;
+  color: var(--ctp-subtext);
+}
+
+/* ─── Paragraphs ─── */
+.markdown-body p {
+  margin: 0.5em 0;
+}
+
+/* ─── Lists ─── */
+.markdown-body ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.markdown-body ol {
+  list-style-type: decimal;
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.markdown-body li {
+  margin: 0.2em 0;
+}
+
+.markdown-body li > ul,
+.markdown-body li > ol {
+  margin: 0.1em 0;
+}
+
+/* ─── Task lists (GFM) ─── */
+.markdown-body li > input[type="checkbox"] {
+  margin-right: 0.4em;
+  pointer-events: none;
+}
+
+/* ─── Blockquotes ─── */
+.markdown-body blockquote {
+  border-left: 3px solid var(--ctp-mauve);
+  padding: 0.3em 1em;
+  margin: 0.5em 0;
+  color: var(--ctp-subtext);
+  background-color: color-mix(in srgb, var(--ctp-surface0) 40%, transparent);
+  border-radius: 0 4px 4px 0;
+}
+
+/* ─── Code: inline ─── */
+.markdown-body code {
+  font-family: 'Geist Mono', ui-monospace, 'Fira Code', monospace;
+  font-size: 0.875em;
+  background-color: var(--ctp-surface0);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  color: var(--ctp-peach);
+}
+
+/* ─── Code: fenced blocks ─── */
+.markdown-body pre {
+  background-color: var(--ctp-mantle);
+  border: 1px solid var(--ctp-surface1);
+  border-radius: 6px;
+  padding: 0.8em 1em;
+  margin: 0.5em 0;
+  overflow-x: auto;
+}
+
+.markdown-body pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ctp-text);
+}
+
+/* ─── Tables (GFM) ─── */
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  font-size: 0.9em;
+}
+
+.markdown-body th {
+  background-color: var(--ctp-surface0);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.5em 0.75em;
+  border: 1px solid var(--ctp-surface1);
+}
+
+.markdown-body td {
+  padding: 0.4em 0.75em;
+  border: 1px solid var(--ctp-surface1);
+}
+
+.markdown-body tr:nth-child(even) {
+  background-color: color-mix(in srgb, var(--ctp-surface0) 30%, transparent);
+}
+
+/* ─── Horizontal rules ─── */
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid var(--ctp-surface1);
+  margin: 1.5em 0;
+}
+
+/* ─── Links ─── */
+.markdown-body a {
+  color: var(--ctp-blue);
+  text-decoration: none;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+/* ─── Images ─── */
+.markdown-body img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 0.5em 0;
+}
+
+/* ─── Strikethrough (GFM) ─── */
+.markdown-body del {
+  color: var(--ctp-overlay0);
+}
+
+/* ─── Focus styles for keyboard navigation ─── */
+.markdown-body [data-source-start]:focus-visible {
+  outline: 2px solid var(--ctp-mauve);
+  outline-offset: 2px;
+  background-color: color-mix(in srgb, var(--ctp-mauve) 6%, transparent);
+}
+
+/* ─── Widget area ─── */
+.markdown-preview-widgets {
+  margin-top: 1em;
+}

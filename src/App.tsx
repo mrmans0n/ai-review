@@ -34,6 +34,7 @@ import { buildJsonFeedback } from "./lib/jsonFeedback";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
 import { extractLinesFromHunks } from "./lib/extractLinesFromHunks";
 import { HunkExpandControl } from "./components/HunkExpandControl";
+import { MarkdownPreview } from "./components/MarkdownPreview";
 import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile } from "./types";
 
 type InitialDiffMode = {
@@ -105,6 +106,8 @@ function App() {
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
   const [initError, setInitError] = useState<string | null>(null);
+  const [markdownPreviewFiles, setMarkdownPreviewFiles] = useState<Set<string>>(new Set());
+  const [markdownContentCache, setMarkdownContentCache] = useState<Record<string, string>>({});
 
   const { theme, toggle: toggleTheme } = useTheme();
 
@@ -604,6 +607,8 @@ function App() {
     setExpandedHunksMap({});
     sourceCache.current = {};
     setOldSourceMap({});
+    setMarkdownPreviewFiles(new Set());
+    setMarkdownContentCache({});
   }, [diffMode, selectedCommit, selectedBranch]);
 
   const fetchFileSource = async (filePath: string): Promise<string[]> => {
@@ -778,6 +783,78 @@ function App() {
       setExpandedHunksMap((prev) => ({ ...prev, [filePath]: expanded }));
     } catch (err) {
       console.error("Failed to expand context:", err);
+    }
+  };
+
+  const isMarkdownFile = (filename: string): boolean => {
+    const ext = filename.split(".").pop()?.toLowerCase();
+    return ext === "md" || ext === "mdx" || ext === "markdown";
+  };
+
+  const toggleMarkdownPreview = async (fileName: string) => {
+    setMarkdownPreviewFiles((prev) => {
+      const next = new Set(prev);
+      if (next.has(fileName)) {
+        next.delete(fileName);
+      } else {
+        next.add(fileName);
+      }
+      return next;
+    });
+
+    // Lazy-fetch the new-side content if not cached
+    if (!markdownContentCache[fileName] && workingDir) {
+      try {
+        let content: string;
+        if (selectedCommit) {
+          content = await invoke<string>("get_file_at_ref", {
+            path: workingDir,
+            gitRef: selectedCommit.hash,
+            filePath: fileName,
+          });
+        } else if (selectedBranch) {
+          content = await invoke<string>("get_file_at_ref", {
+            path: workingDir,
+            gitRef: selectedBranch.name,
+            filePath: fileName,
+          });
+        } else if (diffMode.mode === "staged") {
+          content = await invoke<string>("get_file_at_ref", {
+            path: workingDir,
+            gitRef: ":0",
+            filePath: fileName,
+          });
+        } else if (diffMode.mode === "commit" && diffMode.commitRef) {
+          content = await invoke<string>("get_file_at_ref", {
+            path: workingDir,
+            gitRef: diffMode.commitRef,
+            filePath: fileName,
+          });
+        } else if (diffMode.mode === "range" && diffMode.range) {
+          const toRef = diffMode.range.includes("...")
+            ? diffMode.range.split("...")[1]
+            : diffMode.range.split("..")[1];
+          content = await invoke<string>("get_file_at_ref", {
+            path: workingDir,
+            gitRef: toRef || "HEAD",
+            filePath: fileName,
+          });
+        } else if (diffMode.mode === "branch" && diffMode.branchName) {
+          content = await invoke<string>("get_file_at_ref", {
+            path: workingDir,
+            gitRef: diffMode.branchName,
+            filePath: fileName,
+          });
+        } else {
+          content = await invoke<string>("read_file_content", {
+            path: workingDir,
+            filePath: fileName,
+          });
+        }
+        setMarkdownContentCache((prev) => ({ ...prev, [fileName]: content }));
+      } catch (err) {
+        console.error("Failed to fetch markdown content:", err);
+      }
     }
   };
 
@@ -1377,6 +1454,27 @@ function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {isMarkdownFile(fileName) && viewType === "split" && (
+              <button
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggleMarkdownPreview(fileName);
+                }}
+                className={`flex items-center gap-1 text-xs px-2 py-1 rounded-sm transition-colors ${
+                  markdownPreviewFiles.has(fileName)
+                    ? "bg-ctp-surface1 text-ctp-peach border border-ctp-peach"
+                    : "text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface0 border border-transparent"
+                }`}
+                title={markdownPreviewFiles.has(fileName) ? "Show raw diff" : "Show rendered preview"}
+                aria-label={markdownPreviewFiles.has(fileName) ? "Show raw diff" : "Show rendered preview"}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                  <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
+                  <path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                </svg>
+                Preview
+              </button>
+            )}
             <label
               className="flex items-center gap-2 text-xs uppercase tracking-wide text-ctp-subtext cursor-pointer"
               onClick={(event) => event.stopPropagation()}
@@ -1394,7 +1492,32 @@ function App() {
             </span>
           </div>
         </div>
-        {!isViewed && (
+        {!isViewed && markdownPreviewFiles.has(fileName) && markdownContentCache[fileName] !== undefined && (
+          <MarkdownPreview
+            markdown={markdownContentCache[fileName]}
+            fileName={fileName}
+            comments={comments.filter((c) => c.file === fileName)}
+            addingCommentAt={addingCommentAt}
+            onAddComment={handleAddComment}
+            onCancelComment={() => setAddingCommentAt(null)}
+            onBlockClick={(startLine, endLine) => {
+              setAddingCommentAt({
+                file: fileName,
+                startLine,
+                endLine,
+                side: "new",
+              });
+            }}
+            onEditComment={updateComment}
+            onDeleteComment={deleteComment}
+            editingCommentId={editingCommentId}
+            onStartEditComment={startEditing}
+            onStopEditComment={stopEditing}
+            hoveredCommentIds={hoveredCommentIds}
+            onHoverCommentIds={setHoveredCommentIds}
+          />
+        )}
+        {!isViewed && !markdownPreviewFiles.has(fileName) && (
         <Diff
           viewType={viewType}
           diffType={file.type}
