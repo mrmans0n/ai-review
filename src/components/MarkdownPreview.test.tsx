@@ -44,6 +44,20 @@ vi.mock("../hooks/useMarkdownRenderer", () => ({
             "Quote text"
           )
         ),
+        // Table with tableRow to test SKIP_TYPES (tableRow defers to table)
+        React.createElement(
+          "table",
+          { key: "tbl", "data-source-start": 14, "data-source-end": 16, "data-source-type": "table" },
+          React.createElement(
+            "tbody",
+            { key: "tbody" },
+            React.createElement(
+              "tr",
+              { key: "tr1", "data-source-start": 14, "data-source-end": 14, "data-source-type": "tableRow" },
+              React.createElement("td", { key: "td1" }, "Cell A")
+            )
+          )
+        ),
       ]),
       sourceMap: [],
     };
@@ -206,5 +220,22 @@ describe("MarkdownPreview", () => {
     // within the list block 7-9. The form should still render (containment check).
     fireEvent.click(screen.getByText("Item one"));
     expect(screen.getByTestId("add-comment-form")).toBeInTheDocument();
+  });
+
+  it("add-comment form renders exactly once even when containment matches multiple ancestors", () => {
+    render(<MarkdownPreview {...baseProps} />);
+    // Click a list item — its range (7-7) is contained within the list (7-9).
+    // The form must appear only once, not once per matching ancestor.
+    fireEvent.click(screen.getByText("Item one"));
+    expect(screen.getAllByTestId("add-comment-form")).toHaveLength(1);
+  });
+
+  it("clicking a table cell anchors to the table, not the tableRow", () => {
+    render(<MarkdownPreview {...baseProps} />);
+    fireEvent.click(screen.getByText("Cell A"));
+    const form = screen.getByTestId("add-comment-form");
+    // tableRow is in SKIP_TYPES, so it defers to the table (14-16)
+    expect(form.getAttribute("data-start")).toBe("14");
+    expect(form.getAttribute("data-end")).toBe("16");
   });
 });

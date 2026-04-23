@@ -129,6 +129,7 @@ export function MarkdownPreview({
     (c) => c.file === fileName && c.side === "new"
   );
   const placedCommentIds = new Set<string>();
+  let addingCommentFormPlaced = false;
 
   // Walk the top-level children of the rendered tree and interleave comments
   const interleaved: ReactNode[] = [];
@@ -169,12 +170,14 @@ export function MarkdownPreview({
             );
           }
 
-          // Show add-comment form after the smallest containing block
+          // Show add-comment form after the smallest containing block (once only)
           if (
             addingAt &&
+            !addingCommentFormPlaced &&
             addingAt.startLine >= start &&
             addingAt.endLine <= end
           ) {
+            addingCommentFormPlaced = true;
             interleaved.push(
               <div key="add-comment-form" className="ml-4 mr-4 mb-2">
                 <AddCommentForm
