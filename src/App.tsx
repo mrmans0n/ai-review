@@ -1470,7 +1470,7 @@ function App() {
           <MarkdownPreview
             content={mdContentCache[fileName]}
             fileName={fileName}
-            comments={comments.filter((c) => c.file === fileName)}
+            comments={comments.filter((c) => c.file === fileName && c.side === "new")}
             onAddComment={addComment}
             onEditComment={updateComment}
             onDeleteComment={deleteComment}
@@ -1779,7 +1779,7 @@ function App() {
             Split
           </button>
           <button
-            onClick={() => setViewType("unified")}
+            onClick={() => { setViewType("unified"); setMdPreviewFiles(new Set()); }}
             className={viewType === "unified" ? btnActive : btnDefault}
           >
             Unified
