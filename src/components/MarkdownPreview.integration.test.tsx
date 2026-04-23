@@ -81,13 +81,15 @@ describe("MarkdownPreview integration", () => {
     expect(container.querySelector("hr")).toBeInTheDocument();
   });
 
-  it("rendered blocks have data-source-start attributes", () => {
+  it("rendered blocks have data-source-start and data-source-type attributes", () => {
     const { container } = render(<MarkdownPreview {...baseProps} />);
     const h1 = container.querySelector("h1");
     expect(h1?.getAttribute("data-source-start")).toBe("1");
     expect(h1?.getAttribute("data-source-end")).toBe("1");
+    expect(h1?.getAttribute("data-source-type")).toBe("heading");
     const h2 = container.querySelector("h2");
     expect(h2?.getAttribute("data-source-start")).toBe("5");
+    expect(h2?.getAttribute("data-source-type")).toBe("heading");
   });
 
   it("clicking a rendered block opens AddCommentForm with correct source lines", () => {
@@ -167,7 +169,7 @@ describe("MarkdownPreview integration", () => {
     const bqParagraph = container.querySelector("blockquote p")!;
     fireEvent.click(bqParagraph);
     const form = screen.getByTestId("add-comment-form");
-    // paragraph is primary and innermost, so it wins over blockquote (11-13)
+    // Paragraph line 11 should win over the outer blockquote span 11-13.
     expect(form.getAttribute("data-start")).toBe("11");
     expect(form.getAttribute("data-end")).toBe("11");
   });
