@@ -44,7 +44,8 @@ This is a paragraph with **bold** and *italic*.
 - Item three
 
 > A blockquote
-> with two lines
+>
+> Second paragraph
 
 \`\`\`typescript
 const x = 42;
@@ -166,9 +167,9 @@ describe("MarkdownPreview integration", () => {
     const bqParagraph = container.querySelector("blockquote p")!;
     fireEvent.click(bqParagraph);
     const form = screen.getByTestId("add-comment-form");
-    // paragraph is primary and innermost, so it wins over blockquote
+    // paragraph is primary and innermost, so it wins over blockquote (11-13)
     expect(form.getAttribute("data-start")).toBe("11");
-    expect(form.getAttribute("data-end")).toBe("12");
+    expect(form.getAttribute("data-end")).toBe("11");
   });
 
   it("comments on non-existent lines appear in orphaned section", () => {

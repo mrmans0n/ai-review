@@ -19,7 +19,7 @@ vi.mock("../hooks/useMarkdownRenderer", () => ({
           { key: "p", "data-source-start": 3, "data-source-end": 5, "data-source-type": "paragraph" },
           "Paragraph text"
         ),
-        // List with nested listItem to test SKIP_TYPES
+        // List with nested listItem to test PRIMARY_ANCHOR_TYPES precedence
         React.createElement(
           "ul",
           { key: "ul", "data-source-start": 7, "data-source-end": 9, "data-source-type": "list" },
@@ -34,17 +34,17 @@ vi.mock("../hooks/useMarkdownRenderer", () => ({
             "Item two"
           )
         ),
-        // Blockquote with inner paragraph to test SKIP_TYPES
+        // Blockquote with inner paragraph to test PRIMARY_ANCHOR_TYPES precedence
         React.createElement(
           "blockquote",
-          { key: "bq", "data-source-start": 11, "data-source-end": 12, "data-source-type": "blockquote" },
+          { key: "bq", "data-source-start": 11, "data-source-end": 13, "data-source-type": "blockquote" },
           React.createElement(
             "p",
             { key: "bq-p", "data-source-start": 11, "data-source-end": 12, "data-source-type": "paragraph" },
             "Quote text"
           )
         ),
-        // Table with tableRow to test SKIP_TYPES (tableRow defers to table)
+        // Table with tableRow to test PRIMARY_ANCHOR_TYPES precedence (tableRow defers to table)
         React.createElement(
           "table",
           { key: "tbl", "data-source-start": 14, "data-source-end": 16, "data-source-type": "table" },
