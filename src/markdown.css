@@ -131,7 +131,7 @@
 }
 
 /* Hover highlight on clickable blocks */
-.markdown-body > *[data-source-start]:hover {
+.markdown-body *[data-source-start]:hover {
   background: var(--ctp-surface0);
   border-radius: 4px;
   cursor: pointer;
@@ -140,7 +140,7 @@
 }
 
 /* Keyboard focus styles */
-.markdown-body > *[data-source-start]:focus-visible {
+.markdown-body *[data-source-start]:focus-visible {
   outline: 2px solid var(--ctp-mauve);
   outline-offset: 2px;
   border-radius: 4px;
