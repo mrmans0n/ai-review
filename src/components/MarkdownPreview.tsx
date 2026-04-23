@@ -123,12 +123,13 @@ export function MarkdownPreview({
         const start = props["data-source-start"];
         const end = props["data-source-end"];
         if (typeof start === "number" && typeof end === "number") {
-          // Find comments whose range overlaps this block
+          // Find comments whose range overlaps this block (not strict containment,
+          // so multi-block-spanning comments attach to the first overlapping block)
           const blockComments = fileComments.filter(
             (c) =>
               !placedCommentIds.has(c.id) &&
-              c.startLine >= start &&
-              c.endLine <= end
+              c.startLine <= end &&
+              c.endLine >= start
           );
           for (const comment of blockComments) {
             placedCommentIds.add(comment.id);

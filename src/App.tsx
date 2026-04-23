@@ -555,6 +555,14 @@ function App() {
             gitRef: ":0",
             filePath: fileName,
           });
+        } else if (diffMode.mode === "range" && diffMode.range) {
+          const parts = diffMode.range.split("..");
+          const toRef = parts[parts.length - 1] || "HEAD";
+          content = await invoke<string>("get_file_at_ref", {
+            path: workingDir,
+            gitRef: toRef,
+            filePath: fileName,
+          });
         } else {
           const ref = selectedCommit?.hash || selectedBranch?.name || diffMode.commitRef || "HEAD";
           content = await invoke<string>("get_file_at_ref", {
@@ -1422,7 +1430,7 @@ function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {detectLanguage(fileName) === "markdown" && viewType === "split" && (
+            {detectLanguage(fileName) === "markdown" && viewType === "split" && file.newPath !== "/dev/null" && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
