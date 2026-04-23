@@ -20,6 +20,7 @@ import { CommitSelectorContent } from "./components/CommitSelectorContent";
 import { FileList } from "./components/FileList";
 import { FileViewer } from "./components/FileViewer";
 import { ImagePreview } from "./components/ImagePreview";
+import { MarkdownPreview } from "./components/MarkdownPreview";
 import { SearchBar } from "./components/SearchBar";
 import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
@@ -104,6 +105,8 @@ function App() {
   const [sidebarWidth, setSidebarWidth] = useState(256);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
+  const [mdPreviewFiles, setMdPreviewFiles] = useState<Set<string>>(new Set());
+  const [mdContentCache, setMdContentCache] = useState<Record<string, string>>({});
   const [initError, setInitError] = useState<string | null>(null);
 
   const { theme, toggle: toggleTheme } = useTheme();
@@ -536,6 +539,44 @@ function App() {
     });
   }
 
+  const toggleMdPreview = async (fileName: string) => {
+    const isCurrentlyPreviewing = mdPreviewFiles.has(fileName);
+    if (!isCurrentlyPreviewing && mdContentCache[fileName] === undefined) {
+      try {
+        let content: string;
+        if (diffMode.mode === "unstaged") {
+          content = await invoke<string>("read_file_content", {
+            path: workingDir,
+            filePath: fileName,
+          });
+        } else if (diffMode.mode === "staged") {
+          content = await invoke<string>("get_file_at_ref", {
+            path: workingDir,
+            gitRef: ":0",
+            filePath: fileName,
+          });
+        } else {
+          const ref = selectedCommit?.hash || selectedBranch?.name || diffMode.commitRef || "HEAD";
+          content = await invoke<string>("get_file_at_ref", {
+            path: workingDir,
+            gitRef: ref,
+            filePath: fileName,
+          });
+        }
+        setMdContentCache((prev) => ({ ...prev, [fileName]: content }));
+      } catch (err) {
+        console.error("Failed to fetch markdown content:", err);
+        return;
+      }
+    }
+    setMdPreviewFiles((prev) => {
+      const next = new Set(prev);
+      if (isCurrentlyPreviewing) next.delete(fileName);
+      else next.add(fileName);
+      return next;
+    });
+  };
+
   const handleSwitchRepo = async (path: string) => {
     if (path === workingDir) return;
     if (comments.length > 0) {
@@ -567,6 +608,8 @@ function App() {
       setLastFocusedLine(null);
       clearAll();
       setViewedFiles(new Set());
+      setMdPreviewFiles(new Set());
+      setMdContentCache({});
       setPendingSwitchPath(null);
       commitSelector.closeSelector();
     } catch (err) {
@@ -604,6 +647,8 @@ function App() {
     setExpandedHunksMap({});
     sourceCache.current = {};
     setOldSourceMap({});
+    setMdPreviewFiles(new Set());
+    setMdContentCache({});
   }, [diffMode, selectedCommit, selectedBranch]);
 
   const fetchFileSource = async (filePath: string): Promise<string[]> => {
@@ -1377,6 +1422,21 @@ function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {detectLanguage(fileName) === "markdown" && viewType === "split" && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMdPreview(fileName);
+                }}
+                className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${
+                  mdPreviewFiles.has(fileName)
+                    ? "bg-ctp-mauve text-ctp-base"
+                    : "text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface1"
+                }`}
+              >
+                {mdPreviewFiles.has(fileName) ? "Source" : "Preview"}
+              </button>
+            )}
             <label
               className="flex items-center gap-2 text-xs uppercase tracking-wide text-ctp-subtext cursor-pointer"
               onClick={(event) => event.stopPropagation()}
@@ -1394,7 +1454,19 @@ function App() {
             </span>
           </div>
         </div>
-        {!isViewed && (
+        {!isViewed && mdPreviewFiles.has(fileName) && mdContentCache[fileName] !== undefined ? (
+          <MarkdownPreview
+            content={mdContentCache[fileName]}
+            fileName={fileName}
+            comments={comments.filter((c) => c.file === fileName)}
+            onAddComment={addComment}
+            onEditComment={updateComment}
+            onDeleteComment={deleteComment}
+            editingCommentId={editingCommentId}
+            onStartEditComment={startEditing}
+            onStopEditComment={stopEditing}
+          />
+        ) : !isViewed ? (
         <Diff
           viewType={viewType}
           diffType={file.type}
@@ -1596,7 +1668,7 @@ function App() {
             return elements;
           }}
         </Diff>
-        )}
+        ) : null}
       </div>
     );
   };
