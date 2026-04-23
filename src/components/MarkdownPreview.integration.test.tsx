@@ -188,4 +188,83 @@ describe("MarkdownPreview integration", () => {
     expect(screen.getByText("Comments on lines not visible in preview:")).toBeInTheDocument();
     expect(screen.getByTestId("comment-c-orphan")).toHaveTextContent("orphaned comment");
   });
+
+  describe("type-aware anchor resolution", () => {
+    it("clicking a list item anchors to the item, not the whole list", () => {
+      const { container } = render(<MarkdownPreview {...baseProps} />);
+      const firstLi = container.querySelector("li")!;
+      fireEvent.click(firstLi);
+      const form = screen.getByTestId("add-comment-form");
+      // List item "- Item one" is on line 7, should anchor to just that item
+      expect(form.getAttribute("data-start")).toBe("7");
+      expect(form.getAttribute("data-end")).toBe("7");
+    });
+
+    it("clicking inside a blockquote anchors to the inner paragraph", () => {
+      const { container } = render(<MarkdownPreview {...baseProps} />);
+      const bqParagraph = container.querySelector("blockquote p")!;
+      fireEvent.click(bqParagraph);
+      const form = screen.getByTestId("add-comment-form");
+      // The clicked paragraph should win over the outer blockquote span 11-13.
+      expect(form.getAttribute("data-start")).toBe("11");
+      expect(form.getAttribute("data-end")).toBe("11");
+    });
+
+    it("comment on a list item is placed after the containing list block", () => {
+      const comment: Comment = {
+        id: "c-li",
+        file: "README.md",
+        startLine: 7,
+        endLine: 7,
+        side: "new",
+        text: "list item comment",
+        createdAt: "2026-01-01T00:00:00Z",
+      };
+      render(<MarkdownPreview {...baseProps} comments={[comment]} />);
+      expect(screen.getByTestId("comment-c-li")).toHaveTextContent("list item comment");
+    });
+
+    it("add-comment form appears after containing block for nested anchors", () => {
+      const { container } = render(<MarkdownPreview {...baseProps} />);
+      // Click first list item
+      const firstLi = container.querySelector("li")!;
+      fireEvent.click(firstLi);
+      // The form should appear (placed after the <ul> that contains the <li>)
+      const form = screen.getByTestId("add-comment-form");
+      expect(form).toBeInTheDocument();
+      expect(form.getAttribute("data-start")).toBe("7");
+    });
+  });
+});
+
+describe("MarkdownPreview GFM table anchor resolution", () => {
+  const TABLE_MD = `# Title
+
+| Col A | Col B |
+| ----- | ----- |
+| val 1 | val 2 |
+| val 3 | val 4 |
+`;
+
+  const tableProps = {
+    content: TABLE_MD,
+    fileName: "table.md",
+    comments: [] as Comment[],
+    onAddComment: vi.fn(),
+    onEditComment: vi.fn(),
+    onDeleteComment: vi.fn(),
+    editingCommentId: null as string | null,
+    onStartEditComment: vi.fn(),
+    onStopEditComment: vi.fn(),
+  };
+
+  it("clicking a table cell anchors to the whole table, not the row", () => {
+    const { container } = render(<MarkdownPreview {...tableProps} />);
+    const td = container.querySelector("td")!;
+    fireEvent.click(td);
+    const form = screen.getByTestId("add-comment-form");
+    // Should anchor to the whole table (lines 3-6), not just the row
+    expect(form.getAttribute("data-start")).toBe("3");
+    expect(form.getAttribute("data-end")).toBe("6");
+  });
 });

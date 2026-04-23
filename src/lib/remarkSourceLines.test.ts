@@ -21,10 +21,11 @@ function processMarkdown(md: string) {
 }
 
 describe("remarkSourceLines", () => {
-  it("adds source lines to a simple heading", () => {
+  it("adds source lines and type to a simple heading", () => {
     const { html, sourceMap } = processMarkdown("# Hello");
     expect(html).toContain('data-source-start="1"');
     expect(html).toContain('data-source-end="1"');
+    expect(html).toContain('data-source-type="heading"');
     expect(sourceMap).toContainEqual({
       startLine: 1,
       endLine: 1,
@@ -81,33 +82,32 @@ describe("remarkSourceLines", () => {
     expect(types).toContain("blockquote");
   });
 
-  it("injects data-source-type attribute matching the node type", () => {
-    const { html } = processMarkdown("# Hello");
-    expect(html).toContain('data-source-type="heading"');
-  });
-
-  it("injects data-source-type for paragraphs", () => {
-    const { html } = processMarkdown("A paragraph.");
-    expect(html).toContain('data-source-type="paragraph"');
-  });
-
-  it("injects data-source-type for code blocks", () => {
-    const { html } = processMarkdown("```js\nconst x = 1;\n```");
-    expect(html).toContain('data-source-type="code"');
-  });
-
-  it("injects data-source-type for all BLOCK_TYPES including nested", () => {
-    const md = "# Heading\n\nParagraph\n\n- item\n\n> quote\n\n```\ncode\n```";
+  it("propagates data-source-type for all block types", () => {
+    const md = [
+      "# Heading",
+      "",
+      "A paragraph.",
+      "",
+      "- item one",
+      "",
+      "> a quote",
+      "",
+      "```js",
+      "code",
+      "```",
+      "",
+      "---",
+    ].join("\n");
     const { html } = processMarkdown(md);
     expect(html).toContain('data-source-type="heading"');
     expect(html).toContain('data-source-type="paragraph"');
-    expect(html).toContain('data-source-type="list"');
     expect(html).toContain('data-source-type="listItem"');
+    expect(html).toContain('data-source-type="list"');
     expect(html).toContain('data-source-type="blockquote"');
     expect(html).toContain('data-source-type="code"');
+    expect(html).toContain('data-source-type="thematicBreak"');
   });
 
-  // GFM tests
   describe("GFM extensions", () => {
     function processGfm(md: string) {
       const processor = unified()
@@ -154,10 +154,8 @@ describe("remarkSourceLines", () => {
       const md = "~~deleted text~~";
       const { html, sourceMap } = processGfm(md);
       expect(html).toContain("<del");
-      // strikethrough is inline — should not be in sourceMap
       const del = sourceMap.find((b) => b.nodeType === "delete");
       expect(del).toBeUndefined();
-      // but the containing paragraph should be annotated
       const para = sourceMap.find((b) => b.nodeType === "paragraph");
       expect(para?.startLine).toBe(1);
     });

@@ -41,7 +41,7 @@ interface CommentAnchor {
  *
  * When a user clicks (or keyboard-focuses) an element in the preview,
  * we walk up the DOM collecting every ancestor that carries a
- * `data-source-*` attribute.  From that list we pick the *innermost*
+ * `data-source-*` attribute. From that list we pick the *innermost*
  * **primary** block-level node.
  *
  * Primary types represent self-contained content units (headings,
@@ -75,6 +75,7 @@ interface AnchorCandidate {
 function findSourceAnchor(target: EventTarget): CommentAnchor | null {
   const candidates: AnchorCandidate[] = [];
   let el = target as HTMLElement | null;
+
   while (el) {
     const start = el.getAttribute("data-source-start");
     const end = el.getAttribute("data-source-end");
@@ -88,11 +89,12 @@ function findSourceAnchor(target: EventTarget): CommentAnchor | null {
     }
     el = el.parentElement;
   }
+
   if (candidates.length === 0) return null;
 
-  // Prefer the innermost primary anchor type.
   const primary = candidates.find((c) => PRIMARY_ANCHOR_TYPES.has(c.sourceType));
   const chosen = primary || candidates[0];
+
   return { startLine: chosen.startLine, endLine: chosen.endLine };
 }
 
@@ -258,21 +260,18 @@ export function MarkdownPreview({
       )}
 
       {/* Fallback: show add-comment form at bottom if it wasn't interleaved */}
-      {addingAt &&
-        !interleaved.some(
-          (n) => isValidElement(n) && n.key === "add-comment-form"
-        ) && (
-          <div className="ml-4 mr-4 mb-2">
-            <AddCommentForm
-              file={fileName}
-              startLine={addingAt.startLine}
-              endLine={addingAt.endLine}
-              side="new"
-              onSubmit={handleSubmitComment}
-              onCancel={() => setAddingAt(null)}
-            />
-          </div>
-        )}
+      {addingAt && !addingCommentFormPlaced && (
+        <div className="ml-4 mr-4 mb-2">
+          <AddCommentForm
+            file={fileName}
+            startLine={addingAt.startLine}
+            endLine={addingAt.endLine}
+            side="new"
+            onSubmit={handleSubmitComment}
+            onCancel={() => setAddingAt(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }
