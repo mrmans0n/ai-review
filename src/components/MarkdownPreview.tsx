@@ -36,8 +36,35 @@ interface CommentAnchor {
   endLine: number;
 }
 
-// Container types that defer to their inner elements for anchor resolution
-const SKIP_TYPES = new Set(["list", "tableRow", "blockquote"]);
+/**
+ * Anchor-selection policy for rendered Markdown nodes.
+ *
+ * When a user clicks (or keyboard-focuses) an element in the preview,
+ * we walk up the DOM collecting every ancestor that carries a
+ * `data-source-*` attribute.  From that list we pick the *innermost*
+ * **primary** block-level node.
+ *
+ * Primary types represent self-contained content units (headings,
+ * paragraphs, list items, code blocks, tables, blockquotes, etc.).
+ * Structural containers such as `list` and `tableRow` are *not*
+ * primary — they are skipped in favour of their more granular
+ * children so that a comment anchors to the meaningful rendered
+ * block the user actually interacted with.
+ *
+ * If no primary candidate exists (e.g. the user clicked the padding
+ * area of a `<ul>`) we fall back to the innermost overall candidate.
+ */
+const PRIMARY_ANCHOR_TYPES = new Set([
+  "heading",
+  "paragraph",
+  "code",
+  "blockquote",
+  "listItem",
+  "table",
+  "thematicBreak",
+  "html",
+  "definition",
+]);
 
 interface AnchorCandidate {
   startLine: number;
@@ -63,9 +90,9 @@ function findSourceAnchor(target: EventTarget): CommentAnchor | null {
   }
   if (candidates.length === 0) return null;
 
-  // Prefer the innermost non-skip-type candidate
-  const preferred = candidates.find((c) => !SKIP_TYPES.has(c.sourceType));
-  const chosen = preferred || candidates[0];
+  // Prefer the innermost primary anchor type.
+  const primary = candidates.find((c) => PRIMARY_ANCHOR_TYPES.has(c.sourceType));
+  const chosen = primary || candidates[0];
   return { startLine: chosen.startLine, endLine: chosen.endLine };
 }
 

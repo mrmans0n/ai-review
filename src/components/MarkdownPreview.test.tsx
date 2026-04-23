@@ -200,16 +200,16 @@ describe("MarkdownPreview", () => {
     render(<MarkdownPreview {...baseProps} />);
     fireEvent.click(screen.getByText("Item one"));
     const form = screen.getByTestId("add-comment-form");
-    // Should anchor to the listItem (line 7), not the list (lines 7-9)
+    // listItem is primary; the list container is not, so we anchor to the li
     expect(form.getAttribute("data-start")).toBe("7");
     expect(form.getAttribute("data-end")).toBe("7");
   });
 
-  it("clicking blockquote text anchors to inner paragraph, not blockquote", () => {
+  it("clicking blockquote text anchors to the inner paragraph (primary)", () => {
     render(<MarkdownPreview {...baseProps} />);
     fireEvent.click(screen.getByText("Quote text"));
     const form = screen.getByTestId("add-comment-form");
-    // Should anchor to the inner paragraph (11-12), not blockquote container
+    // paragraph is primary and innermost, so it wins over blockquote
     expect(form.getAttribute("data-start")).toBe("11");
     expect(form.getAttribute("data-end")).toBe("12");
   });
@@ -234,7 +234,7 @@ describe("MarkdownPreview", () => {
     render(<MarkdownPreview {...baseProps} />);
     fireEvent.click(screen.getByText("Cell A"));
     const form = screen.getByTestId("add-comment-form");
-    // tableRow is in SKIP_TYPES, so it defers to the table (14-16)
+    // tableRow is not primary, so it defers to the table (14-16)
     expect(form.getAttribute("data-start")).toBe("14");
     expect(form.getAttribute("data-end")).toBe("16");
   });

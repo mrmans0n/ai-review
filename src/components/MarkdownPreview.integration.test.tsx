@@ -151,22 +151,22 @@ describe("MarkdownPreview integration", () => {
     expect(codeType).toBe("code");
   });
 
-  it("clicking a list item anchors to the listItem, not the list", () => {
+  it("clicking a list item anchors to the listItem (primary)", () => {
     const { container } = render(<MarkdownPreview {...baseProps} />);
     const li = container.querySelectorAll("li")[0]!;
     fireEvent.click(li);
     const form = screen.getByTestId("add-comment-form");
-    // listItem should be line 7-7 in SAMPLE_MD
+    // listItem is a primary type; it wins over the non-primary list container
     expect(form.getAttribute("data-start")).toBe("7");
     expect(form.getAttribute("data-end")).toBe("7");
   });
 
-  it("clicking blockquote text anchors to inner paragraph, not blockquote", () => {
+  it("clicking blockquote paragraph anchors to the paragraph (primary), not blockquote", () => {
     const { container } = render(<MarkdownPreview {...baseProps} />);
     const bqParagraph = container.querySelector("blockquote p")!;
     fireEvent.click(bqParagraph);
     const form = screen.getByTestId("add-comment-form");
-    // Inner paragraph of blockquote, not the blockquote itself
+    // paragraph is primary and innermost, so it wins over blockquote
     expect(form.getAttribute("data-start")).toBe("11");
     expect(form.getAttribute("data-end")).toBe("12");
   });
