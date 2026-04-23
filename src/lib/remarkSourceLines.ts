@@ -9,9 +9,23 @@ export interface SourceBlock {
   nodeType: string;
 }
 
+const BLOCK_TYPES = new Set([
+  "heading",
+  "paragraph",
+  "code",
+  "blockquote",
+  "list",
+  "listItem",
+  "table",
+  "tableRow",
+  "thematicBreak",
+  "html",
+  "definition",
+]);
+
 /**
  * Remark plugin that injects `data-source-start` and `data-source-end`
- * attributes onto every block-level node that has position information.
+ * attributes onto block-level nodes that have position information.
  * Also collects a `sourceMap` array on `vfile.data` for programmatic access.
  */
 const remarkSourceLines: Plugin<[], Root> = function () {
@@ -19,7 +33,7 @@ const remarkSourceLines: Plugin<[], Root> = function () {
     const sourceMap: SourceBlock[] = [];
 
     visit(tree, (node: Node) => {
-      if (node.type === "root" || !node.position) return;
+      if (!node.position || !BLOCK_TYPES.has(node.type)) return;
 
       const startLine = node.position.start.line;
       const endLine = node.position.end.line;

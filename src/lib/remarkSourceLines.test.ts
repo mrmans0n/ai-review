@@ -115,12 +115,16 @@ describe("remarkSourceLines", () => {
       expect(listItems[1].startLine).toBe(2);
     });
 
-    it("adds source lines to GFM strikethrough", () => {
+    it("does not annotate inline GFM strikethrough (block-level only)", () => {
       const md = "~~deleted text~~";
       const { html, sourceMap } = processGfm(md);
       expect(html).toContain("<del");
+      // strikethrough is inline — should not be in sourceMap
       const del = sourceMap.find((b) => b.nodeType === "delete");
-      expect(del?.startLine).toBe(1);
+      expect(del).toBeUndefined();
+      // but the containing paragraph should be annotated
+      const para = sourceMap.find((b) => b.nodeType === "paragraph");
+      expect(para?.startLine).toBe(1);
     });
   });
 });
