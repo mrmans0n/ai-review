@@ -1,16 +1,16 @@
 import { hljs } from "../highlight";
 
-interface HighlightedCodeProps {
-  className?: string;
+interface HighlightedCodeProps
+  extends React.HTMLAttributes<HTMLElement> {
   children?: React.ReactNode;
 }
 
-export function HighlightedCode({ className, children }: HighlightedCodeProps) {
+export function HighlightedCode({ className, children, ...rest }: HighlightedCodeProps) {
   const text = extractText(children);
   const language = extractLanguage(className);
 
   if (!language || !hljs.getLanguage(language)) {
-    return <code className={className}>{children}</code>;
+    return <code className={className} {...rest}>{children}</code>;
   }
 
   const highlighted = hljs.highlight(text, { language, ignoreIllegals: true });
@@ -18,6 +18,7 @@ export function HighlightedCode({ className, children }: HighlightedCodeProps) {
   return (
     <code
       className={className}
+      {...rest}
       dangerouslySetInnerHTML={{ __html: highlighted.value }}
     />
   );
