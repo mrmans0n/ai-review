@@ -8,6 +8,7 @@ import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import rehypeReact from "rehype-react";
 import * as runtime from "react/jsx-runtime";
 import remarkSourceLines from "../lib/remarkSourceLines";
+import { HighlightedCode } from "../components/HighlightedCode";
 import type { SourceBlock } from "../lib/remarkSourceLines";
 import type { ReactElement } from "react";
 
@@ -22,6 +23,7 @@ const sanitizeSchema = {
       "data-source-end",
       "data-source-type",
     ],
+    code: [...(defaultSchema.attributes?.["code"] || []), "className"],
   },
 };
 
@@ -32,7 +34,7 @@ const processor = unified()
   .use(remarkGfm)
   .use(remarkRehype)
   .use(rehypeSanitize, sanitizeSchema)
-  .use(rehypeReact, runtime as any);
+  .use(rehypeReact, { ...runtime, components: { code: HighlightedCode } } as any);
 
 export function useMarkdownRenderer(markdown: string): {
   content: ReactElement;
