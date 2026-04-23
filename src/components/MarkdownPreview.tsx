@@ -36,17 +36,37 @@ interface CommentAnchor {
   endLine: number;
 }
 
+// Container types that defer to their inner elements for anchor resolution
+const SKIP_TYPES = new Set(["list", "tableRow", "blockquote"]);
+
+interface AnchorCandidate {
+  startLine: number;
+  endLine: number;
+  sourceType: string;
+}
+
 function findSourceAnchor(target: EventTarget): CommentAnchor | null {
+  const candidates: AnchorCandidate[] = [];
   let el = target as HTMLElement | null;
   while (el) {
     const start = el.getAttribute("data-source-start");
     const end = el.getAttribute("data-source-end");
+    const sourceType = el.getAttribute("data-source-type");
     if (start && end) {
-      return { startLine: parseInt(start, 10), endLine: parseInt(end, 10) };
+      candidates.push({
+        startLine: parseInt(start, 10),
+        endLine: parseInt(end, 10),
+        sourceType: sourceType || "",
+      });
     }
     el = el.parentElement;
   }
-  return null;
+  if (candidates.length === 0) return null;
+
+  // Prefer the innermost non-skip-type candidate
+  const preferred = candidates.find((c) => !SKIP_TYPES.has(c.sourceType));
+  const chosen = preferred || candidates[0];
+  return { startLine: chosen.startLine, endLine: chosen.endLine };
 }
 
 export function MarkdownPreview({
@@ -149,11 +169,11 @@ export function MarkdownPreview({
             );
           }
 
-          // Show add-comment form after this block if it matches
+          // Show add-comment form after the smallest containing block
           if (
             addingAt &&
-            addingAt.startLine === start &&
-            addingAt.endLine === end
+            addingAt.startLine >= start &&
+            addingAt.endLine <= end
           ) {
             interleaved.push(
               <div key="add-comment-form" className="ml-4 mr-4 mb-2">

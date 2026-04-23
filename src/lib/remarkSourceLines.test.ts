@@ -81,6 +81,32 @@ describe("remarkSourceLines", () => {
     expect(types).toContain("blockquote");
   });
 
+  it("injects data-source-type attribute matching the node type", () => {
+    const { html } = processMarkdown("# Hello");
+    expect(html).toContain('data-source-type="heading"');
+  });
+
+  it("injects data-source-type for paragraphs", () => {
+    const { html } = processMarkdown("A paragraph.");
+    expect(html).toContain('data-source-type="paragraph"');
+  });
+
+  it("injects data-source-type for code blocks", () => {
+    const { html } = processMarkdown("```js\nconst x = 1;\n```");
+    expect(html).toContain('data-source-type="code"');
+  });
+
+  it("injects data-source-type for all BLOCK_TYPES including nested", () => {
+    const md = "# Heading\n\nParagraph\n\n- item\n\n> quote\n\n```\ncode\n```";
+    const { html } = processMarkdown(md);
+    expect(html).toContain('data-source-type="heading"');
+    expect(html).toContain('data-source-type="paragraph"');
+    expect(html).toContain('data-source-type="list"');
+    expect(html).toContain('data-source-type="listItem"');
+    expect(html).toContain('data-source-type="blockquote"');
+    expect(html).toContain('data-source-type="code"');
+  });
+
   // GFM tests
   describe("GFM extensions", () => {
     function processGfm(md: string) {
@@ -113,6 +139,14 @@ describe("remarkSourceLines", () => {
       expect(listItems).toHaveLength(2);
       expect(listItems[0].startLine).toBe(1);
       expect(listItems[1].startLine).toBe(2);
+    });
+
+    it("injects data-source-type for GFM tables", () => {
+      const md = "| A | B |\n| --- | --- |\n| 1 | 2 |";
+      const { html } = processGfm(md);
+      expect(html).toContain('data-source-type="table"');
+      expect(html).toContain('data-source-type="tableRow"');
+      expect(html).toContain('data-source-type="tableCell"');
     });
 
     it("adds source lines to GFM strikethrough", () => {

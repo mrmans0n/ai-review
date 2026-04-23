@@ -11,13 +11,38 @@ vi.mock("../hooks/useMarkdownRenderer", () => ({
       content: React.createElement("div", { "data-testid": "md-root" }, [
         React.createElement(
           "h1",
-          { key: "h1", "data-source-start": 1, "data-source-end": 1 },
+          { key: "h1", "data-source-start": 1, "data-source-end": 1, "data-source-type": "heading" },
           "Title"
         ),
         React.createElement(
           "p",
-          { key: "p", "data-source-start": 3, "data-source-end": 5 },
+          { key: "p", "data-source-start": 3, "data-source-end": 5, "data-source-type": "paragraph" },
           "Paragraph text"
+        ),
+        // List with nested listItem to test SKIP_TYPES
+        React.createElement(
+          "ul",
+          { key: "ul", "data-source-start": 7, "data-source-end": 9, "data-source-type": "list" },
+          React.createElement(
+            "li",
+            { key: "li1", "data-source-start": 7, "data-source-end": 7, "data-source-type": "listItem" },
+            "Item one"
+          ),
+          React.createElement(
+            "li",
+            { key: "li2", "data-source-start": 8, "data-source-end": 8, "data-source-type": "listItem" },
+            "Item two"
+          )
+        ),
+        // Blockquote with inner paragraph to test SKIP_TYPES
+        React.createElement(
+          "blockquote",
+          { key: "bq", "data-source-start": 11, "data-source-end": 12, "data-source-type": "blockquote" },
+          React.createElement(
+            "p",
+            { key: "bq-p", "data-source-start": 11, "data-source-end": 12, "data-source-type": "paragraph" },
+            "Quote text"
+          )
         ),
       ]),
       sourceMap: [],
@@ -155,5 +180,31 @@ describe("MarkdownPreview", () => {
     expect(screen.getByTestId("add-comment-form")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("cancel-comment"));
     expect(screen.queryByTestId("add-comment-form")).not.toBeInTheDocument();
+  });
+
+  it("clicking a list item anchors to the listItem, not the list", () => {
+    render(<MarkdownPreview {...baseProps} />);
+    fireEvent.click(screen.getByText("Item one"));
+    const form = screen.getByTestId("add-comment-form");
+    // Should anchor to the listItem (line 7), not the list (lines 7-9)
+    expect(form.getAttribute("data-start")).toBe("7");
+    expect(form.getAttribute("data-end")).toBe("7");
+  });
+
+  it("clicking blockquote text anchors to inner paragraph, not blockquote", () => {
+    render(<MarkdownPreview {...baseProps} />);
+    fireEvent.click(screen.getByText("Quote text"));
+    const form = screen.getByTestId("add-comment-form");
+    // Should anchor to the inner paragraph (11-12), not blockquote container
+    expect(form.getAttribute("data-start")).toBe("11");
+    expect(form.getAttribute("data-end")).toBe("12");
+  });
+
+  it("add-comment form uses containment so nested anchors attach to containing block", () => {
+    render(<MarkdownPreview {...baseProps} />);
+    // Click a list item — anchor is listItem line 7-7, which is contained
+    // within the list block 7-9. The form should still render (containment check).
+    fireEvent.click(screen.getByText("Item one"));
+    expect(screen.getByTestId("add-comment-form")).toBeInTheDocument();
   });
 });
