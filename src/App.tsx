@@ -34,6 +34,8 @@ import { generatePrompt } from "./lib/promptGenerator";
 import { buildJsonFeedback } from "./lib/jsonFeedback";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
 import { extractLinesFromHunks } from "./lib/extractLinesFromHunks";
+import { isLfsPointerDiff } from "./lib/lfsDetection";
+import { LfsFileWrapper } from "./components/LfsFileWrapper";
 import { HunkExpandControl } from "./components/HunkExpandControl";
 import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile } from "./types";
 
@@ -107,6 +109,7 @@ function App() {
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
   const [mdPreviewFiles, setMdPreviewFiles] = useState<Set<string>>(new Set());
   const [mdContentCache, setMdContentCache] = useState<Record<string, string>>({});
+  const [lfsFiles, setLfsFiles] = useState<Set<string>>(new Set());
   const [initError, setInitError] = useState<string | null>(null);
 
   const { theme, toggle: toggleTheme } = useTheme();
@@ -280,6 +283,18 @@ function App() {
   const renderableFiles = files.filter((file: any) => file.hunks && file.hunks.length > 0);
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
   const isEmptyState = renderableFiles.length === 0 && !selectedCommit && !selectedBranch;
+
+  // Detect LFS pointer diffs
+  useEffect(() => {
+    const detectedLfsFiles = new Set<string>();
+    for (const file of files) {
+      const fileName = file.newPath || file.oldPath;
+      if (isLfsPointerDiff(file.hunks)) {
+        detectedLfsFiles.add(fileName);
+      }
+    }
+    setLfsFiles(detectedLfsFiles);
+  }, [diffText]);
 
   const { loadData } = commitSelector;
   useEffect(() => {
@@ -1466,7 +1481,28 @@ function App() {
             </span>
           </div>
         </div>
-        {!isViewed && mdPreviewFiles.has(fileName) && mdContentCache[fileName] !== undefined ? (
+        {!isViewed && lfsFiles.has(fileName) ? (
+          <LfsFileWrapper
+            fileName={fileName}
+            fileStatus={
+              file.type === "add" ? "added" :
+              file.type === "delete" ? "deleted" :
+              file.type === "rename" ? "renamed" : "modified"
+            }
+            hunks={fileHunks}
+            workingDir={workingDir!}
+            diffMode={diffMode}
+            selectedCommit={selectedCommit}
+            selectedBranch={selectedBranch}
+            comments={fileComments}
+            onAddComment={addComment}
+            onEditComment={updateComment}
+            onDeleteComment={deleteComment}
+            editingCommentId={editingCommentId}
+            onStartEditComment={startEditing}
+            onStopEditComment={stopEditing}
+          />
+        ) : !isViewed && mdPreviewFiles.has(fileName) && mdContentCache[fileName] !== undefined ? (
           <MarkdownPreview
             content={mdContentCache[fileName]}
             fileName={fileName}

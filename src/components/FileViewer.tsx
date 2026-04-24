@@ -95,6 +95,7 @@ export function FileViewer({
       (c) =>
         c.file === fileName &&
         c.side === "new" &&
+        c.startLine !== 0 &&
         c.endLine === lineNumber
     );
   };

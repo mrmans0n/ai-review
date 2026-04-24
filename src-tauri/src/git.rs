@@ -473,6 +473,12 @@ pub fn get_file_at_ref_base64(
     Ok(base64::engine::general_purpose::STANDARD.encode(output.stdout))
 }
 
+/// Check if text content is a git-lfs pointer file.
+#[allow(dead_code)]
+pub fn is_lfs_pointer_content(text: &str) -> bool {
+    text.starts_with("version https://git-lfs.github.com/spec/v1\n")
+}
+
 /// List all files in the repository at a given ref
 pub fn list_files_at_ref(dir: &Path, git_ref: &str) -> Result<Vec<String>, String> {
     let output = Command::new("git")
@@ -1646,5 +1652,23 @@ mod tests {
         let only_untracked = get_change_status_from_porcelain("?? new.rs\n");
         assert!(!only_untracked.has_staged);
         assert!(only_untracked.has_unstaged);
+    }
+
+    #[test]
+    fn test_is_lfs_pointer_content_valid() {
+        let pointer =
+            "version https://git-lfs.github.com/spec/v1\noid sha256:abc123\nsize 12345\n";
+        assert!(is_lfs_pointer_content(pointer));
+    }
+
+    #[test]
+    fn test_is_lfs_pointer_content_regular_file() {
+        let content = "fn main() {\n    println!(\"hello\");\n}\n";
+        assert!(!is_lfs_pointer_content(content));
+    }
+
+    #[test]
+    fn test_is_lfs_pointer_content_empty() {
+        assert!(!is_lfs_pointer_content(""));
     }
 }

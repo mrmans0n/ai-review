@@ -80,4 +80,15 @@ describe("AddCommentForm", () => {
     const textarea = screen.getByPlaceholderText(/Enter your comment/) as HTMLTextAreaElement;
     expect(textarea.value).toMatch(/^```\n/);
   });
+
+  it("shows whole-file header when startLine is 0", () => {
+    render(
+      <AddCommentForm
+        {...makeProps()}
+        startLine={0}
+        endLine={0}
+      />
+    );
+    expect(screen.getByText(/whole file/i)).toBeInTheDocument();
+  });
 });
