@@ -119,6 +119,7 @@ function App() {
   }>>({});
   const lfsFetchingRef = useRef<Set<string>>(new Set());
   const lfsRequestIdRef = useRef(0);
+  const [lfsVersion, setLfsVersion] = useState(0);
   const [initError, setInitError] = useState<string | null>(null);
 
   const { theme, toggle: toggleTheme } = useTheme();
@@ -634,6 +635,7 @@ function App() {
       setLfsContentCache({});
       lfsFetchingRef.current.clear();
       lfsRequestIdRef.current++;
+    setLfsVersion((v) => v + 1);
       setPendingSwitchPath(null);
       commitSelector.closeSelector();
     } catch (err) {
@@ -676,6 +678,7 @@ function App() {
     setLfsContentCache({});
     lfsFetchingRef.current.clear();
     lfsRequestIdRef.current++;
+    setLfsVersion((v) => v + 1);
   }, [diffMode, selectedCommit, selectedBranch]);
 
   const fetchFileSource = async (filePath: string): Promise<string[]> => {
@@ -1497,7 +1500,7 @@ function App() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [renderableFiles, diffMode, selectedCommit, selectedBranch]);
+  }, [renderableFiles, lfsVersion]);
 
   const renderFile = (file: any) => {
     const fileName = file.newPath && file.newPath !== "/dev/null" ? file.newPath : file.oldPath;
