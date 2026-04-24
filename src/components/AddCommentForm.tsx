@@ -75,8 +75,9 @@ export function AddCommentForm({
       className="border-l-2 border-ctp-mauve bg-ctp-surface0 p-3"
     >
       <div className="text-xs text-ctp-subtext mb-2">
-        Adding comment on {file} lines {startLine}
-        {endLine !== startLine && `-${endLine}`} ({side} side)
+        {startLine === 0 && endLine === 0
+          ? `Adding comment on ${file} (whole file)`
+          : `Adding comment on ${file} lines ${startLine}${endLine !== startLine ? `-${endLine}` : ""} (${side} side)`}
       </div>
       <textarea
         ref={textareaRef}

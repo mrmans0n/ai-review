@@ -143,4 +143,32 @@ describe("parsePromptLines", () => {
       deleted: false,
     });
   });
+
+  it("should parse a whole-file comment", () => {
+    const input = "- `src/assets/logo.png (whole file)` — Optimize this image";
+    const result = parsePromptLines(input);
+    expect(result).toEqual([
+      {
+        type: "comment",
+        fullPath: "src/assets/logo.png",
+        fileName: "logo.png",
+        startLine: 0,
+        endLine: 0,
+        deleted: false,
+        text: "Optimize this image",
+      },
+    ]);
+  });
+
+  it("should parse whole-file comment for root file", () => {
+    const input = "- `README.md (whole file)` — Rewrite introduction";
+    const result = parsePromptLines(input);
+    expect(result[0]).toMatchObject({
+      type: "comment",
+      fullPath: "README.md",
+      fileName: "README.md",
+      startLine: 0,
+      endLine: 0,
+    });
+  });
 });

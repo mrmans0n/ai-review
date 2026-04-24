@@ -134,6 +134,22 @@ fn get_file_at_ref_base64(
 }
 
 #[tauri::command]
+fn get_lfs_file_at_ref(path: String, git_ref: String, file_path: String) -> Result<String, String> {
+    let dir = PathBuf::from(path);
+    git::get_lfs_file_at_ref(&dir, &git_ref, &file_path)
+}
+
+#[tauri::command]
+fn get_lfs_file_at_ref_base64(
+    path: String,
+    git_ref: String,
+    file_path: String,
+) -> Result<String, String> {
+    let dir = PathBuf::from(path);
+    git::get_lfs_file_at_ref_base64(&dir, &git_ref, &file_path)
+}
+
+#[tauri::command]
 fn list_commits(path: String, limit: u32) -> Result<Vec<git::CommitInfo>, String> {
     let dir = PathBuf::from(path);
     git::list_commits(&dir, limit)
@@ -563,6 +579,8 @@ pub fn run() {
             read_file_content_base64,
             get_file_at_ref,
             get_file_at_ref_base64,
+            get_lfs_file_at_ref,
+            get_lfs_file_at_ref_base64,
             list_commits,
             get_commit_diff,
             list_branches,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { parseDiff, Diff, Hunk, Decoration, getChangeKey, getCollapsedLinesCountBetween, expandFromRawCode } from "react-diff-view";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -34,7 +34,9 @@ import { generatePrompt } from "./lib/promptGenerator";
 import { buildJsonFeedback } from "./lib/jsonFeedback";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
 import { extractLinesFromHunks } from "./lib/extractLinesFromHunks";
+import { detectLfsPointer, isTextPreviewable } from "./lib/lfsDetection";
 import { HunkExpandControl } from "./components/HunkExpandControl";
+import { LfsFileWrapper } from "./components/LfsFileWrapper";
 import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile } from "./types";
 
 type InitialDiffMode = {
@@ -107,6 +109,17 @@ function App() {
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
   const [mdPreviewFiles, setMdPreviewFiles] = useState<Set<string>>(new Set());
   const [mdContentCache, setMdContentCache] = useState<Record<string, string>>({});
+  const [lfsContentCache, setLfsContentCache] = useState<Record<string, {
+    oldText: string | null;
+    newText: string | null;
+    oldImage: string | null;
+    newImage: string | null;
+    loading: boolean;
+    error: string | null;
+  }>>({});
+  const lfsFetchingRef = useRef<Set<string>>(new Set());
+  const lfsRequestIdRef = useRef(0);
+  const [lfsVersion, setLfsVersion] = useState(0);
   const [initError, setInitError] = useState<string | null>(null);
 
   const { theme, toggle: toggleTheme } = useTheme();
@@ -272,12 +285,13 @@ function App() {
     applyInitialMode();
   }, [workingDir, isGitRepo, initialDiffMode]);
 
-  const files = (diffText ? parseDiff(diffText) : []).map((f: any) => ({
+  const files = useMemo(() => (diffText ? parseDiff(diffText) : []).map((f: any) => ({
     ...f,
     additions: f.hunks.flatMap((h: any) => h.changes).filter((c: any) => c.isInsert).length,
     deletions: f.hunks.flatMap((h: any) => h.changes).filter((c: any) => c.isDelete).length,
-  }));
-  const renderableFiles = files.filter((file: any) => file.hunks && file.hunks.length > 0);
+    lfsPointer: detectLfsPointer(f.hunks),
+  })), [diffText]);
+  const renderableFiles = useMemo(() => files.filter((file: any) => file.hunks && file.hunks.length > 0), [files]);
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
   const isEmptyState = renderableFiles.length === 0 && !selectedCommit && !selectedBranch;
 
@@ -618,6 +632,10 @@ function App() {
       setViewedFiles(new Set());
       setMdPreviewFiles(new Set());
       setMdContentCache({});
+      setLfsContentCache({});
+      lfsFetchingRef.current.clear();
+      lfsRequestIdRef.current++;
+    setLfsVersion((v) => v + 1);
       setPendingSwitchPath(null);
       commitSelector.closeSelector();
     } catch (err) {
@@ -657,6 +675,10 @@ function App() {
     setOldSourceMap({});
     setMdPreviewFiles(new Set());
     setMdContentCache({});
+    setLfsContentCache({});
+    lfsFetchingRef.current.clear();
+    lfsRequestIdRef.current++;
+    setLfsVersion((v) => v + 1);
   }, [diffMode, selectedCommit, selectedBranch]);
 
   const fetchFileSource = async (filePath: string): Promise<string[]> => {
@@ -1368,11 +1390,169 @@ function App() {
     return widgets;
   };
 
+  // Normalize file status from different sources ("A"/"D"/"M" from stack diffs vs "added"/"deleted"/"modified")
+  const normalizeLfsStatus = (status: string): string => {
+    if (status === "A" || status === "added") return "added";
+    if (status === "D" || status === "deleted") return "deleted";
+    return "modified";
+  };
+
+  // Fetch resolved LFS content for a file (image or text)
+  const fetchLfsContent = async (filePath: string, oldFilePath: string, isImage: boolean, diffFileType?: string) => {
+    if (!workingDir || lfsFetchingRef.current.has(filePath)) return;
+    lfsFetchingRef.current.add(filePath);
+    const requestId = lfsRequestIdRef.current;
+    setLfsContentCache((prev) => ({
+      ...prev,
+      [filePath]: { oldText: null, newText: null, oldImage: null, newImage: null, loading: true, error: null },
+    }));
+
+    try {
+      const refs = await resolvePreviewRefs({ workingDir, diffMode, selectedCommit, selectedBranch });
+      const selectedChangedFile = changedFiles.find((f) => f.path === filePath);
+      const rawStatus = selectedChangedFile?.status
+        || (diffFileType === "add" ? "added" : diffFileType === "delete" ? "deleted" : "modified");
+      const fileStatus = normalizeLfsStatus(rawStatus);
+
+      if (isImage) {
+        const mimeType = getImageMimeType(filePath);
+        const makeDataUrl = (base64: string) => `data:${mimeType};base64,${base64}`;
+
+        let oldImage: string | null = null;
+        let newImage: string | null = null;
+
+        if (fileStatus === "added") {
+          const base64 = refs.readNewFromWorkingTree
+            ? await invoke<string>("read_file_content_base64", { path: workingDir, filePath })
+            : await invoke<string>("get_lfs_file_at_ref_base64", { path: workingDir, gitRef: refs.newRef, filePath });
+          newImage = makeDataUrl(base64);
+        } else if (fileStatus === "deleted") {
+          const base64 = await invoke<string>("get_lfs_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath });
+          oldImage = makeDataUrl(base64);
+        } else {
+          const [oldBase64, newBase64] = await Promise.all([
+            invoke<string>("get_lfs_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath }),
+            refs.readNewFromWorkingTree
+              ? invoke<string>("read_file_content_base64", { path: workingDir, filePath })
+              : invoke<string>("get_lfs_file_at_ref_base64", { path: workingDir, gitRef: refs.newRef, filePath }),
+          ]);
+          oldImage = makeDataUrl(oldBase64);
+          newImage = makeDataUrl(newBase64);
+        }
+
+        if (requestId !== lfsRequestIdRef.current) return;
+        lfsFetchingRef.current.delete(filePath);
+        setLfsContentCache((prev) => ({
+          ...prev,
+          [filePath]: { oldText: null, newText: null, oldImage, newImage, loading: false, error: null },
+        }));
+      } else {
+        let oldText: string | null = null;
+        let newText: string | null = null;
+
+        if (fileStatus === "added") {
+          newText = refs.readNewFromWorkingTree
+            ? await invoke<string>("read_file_content", { path: workingDir, filePath })
+            : await invoke<string>("get_lfs_file_at_ref", { path: workingDir, gitRef: refs.newRef, filePath });
+        } else if (fileStatus === "deleted") {
+          oldText = await invoke<string>("get_lfs_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath });
+        } else {
+          [oldText, newText] = await Promise.all([
+            invoke<string>("get_lfs_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath }),
+            refs.readNewFromWorkingTree
+              ? invoke<string>("read_file_content", { path: workingDir, filePath })
+              : invoke<string>("get_lfs_file_at_ref", { path: workingDir, gitRef: refs.newRef, filePath }),
+          ]);
+        }
+
+        if (requestId !== lfsRequestIdRef.current) return;
+        lfsFetchingRef.current.delete(filePath);
+        setLfsContentCache((prev) => ({
+          ...prev,
+          [filePath]: { oldText, newText, oldImage: null, newImage: null, loading: false, error: null },
+        }));
+      }
+    } catch (err) {
+      if (requestId !== lfsRequestIdRef.current) return;
+      lfsFetchingRef.current.delete(filePath);
+      const message = err instanceof Error ? err.message : String(err);
+      setLfsContentCache((prev) => ({
+        ...prev,
+        [filePath]: { oldText: null, newText: null, oldImage: null, newImage: null, loading: false, error: message },
+      }));
+    }
+  };
+
+  // Trigger LFS content fetches via useEffect instead of during render.
+  // Only depend on renderableFiles (not lfsContentCache) so this effect
+  // fires after loadDiff completes with fresh files, not immediately when
+  // the cache is cleared on a mode switch (which would prefetch against
+  // the stale previous file list).
+  useEffect(() => {
+    for (const file of renderableFiles) {
+      if (!file.lfsPointer) continue;
+      const fileName = file.newPath && file.newPath !== "/dev/null" ? file.newPath : file.oldPath;
+      const isImage = isImageFile(fileName);
+      const isText = isTextPreviewable(fileName);
+      if (isImage || isText) {
+        const oldFilePath = file.oldPath && file.oldPath !== "/dev/null" ? file.oldPath : fileName;
+        fetchLfsContent(fileName, oldFilePath, isImage, file.type);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderableFiles, lfsVersion]);
+
   const renderFile = (file: any) => {
-    const fileName = file.newPath || file.oldPath;
+    const fileName = file.newPath && file.newPath !== "/dev/null" ? file.newPath : file.oldPath;
     const isViewed = viewedFiles.has(fileName);
     const fileHunks = expandedHunksMap[fileName] || file.hunks;
     if (!fileHunks || fileHunks.length === 0) return null;
+
+    // LFS file rendering
+    if (file.lfsPointer) {
+      const isImage = isImageFile(fileName);
+      const isText = isTextPreviewable(fileName);
+      const previewMode = isImage ? "image" as const : isText ? "text" as const : "unsupported" as const;
+
+      const cached = lfsContentCache[fileName];
+      const selectedChangedFile = changedFiles.find((f) => f.path === fileName);
+      const fileStatus = normalizeLfsStatus(
+        selectedChangedFile?.status || (
+          file.type === "add" ? "added" : file.type === "delete" ? "deleted" : "modified"
+        )
+      );
+
+      return (
+        <LfsFileWrapper
+          key={file.oldPath + file.newPath}
+          fileName={fileName}
+          fileType={file.type}
+          lfsPointer={file.lfsPointer}
+          hunks={file.hunks}
+          isViewed={isViewed}
+          onToggleViewed={() => toggleViewed(fileName)}
+          previewMode={previewMode}
+          oldImageSrc={cached?.oldImage ?? null}
+          newImageSrc={cached?.newImage ?? null}
+          imageLoading={cached?.loading ?? true}
+          imageError={cached?.error ?? null}
+          oldTextContent={cached?.oldText ?? null}
+          newTextContent={cached?.newText ?? null}
+          textLoading={cached?.loading ?? true}
+          textError={cached?.error ?? null}
+          language={detectLanguage(fileName)}
+          status={fileStatus}
+          comments={comments}
+          onAddComment={addComment}
+          onEditComment={updateComment}
+          onDeleteComment={deleteComment}
+          editingCommentId={editingCommentId}
+          onStartEditComment={startEditing}
+          onStopEditComment={stopEditing}
+        />
+      );
+    }
+
     // For existing files, look up by oldPath; for new files (oldPath is /dev/null),
     // look up by newPath where we stored empty string as oldSource
     const oldSource = (file.oldPath && file.oldPath !== "/dev/null")
