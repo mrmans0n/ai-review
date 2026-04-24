@@ -57,6 +57,21 @@ describe("detectLfsPointer", () => {
     expect(result!.size).toBe(12345);
   });
 
+  it("returns null when LFS pointer text is embedded in larger content", () => {
+    const hunks = [
+      {
+        changes: [
+          { content: "Here is a sample LFS pointer:", isInsert: true, isDelete: false, isNormal: false },
+          { content: "version https://git-lfs.github.com/spec/v1", isInsert: true, isDelete: false, isNormal: false },
+          { content: `oid sha256:${SAMPLE_OID}`, isInsert: true, isDelete: false, isNormal: false },
+          { content: "size 12345", isInsert: true, isDelete: false, isNormal: false },
+          { content: "End of sample.", isInsert: true, isDelete: false, isNormal: false },
+        ],
+      },
+    ];
+    expect(detectLfsPointer(hunks)).toBeNull();
+  });
+
   it("returns null for partial LFS pointer", () => {
     const hunks = [
       {

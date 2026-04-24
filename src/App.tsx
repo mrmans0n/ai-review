@@ -1420,17 +1420,17 @@ function App() {
         if (fileStatus === "added") {
           const base64 = refs.readNewFromWorkingTree
             ? await invoke<string>("read_file_content_base64", { path: workingDir, filePath })
-            : await invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.newRef, filePath });
+            : await invoke<string>("get_lfs_file_at_ref_base64", { path: workingDir, gitRef: refs.newRef, filePath });
           newImage = makeDataUrl(base64);
         } else if (fileStatus === "deleted") {
-          const base64 = await invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath });
+          const base64 = await invoke<string>("get_lfs_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath });
           oldImage = makeDataUrl(base64);
         } else {
           const [oldBase64, newBase64] = await Promise.all([
-            invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath }),
+            invoke<string>("get_lfs_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath }),
             refs.readNewFromWorkingTree
               ? invoke<string>("read_file_content_base64", { path: workingDir, filePath })
-              : invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.newRef, filePath }),
+              : invoke<string>("get_lfs_file_at_ref_base64", { path: workingDir, gitRef: refs.newRef, filePath }),
           ]);
           oldImage = makeDataUrl(oldBase64);
           newImage = makeDataUrl(newBase64);
@@ -1448,15 +1448,15 @@ function App() {
         if (fileStatus === "added") {
           newText = refs.readNewFromWorkingTree
             ? await invoke<string>("read_file_content", { path: workingDir, filePath })
-            : await invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.newRef, filePath });
+            : await invoke<string>("get_lfs_file_at_ref", { path: workingDir, gitRef: refs.newRef, filePath });
         } else if (fileStatus === "deleted") {
-          oldText = await invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath });
+          oldText = await invoke<string>("get_lfs_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath });
         } else {
           [oldText, newText] = await Promise.all([
-            invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath }),
+            invoke<string>("get_lfs_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath }),
             refs.readNewFromWorkingTree
               ? invoke<string>("read_file_content", { path: workingDir, filePath })
-              : invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.newRef, filePath }),
+              : invoke<string>("get_lfs_file_at_ref", { path: workingDir, gitRef: refs.newRef, filePath }),
           ]);
         }
 

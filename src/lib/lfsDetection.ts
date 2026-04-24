@@ -3,8 +3,10 @@ export interface LfsPointerInfo {
   size: number;
 }
 
+// Anchored regex: the entire content (after trimming) must be exactly an LFS pointer.
+// This prevents misclassifying normal files that happen to contain pointer-like text in a hunk.
 const LFS_POINTER_RE =
-  /version https:\/\/git-lfs\.github\.com\/spec\/v1\noid sha256:([a-f0-9]{64})\nsize (\d+)/;
+  /^\s*version https:\/\/git-lfs\.github\.com\/spec\/v1\noid sha256:([a-f0-9]{64})\nsize (\d+)\s*$/;
 
 /**
  * Detect whether a parsed diff file's hunks contain an LFS pointer.
