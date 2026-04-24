@@ -16,6 +16,7 @@ export type ParsedCodeBlock = {
 export type ParsedLine = ParsedTextLine | ParsedCommentLine | ParsedCodeBlock;
 
 const COMMENT_RE = /^- `(.+?):(\d+)(?:-(\d+))?( \(deleted\))?` — (.+)$/;
+const WHOLE_FILE_COMMENT_RE = /^- `(.+?) \(whole file\)` — (.+)$/;
 const CODE_FENCE_RE = /^```(\w*)$/;
 
 export function parsePromptLines(prompt: string): ParsedLine[] {
@@ -38,6 +39,23 @@ export function parsePromptLines(prompt: string): ParsedLine[] {
         endLine: commentMatch[3] ? parseInt(commentMatch[3], 10) : null,
         deleted: !!commentMatch[4],
         text: commentMatch[5],
+      });
+      i++;
+      continue;
+    }
+
+    const wholeFileMatch = lines[i].match(WHOLE_FILE_COMMENT_RE);
+    if (wholeFileMatch) {
+      const fullPath = wholeFileMatch[1];
+      const parts = fullPath.split("/");
+      result.push({
+        type: "comment",
+        fullPath,
+        fileName: parts[parts.length - 1],
+        startLine: 0,
+        endLine: 0,
+        deleted: false,
+        text: wholeFileMatch[2],
       });
       i++;
       continue;

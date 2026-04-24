@@ -1476,19 +1476,23 @@ function App() {
     }
   };
 
-  // Trigger LFS content fetches via useEffect instead of during render
+  // Trigger LFS content fetches via useEffect instead of during render.
+  // Only depend on renderableFiles (not lfsContentCache) so this effect
+  // fires after loadDiff completes with fresh files, not immediately when
+  // the cache is cleared on a mode switch (which would prefetch against
+  // the stale previous file list).
   useEffect(() => {
     for (const file of renderableFiles) {
       if (!file.lfsPointer) continue;
       const fileName = file.newPath || file.oldPath;
       const isImage = isImageFile(fileName);
       const isText = isTextPreviewable(fileName);
-      if ((isImage || isText) && !lfsContentCache[fileName]) {
+      if (isImage || isText) {
         const oldFilePath = file.oldPath && file.oldPath !== "/dev/null" ? file.oldPath : fileName;
         fetchLfsContent(fileName, oldFilePath, isImage);
       }
     }
-  }, [renderableFiles, lfsContentCache]);
+  }, [renderableFiles]);
 
   const renderFile = (file: any) => {
     const fileName = file.newPath || file.oldPath;
