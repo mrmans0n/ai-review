@@ -1395,7 +1395,7 @@ function App() {
   };
 
   // Fetch resolved LFS content for a file (image or text)
-  const fetchLfsContent = async (filePath: string, oldFilePath: string, isImage: boolean) => {
+  const fetchLfsContent = async (filePath: string, oldFilePath: string, isImage: boolean, diffFileType?: string) => {
     if (!workingDir || lfsFetchingRef.current.has(filePath)) return;
     lfsFetchingRef.current.add(filePath);
     const requestId = lfsRequestIdRef.current;
@@ -1407,7 +1407,8 @@ function App() {
     try {
       const refs = await resolvePreviewRefs({ workingDir, diffMode, selectedCommit, selectedBranch });
       const selectedChangedFile = changedFiles.find((f) => f.path === filePath);
-      const rawStatus = selectedChangedFile?.status || "modified";
+      const rawStatus = selectedChangedFile?.status
+        || (diffFileType === "add" ? "added" : diffFileType === "delete" ? "deleted" : "modified");
       const fileStatus = normalizeLfsStatus(rawStatus);
 
       if (isImage) {
@@ -1492,10 +1493,11 @@ function App() {
       const isText = isTextPreviewable(fileName);
       if (isImage || isText) {
         const oldFilePath = file.oldPath && file.oldPath !== "/dev/null" ? file.oldPath : fileName;
-        fetchLfsContent(fileName, oldFilePath, isImage);
+        fetchLfsContent(fileName, oldFilePath, isImage, file.type);
       }
     }
-  }, [renderableFiles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderableFiles, diffMode, selectedCommit, selectedBranch]);
 
   const renderFile = (file: any) => {
     const fileName = file.newPath && file.newPath !== "/dev/null" ? file.newPath : file.oldPath;
