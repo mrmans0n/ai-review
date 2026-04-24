@@ -123,7 +123,9 @@ export function PromptPreview({ prompt, onClose, waitMode }: PromptPreviewProps)
                     <span className="inline-flex items-center gap-1 bg-ctp-surface0 text-ctp-subtext rounded-sm px-2 py-0.5 text-xs font-mono flex-shrink-0">
                       {line.fileName}
                       <span className="text-ctp-overlay0">
-                        ({line.endLine ? `L${line.startLine}-${line.endLine}` : `L${line.startLine}`})
+                        ({line.startLine === 0 && (line.endLine === 0 || line.endLine === null)
+                          ? "whole file"
+                          : line.endLine ? `L${line.startLine}-${line.endLine}` : `L${line.startLine}`})
                       </span>
                     </span>
                     {line.deleted && (

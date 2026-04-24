@@ -1437,6 +1437,7 @@ function App() {
         }
 
         if (requestId !== lfsRequestIdRef.current) return;
+        lfsFetchingRef.current.delete(filePath);
         setLfsContentCache((prev) => ({
           ...prev,
           [filePath]: { oldText: null, newText: null, oldImage, newImage, loading: false, error: null },
@@ -1461,6 +1462,7 @@ function App() {
         }
 
         if (requestId !== lfsRequestIdRef.current) return;
+        lfsFetchingRef.current.delete(filePath);
         setLfsContentCache((prev) => ({
           ...prev,
           [filePath]: { oldText, newText, oldImage: null, newImage: null, loading: false, error: null },
@@ -1468,6 +1470,7 @@ function App() {
       }
     } catch (err) {
       if (requestId !== lfsRequestIdRef.current) return;
+      lfsFetchingRef.current.delete(filePath);
       const message = err instanceof Error ? err.message : String(err);
       setLfsContentCache((prev) => ({
         ...prev,
