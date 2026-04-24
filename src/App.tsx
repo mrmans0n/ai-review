@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { parseDiff, Diff, Hunk, Decoration, getChangeKey, getCollapsedLinesCountBetween, expandFromRawCode } from "react-diff-view";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -284,13 +284,13 @@ function App() {
     applyInitialMode();
   }, [workingDir, isGitRepo, initialDiffMode]);
 
-  const files = (diffText ? parseDiff(diffText) : []).map((f: any) => ({
+  const files = useMemo(() => (diffText ? parseDiff(diffText) : []).map((f: any) => ({
     ...f,
     additions: f.hunks.flatMap((h: any) => h.changes).filter((c: any) => c.isInsert).length,
     deletions: f.hunks.flatMap((h: any) => h.changes).filter((c: any) => c.isDelete).length,
     lfsPointer: detectLfsPointer(f.hunks),
-  }));
-  const renderableFiles = files.filter((file: any) => file.hunks && file.hunks.length > 0);
+  })), [diffText]);
+  const renderableFiles = useMemo(() => files.filter((file: any) => file.hunks && file.hunks.length > 0), [files]);
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
   const isEmptyState = renderableFiles.length === 0 && !selectedCommit && !selectedBranch;
 
@@ -1487,7 +1487,7 @@ function App() {
   useEffect(() => {
     for (const file of renderableFiles) {
       if (!file.lfsPointer) continue;
-      const fileName = file.newPath || file.oldPath;
+      const fileName = file.newPath && file.newPath !== "/dev/null" ? file.newPath : file.oldPath;
       const isImage = isImageFile(fileName);
       const isText = isTextPreviewable(fileName);
       if (isImage || isText) {
@@ -1498,7 +1498,7 @@ function App() {
   }, [renderableFiles]);
 
   const renderFile = (file: any) => {
-    const fileName = file.newPath || file.oldPath;
+    const fileName = file.newPath && file.newPath !== "/dev/null" ? file.newPath : file.oldPath;
     const isViewed = viewedFiles.has(fileName);
     const fileHunks = expandedHunksMap[fileName] || file.hunks;
     if (!fileHunks || fileHunks.length === 0) return null;
