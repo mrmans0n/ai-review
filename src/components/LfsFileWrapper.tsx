@@ -86,7 +86,7 @@ export function LfsFileWrapper({
   onStopEditComment,
 }: LfsFileWrapperProps) {
   const [showAddComment, setShowAddComment] = useState(false);
-  const fileComments = comments.filter((c) => c.file === fileName);
+  const fileComments = comments.filter((c) => c.file === fileName && c.startLine === 0 && c.endLine === 0);
 
   const statusLabel = fileType === "delete"
     ? "Deleted"

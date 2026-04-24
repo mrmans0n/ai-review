@@ -379,6 +379,25 @@ describe("generatePrompt", () => {
     expect(result).not.toContain("(deleted)");
   });
 
+  it("should output '(whole file)' for (0,0) sentinel comments", () => {
+    const comments: Comment[] = [
+      {
+        id: "1",
+        file: "assets/logo.png",
+        startLine: 0,
+        endLine: 0,
+        side: "new",
+        text: "Logo needs higher resolution",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ];
+
+    const result = generatePrompt(comments);
+    expect(result).toBe(
+      `Please address these review comments:\n\n- \`assets/logo.png (whole file)\` — Logo needs higher resolution`
+    );
+  });
+
   it("should handle mix of old and new side comments", () => {
     const comments: Comment[] = [
       {

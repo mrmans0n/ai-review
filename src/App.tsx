@@ -118,6 +118,7 @@ function App() {
     error: string | null;
   }>>({});
   const lfsFetchingRef = useRef<Set<string>>(new Set());
+  const lfsRequestIdRef = useRef(0);
   const [initError, setInitError] = useState<string | null>(null);
 
   const { theme, toggle: toggleTheme } = useTheme();
@@ -632,6 +633,7 @@ function App() {
       setMdContentCache({});
       setLfsContentCache({});
       lfsFetchingRef.current.clear();
+      lfsRequestIdRef.current++;
       setPendingSwitchPath(null);
       commitSelector.closeSelector();
     } catch (err) {
@@ -673,6 +675,7 @@ function App() {
     setMdContentCache({});
     setLfsContentCache({});
     lfsFetchingRef.current.clear();
+    lfsRequestIdRef.current++;
   }, [diffMode, selectedCommit, selectedBranch]);
 
   const fetchFileSource = async (filePath: string): Promise<string[]> => {
@@ -1384,10 +1387,18 @@ function App() {
     return widgets;
   };
 
+  // Normalize file status from different sources ("A"/"D"/"M" from stack diffs vs "added"/"deleted"/"modified")
+  const normalizeLfsStatus = (status: string): string => {
+    if (status === "A" || status === "added") return "added";
+    if (status === "D" || status === "deleted") return "deleted";
+    return "modified";
+  };
+
   // Fetch resolved LFS content for a file (image or text)
-  const fetchLfsContent = async (filePath: string, isImage: boolean) => {
+  const fetchLfsContent = async (filePath: string, oldFilePath: string, isImage: boolean) => {
     if (!workingDir || lfsFetchingRef.current.has(filePath)) return;
     lfsFetchingRef.current.add(filePath);
+    const requestId = lfsRequestIdRef.current;
     setLfsContentCache((prev) => ({
       ...prev,
       [filePath]: { oldText: null, newText: null, oldImage: null, newImage: null, loading: true, error: null },
@@ -1396,7 +1407,8 @@ function App() {
     try {
       const refs = await resolvePreviewRefs({ workingDir, diffMode, selectedCommit, selectedBranch });
       const selectedChangedFile = changedFiles.find((f) => f.path === filePath);
-      const fileStatus = selectedChangedFile?.status || "modified";
+      const rawStatus = selectedChangedFile?.status || "modified";
+      const fileStatus = normalizeLfsStatus(rawStatus);
 
       if (isImage) {
         const mimeType = getImageMimeType(filePath);
@@ -1411,11 +1423,11 @@ function App() {
             : await invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.newRef, filePath });
           newImage = makeDataUrl(base64);
         } else if (fileStatus === "deleted") {
-          const base64 = await invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath });
+          const base64 = await invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath });
           oldImage = makeDataUrl(base64);
         } else {
           const [oldBase64, newBase64] = await Promise.all([
-            invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath }),
+            invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath }),
             refs.readNewFromWorkingTree
               ? invoke<string>("read_file_content_base64", { path: workingDir, filePath })
               : invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.newRef, filePath }),
@@ -1424,6 +1436,7 @@ function App() {
           newImage = makeDataUrl(newBase64);
         }
 
+        if (requestId !== lfsRequestIdRef.current) return;
         setLfsContentCache((prev) => ({
           ...prev,
           [filePath]: { oldText: null, newText: null, oldImage, newImage, loading: false, error: null },
@@ -1437,22 +1450,24 @@ function App() {
             ? await invoke<string>("read_file_content", { path: workingDir, filePath })
             : await invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.newRef, filePath });
         } else if (fileStatus === "deleted") {
-          oldText = await invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath });
+          oldText = await invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath });
         } else {
           [oldText, newText] = await Promise.all([
-            invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath }),
+            invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath }),
             refs.readNewFromWorkingTree
               ? invoke<string>("read_file_content", { path: workingDir, filePath })
               : invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.newRef, filePath }),
           ]);
         }
 
+        if (requestId !== lfsRequestIdRef.current) return;
         setLfsContentCache((prev) => ({
           ...prev,
           [filePath]: { oldText, newText, oldImage: null, newImage: null, loading: false, error: null },
         }));
       }
     } catch (err) {
+      if (requestId !== lfsRequestIdRef.current) return;
       const message = err instanceof Error ? err.message : String(err);
       setLfsContentCache((prev) => ({
         ...prev,
@@ -1460,6 +1475,20 @@ function App() {
       }));
     }
   };
+
+  // Trigger LFS content fetches via useEffect instead of during render
+  useEffect(() => {
+    for (const file of renderableFiles) {
+      if (!file.lfsPointer) continue;
+      const fileName = file.newPath || file.oldPath;
+      const isImage = isImageFile(fileName);
+      const isText = isTextPreviewable(fileName);
+      if ((isImage || isText) && !lfsContentCache[fileName]) {
+        const oldFilePath = file.oldPath && file.oldPath !== "/dev/null" ? file.oldPath : fileName;
+        fetchLfsContent(fileName, oldFilePath, isImage);
+      }
+    }
+  }, [renderableFiles, lfsContentCache]);
 
   const renderFile = (file: any) => {
     const fileName = file.newPath || file.oldPath;
@@ -1473,15 +1502,12 @@ function App() {
       const isText = isTextPreviewable(fileName);
       const previewMode = isImage ? "image" as const : isText ? "text" as const : "unsupported" as const;
 
-      // Trigger lazy fetch if not yet cached
-      if (previewMode !== "unsupported" && !lfsContentCache[fileName]) {
-        fetchLfsContent(fileName, isImage);
-      }
-
       const cached = lfsContentCache[fileName];
       const selectedChangedFile = changedFiles.find((f) => f.path === fileName);
-      const fileStatus = selectedChangedFile?.status || (
-        file.type === "add" ? "added" : file.type === "delete" ? "deleted" : "modified"
+      const fileStatus = normalizeLfsStatus(
+        selectedChangedFile?.status || (
+          file.type === "add" ? "added" : file.type === "delete" ? "deleted" : "modified"
+        )
       );
 
       return (
