@@ -72,6 +72,11 @@ describe("AddCommentForm", () => {
     expect(textarea.value).toMatch(/^```\n/);
   });
 
+  it("shows 'whole file' label for (0, 0) sentinel", () => {
+    render(<AddCommentForm {...makeProps({ startLine: 0, endLine: 0 })} />);
+    expect(screen.getByText(/whole file/)).toBeTruthy();
+  });
+
   it("clicking Insert code uses plain fence when language is omitted", () => {
     render(
       <AddCommentForm {...makeProps({ prefilledCode: "some code" })} />

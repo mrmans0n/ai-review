@@ -115,8 +115,9 @@ export function CommentWidget({
               </div>
               <div className="flex gap-2 items-center text-xs text-ctp-subtext">
                 <span>
-                  Lines {comment.startLine}
-                  {comment.endLine !== comment.startLine && `-${comment.endLine}`}
+                  {comment.startLine === 0 && comment.endLine === 0
+                    ? "Whole file"
+                    : `Lines ${comment.startLine}${comment.endLine !== comment.startLine ? `-${comment.endLine}` : ""}`}
                 </span>
                 <span>•</span>
                 <button
