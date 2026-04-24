@@ -1,4 +1,5 @@
 const MAX_PREVIEW_LINES = 10_000;
+const MAX_PREVIEW_BYTES = 1_000_000;
 
 interface LfsTextPreviewProps {
   fileName: string;
@@ -10,6 +11,9 @@ interface LfsTextPreviewProps {
 }
 
 function truncateContent(content: string): { text: string; truncated: boolean } {
+  if (content.length > MAX_PREVIEW_BYTES) {
+    return { text: content.slice(0, MAX_PREVIEW_BYTES), truncated: true };
+  }
   const lines = content.split("\n");
   if (lines.length <= MAX_PREVIEW_LINES) {
     return { text: content, truncated: false };

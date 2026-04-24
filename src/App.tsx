@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { parseDiff, Diff, Hunk, Decoration, getChangeKey, getCollapsedLinesCountBetween, expandFromRawCode } from "react-diff-view";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -109,7 +109,7 @@ function App() {
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
   const [mdPreviewFiles, setMdPreviewFiles] = useState<Set<string>>(new Set());
   const [mdContentCache, setMdContentCache] = useState<Record<string, string>>({});
-  const [lfsFiles, setLfsFiles] = useState<Set<string>>(new Set());
+  // lfsFiles is derived below via useMemo
   const [initError, setInitError] = useState<string | null>(null);
 
   const { theme, toggle: toggleTheme } = useTheme();
@@ -284,17 +284,17 @@ function App() {
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
   const isEmptyState = renderableFiles.length === 0 && !selectedCommit && !selectedBranch;
 
-  // Detect LFS pointer diffs
-  useEffect(() => {
-    const detectedLfsFiles = new Set<string>();
+  // Detect LFS pointer diffs — pure derivation from parsed files
+  const lfsFiles = useMemo(() => {
+    const detected = new Set<string>();
     for (const file of files) {
       const fileName = file.newPath || file.oldPath;
       if (isLfsPointerDiff(file.hunks)) {
-        detectedLfsFiles.add(fileName);
+        detected.add(fileName);
       }
     }
-    setLfsFiles(detectedLfsFiles);
-  }, [diffText]);
+    return detected;
+  }, [files]);
 
   const { loadData } = commitSelector;
   useEffect(() => {
@@ -1484,6 +1484,7 @@ function App() {
         {!isViewed && lfsFiles.has(fileName) ? (
           <LfsFileWrapper
             fileName={fileName}
+            oldPath={file.oldPath !== file.newPath ? file.oldPath : undefined}
             fileStatus={
               file.type === "add" ? "added" :
               file.type === "delete" ? "deleted" :

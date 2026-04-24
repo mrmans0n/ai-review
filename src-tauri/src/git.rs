@@ -473,6 +473,47 @@ pub fn get_file_at_ref_base64(
     Ok(base64::engine::general_purpose::STANDARD.encode(output.stdout))
 }
 
+/// Get file content at a specific git ref, applying configured filters (e.g. LFS smudge).
+/// Uses `git cat-file --filters <ref>:<path>` so LFS pointers resolve to real content.
+pub fn get_file_at_ref_filtered(
+    dir: &Path,
+    git_ref: &str,
+    file_path: &str,
+) -> Result<String, String> {
+    let ref_path = format!("{}:{}", git_ref, file_path);
+    let output = Command::new("git")
+        .args(["cat-file", "--filters", &ref_path])
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to execute git cat-file --filters: {}", e))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+/// Get file content at a specific git ref with filters applied, returned as base64.
+pub fn get_file_at_ref_filtered_base64(
+    dir: &Path,
+    git_ref: &str,
+    file_path: &str,
+) -> Result<String, String> {
+    let ref_path = format!("{}:{}", git_ref, file_path);
+    let output = Command::new("git")
+        .args(["cat-file", "--filters", &ref_path])
+        .current_dir(dir)
+        .output()
+        .map_err(|e| format!("Failed to execute git cat-file --filters: {}", e))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+
+    Ok(base64::engine::general_purpose::STANDARD.encode(output.stdout))
+}
+
 /// Check if text content is a git-lfs pointer file.
 #[allow(dead_code)]
 pub fn is_lfs_pointer_content(text: &str) -> bool {
@@ -1656,8 +1697,7 @@ mod tests {
 
     #[test]
     fn test_is_lfs_pointer_content_valid() {
-        let pointer =
-            "version https://git-lfs.github.com/spec/v1\noid sha256:abc123\nsize 12345\n";
+        let pointer = "version https://git-lfs.github.com/spec/v1\noid sha256:abc123\nsize 12345\n";
         assert!(is_lfs_pointer_content(pointer));
     }
 

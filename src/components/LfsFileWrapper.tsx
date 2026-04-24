@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ImagePreview } from "./ImagePreview";
 import { LfsTextPreview } from "./LfsTextPreview";
@@ -84,6 +84,7 @@ interface Hunk {
 
 interface LfsFileWrapperProps {
   fileName: string;
+  oldPath?: string;
   fileStatus: string;
   hunks: Hunk[];
   workingDir: string;
@@ -101,6 +102,7 @@ interface LfsFileWrapperProps {
 
 export function LfsFileWrapper({
   fileName,
+  oldPath,
   fileStatus,
   hunks,
   workingDir,
@@ -120,7 +122,7 @@ export function LfsFileWrapper({
   const [oldContent, setOldContent] = useState<string | null>(null);
   const [newContent, setNewContent] = useState<string | null>(null);
   const [addingComment, setAddingComment] = useState(false);
-  const requestIdRef = useRef(0);
+  const oldFilePath = oldPath || fileName;
 
   const isImage = isImageFile(fileName);
   const wholeFileComments = comments.filter(
@@ -129,7 +131,6 @@ export function LfsFileWrapper({
 
   useEffect(() => {
     let cancelled = false;
-    ++requestIdRef.current;
 
     async function fetchContent() {
       setLoading(true);
@@ -148,17 +149,17 @@ export function LfsFileWrapper({
           if (fileStatus === "added") {
             const base64 = refs.readNewFromWorkingTree
               ? await invoke<string>("read_file_content_base64", { path: workingDir, filePath: fileName })
-              : await invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.newRef, filePath: fileName });
+              : await invoke<string>("get_file_at_ref_filtered_base64", { path: workingDir, gitRef: refs.newRef, filePath: fileName });
             if (!cancelled) setNewContent(makeDataUrl(base64));
           } else if (fileStatus === "deleted") {
-            const base64 = await invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath: fileName });
+            const base64 = await invoke<string>("get_file_at_ref_filtered_base64", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath });
             if (!cancelled) setOldContent(makeDataUrl(base64));
           } else {
             const [oldBase64, newBase64] = await Promise.all([
-              invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath: fileName }),
+              invoke<string>("get_file_at_ref_filtered_base64", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath }),
               refs.readNewFromWorkingTree
                 ? invoke<string>("read_file_content_base64", { path: workingDir, filePath: fileName })
-                : invoke<string>("get_file_at_ref_base64", { path: workingDir, gitRef: refs.newRef, filePath: fileName }),
+                : invoke<string>("get_file_at_ref_filtered_base64", { path: workingDir, gitRef: refs.newRef, filePath: fileName }),
             ]);
             if (!cancelled) {
               setOldContent(makeDataUrl(oldBase64));
@@ -169,17 +170,17 @@ export function LfsFileWrapper({
           if (fileStatus === "added") {
             const text = refs.readNewFromWorkingTree
               ? await invoke<string>("read_file_content", { path: workingDir, filePath: fileName })
-              : await invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.newRef, filePath: fileName });
+              : await invoke<string>("get_file_at_ref_filtered", { path: workingDir, gitRef: refs.newRef, filePath: fileName });
             if (!cancelled) setNewContent(text);
           } else if (fileStatus === "deleted") {
-            const text = await invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath: fileName });
+            const text = await invoke<string>("get_file_at_ref_filtered", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath });
             if (!cancelled) setOldContent(text);
           } else {
             const [oldText, newText] = await Promise.all([
-              invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath: fileName }),
+              invoke<string>("get_file_at_ref_filtered", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath }),
               refs.readNewFromWorkingTree
                 ? invoke<string>("read_file_content", { path: workingDir, filePath: fileName })
-                : invoke<string>("get_file_at_ref", { path: workingDir, gitRef: refs.newRef, filePath: fileName }),
+                : invoke<string>("get_file_at_ref_filtered", { path: workingDir, gitRef: refs.newRef, filePath: fileName }),
             ]);
             if (!cancelled) {
               setOldContent(oldText);
@@ -198,7 +199,7 @@ export function LfsFileWrapper({
 
     fetchContent();
     return () => { cancelled = true; };
-  }, [fileName, fileStatus, workingDir, diffMode, selectedCommit, selectedBranch, isImage]);
+  }, [fileName, oldFilePath, fileStatus, workingDir, diffMode, selectedCommit, selectedBranch, isImage]);
 
   return (
     <div className="p-4 space-y-4">
