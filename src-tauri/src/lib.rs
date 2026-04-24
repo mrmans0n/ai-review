@@ -134,11 +134,7 @@ fn get_file_at_ref_base64(
 }
 
 #[tauri::command]
-fn get_lfs_file_at_ref(
-    path: String,
-    git_ref: String,
-    file_path: String,
-) -> Result<String, String> {
+fn get_lfs_file_at_ref(path: String, git_ref: String, file_path: String) -> Result<String, String> {
     let dir = PathBuf::from(path);
     git::get_lfs_file_at_ref(&dir, &git_ref, &file_path)
 }
