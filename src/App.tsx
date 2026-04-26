@@ -61,7 +61,8 @@ function clampRightRailWidth(width: number) {
 }
 
 function escapeAttributeSelector(value: string) {
-  return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(value) : value.replace(/"/g, '\\"');
+  if (typeof CSS !== "undefined" && CSS.escape) return CSS.escape(value);
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/'/g, "\\'").replace(/\[/g, "\\[").replace(/\]/g, "\\]");
 }
 
 function scrollToCommentTarget(comment: Comment) {
@@ -1116,6 +1117,13 @@ function App() {
     );
 
     if (isInDiff) {
+      // Un-collapse viewed files so the target is visible
+      setViewedFiles((prev) => {
+        if (!prev.has(comment.file)) return prev;
+        const next = new Set(prev);
+        next.delete(comment.file);
+        return next;
+      });
       setViewMode("diff");
       setActiveDiffFile(comment.file);
     } else {

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { RailComments } from "./RailComments";
 import { formatCommentRange } from "../hooks/commentHelpers";
 import type { Comment } from "../types";
@@ -54,6 +54,21 @@ describe("RailComments", () => {
     expect(formatCommentRange(makeComment({ startLine: 0, endLine: 0 }))).toBe("File");
   });
 
+  it("shows deleted only for old-side line comments", () => {
+    render(
+      <RailComments
+        {...makeProps({
+          comments: [
+            makeComment({ id: "line-old", side: "old" }),
+            makeComment({ id: "file-old", side: "old", startLine: 0, endLine: 0, text: "Whole file" }),
+          ],
+        })}
+      />
+    );
+
+    expect(screen.getAllByText("deleted")).toHaveLength(1);
+  });
+
   it("navigates when a card is clicked", () => {
     const comment = makeComment();
     const onGoToComment = vi.fn();
@@ -78,6 +93,34 @@ describe("RailComments", () => {
     expect(onGoToComment).not.toHaveBeenCalled();
   });
 
+  it("deletes without navigating", () => {
+    const comment = makeComment();
+    const onGoToComment = vi.fn();
+    const onDeleteComment = vi.fn();
+    render(
+      <RailComments
+        {...makeProps({ comments: [comment], onGoToComment, onDeleteComment })}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Delete"));
+    expect(onDeleteComment).toHaveBeenCalledWith("c1");
+    expect(onGoToComment).not.toHaveBeenCalled();
+  });
+
+  it("shows the current comment text when inline editing opens", () => {
+    const comment = makeComment({ text: "Updated from overview" });
+    render(
+      <RailComments
+        {...makeProps({ comments: [comment], editingCommentId: "c1" })}
+      />
+    );
+
+    expect(screen.getByRole("textbox")).toHaveValue("Updated from overview");
+    expect(screen.getByText("Save")).toBeTruthy();
+    expect(screen.getByText("Cancel")).toBeTruthy();
+  });
+
   it("saves edits through existing handlers", () => {
     const comment = makeComment();
     const onEditComment = vi.fn();
@@ -98,21 +141,6 @@ describe("RailComments", () => {
 
     expect(onEditComment).toHaveBeenCalledWith("c1", "Updated");
     expect(onStopEditComment).toHaveBeenCalled();
-  });
-
-  it("deletes without navigating", () => {
-    const comment = makeComment();
-    const onGoToComment = vi.fn();
-    const onDeleteComment = vi.fn();
-    render(
-      <RailComments
-        {...makeProps({ comments: [comment], onGoToComment, onDeleteComment })}
-      />
-    );
-
-    fireEvent.click(screen.getByText("Delete"));
-    expect(onDeleteComment).toHaveBeenCalledWith("c1");
-    expect(onGoToComment).not.toHaveBeenCalled();
   });
 
   it("opens the overview modal", () => {
