@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Comment } from "../types";
 import { useGroupedComments } from "../hooks/useGroupedComments";
+import { isWholeFileComment, formatCommentRange } from "../hooks/commentHelpers";
 import { MiddleEllipsis } from "./MiddleEllipsis";
 
 interface RailCommentsProps {
@@ -12,16 +13,6 @@ interface RailCommentsProps {
   onStartEditComment: (id: string) => void;
   onStopEditComment: () => void;
   onOpenOverview?: () => void;
-}
-
-export function isWholeFileComment(comment: { startLine: number; endLine: number }): boolean {
-  return comment.startLine === 0 && comment.endLine === 0;
-}
-
-export function formatCommentRange(comment: Comment): string {
-  if (isWholeFileComment(comment)) return "File";
-  if (comment.startLine === comment.endLine) return `L${comment.startLine}`;
-  return `L${comment.startLine}-${comment.endLine}`;
 }
 
 function RailCommentCard({
@@ -59,6 +50,7 @@ function RailCommentCard({
       tabIndex={0}
       onClick={() => onGoToComment(comment)}
       onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           onGoToComment(comment);

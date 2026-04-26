@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { RailComments, formatCommentRange } from "./RailComments";
+import { RailComments } from "./RailComments";
+import { formatCommentRange } from "../hooks/commentHelpers";
 import type { Comment } from "../types";
 
 function makeComment(overrides: Partial<Comment> = {}): Comment {

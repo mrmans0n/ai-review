@@ -27,7 +27,7 @@ import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
 import { PromptPreview } from "./components/PromptPreview";
 import { CommentOverview } from "./components/CommentOverview";
-import { isWholeFileComment } from "./components/RailComments";
+import { isWholeFileComment } from "./hooks/commentHelpers";
 import { RepoLandingPage } from "./components/RepoLandingPage";
 import { RepoSwitcher } from "./components/RepoSwitcher";
 import { ConfirmModal } from "./components/ConfirmModal";

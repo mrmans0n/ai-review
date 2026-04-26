@@ -1,4 +1,4 @@
-import { formatCommentRange } from "./RailComments";
+import { formatCommentRange } from "../hooks/commentHelpers";
 import type { Comment } from "../types";
 
 interface CommentOverviewProps {
