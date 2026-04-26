@@ -343,7 +343,13 @@ fn parse_porcelain_status(output: &str, staged: bool) -> Vec<GitFile> {
 
             let index_status = line.chars().next().unwrap_or(' ');
             let worktree_status = line.chars().nth(1).unwrap_or(' ');
-            let path = line[3..].trim().to_string();
+            let raw_path = line[3..].trim();
+            // For renames, porcelain shows "old -> new"; use the new path
+            let path = if raw_path.contains(" -> ") {
+                raw_path.rsplit(" -> ").next().unwrap_or(raw_path).to_string()
+            } else {
+                raw_path.to_string()
+            };
 
             // Filter based on staged flag
             if staged {
@@ -396,16 +402,27 @@ fn parse_file_status(output: &str) -> Vec<GitFile> {
                 return None;
             }
 
-            let status = match parts[0] {
-                "M" => "modified",
-                "A" => "added",
-                "D" => "deleted",
-                "R" => "renamed",
-                _ => "modified",
+            let status_code = parts[0];
+            let status = if status_code.starts_with('R') {
+                "renamed"
+            } else {
+                match status_code {
+                    "M" => "modified",
+                    "A" => "added",
+                    "D" => "deleted",
+                    _ => "modified",
+                }
+            };
+
+            // For renames (e.g. "R100 old.rs new.rs"), use the new path (last element)
+            let path = if status_code.starts_with('R') && parts.len() >= 3 {
+                parts.last().unwrap()
+            } else {
+                parts[1]
             };
 
             Some(GitFile {
-                path: parts[1].to_string(),
+                path: path.to_string(),
                 status: status.to_string(),
             })
         })
@@ -1399,6 +1416,16 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_porcelain_status_renamed_uses_new_path() {
+        let output = "R  src/old.rs -> src/new.rs\n";
+        let files = parse_porcelain_status(output, false);
+
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "src/new.rs");
+        assert_eq!(files[0].status, "renamed");
+    }
+
+    #[test]
     fn test_build_new_file_diff() {
         let diff = build_new_file_diff("src/new.rs", "line 1\nline 2\n");
 
@@ -1475,6 +1502,16 @@ mod tests {
         let files = parse_file_status(output);
 
         assert_eq!(files.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_file_status_renamed() {
+        let output = "R100\tsrc/old.rs\tsrc/new.rs\n";
+        let files = parse_file_status(output);
+
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "src/new.rs");
+        assert_eq!(files[0].status, "renamed");
     }
 
     #[test]
