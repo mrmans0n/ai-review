@@ -1,73 +1,128 @@
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
-import { RailComments } from "./RailComments";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { RailComments, formatCommentRange } from "./RailComments";
 import type { Comment } from "../types";
 
 function makeComment(overrides: Partial<Comment> = {}): Comment {
   return {
-    id: "1",
+    id: "c1",
     file: "src/App.tsx",
-    startLine: 12,
-    endLine: 12,
+    startLine: 10,
+    endLine: 10,
     side: "new",
-    text: "Review note",
-    createdAt: "2026-04-26T00:00:00.000Z",
+    text: "Fix this",
+    createdAt: "2024-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+function makeProps(overrides: Partial<Parameters<typeof RailComments>[0]> = {}) {
+  return {
+    comments: [] as Comment[],
+    onGoToComment: vi.fn(),
+    onEditComment: vi.fn(),
+    onDeleteComment: vi.fn(),
+    editingCommentId: null,
+    onStartEditComment: vi.fn(),
+    onStopEditComment: vi.fn(),
+    onOpenOverview: vi.fn(),
     ...overrides,
   };
 }
 
 describe("RailComments", () => {
-  it("shows an empty state", () => {
-    render(<RailComments comments={[]} onGoToComment={vi.fn()} />);
-
-    expect(screen.getByText("No comments yet")).toBeInTheDocument();
+  it("renders an empty state", () => {
+    render(<RailComments {...makeProps()} />);
+    expect(screen.getByText("No comments yet")).toBeTruthy();
   });
 
-  it("calls onGoToComment when a comment is clicked", () => {
+  it("renders all draft comments grouped by file", () => {
+    const comments = [
+      makeComment({ id: "c1", file: "src/App.tsx", text: "App comment" }),
+      makeComment({ id: "c2", file: "src/lib.ts", text: "Lib comment" }),
+    ];
+    render(<RailComments {...makeProps({ comments })} />);
+
+    expect(screen.getByText("App comment")).toBeTruthy();
+    expect(screen.getByText("Lib comment")).toBeTruthy();
+  });
+
+  it("formats single-line, range, and file-level labels", () => {
+    expect(formatCommentRange(makeComment({ startLine: 7, endLine: 7 }))).toBe("L7");
+    expect(formatCommentRange(makeComment({ startLine: 7, endLine: 9 }))).toBe("L7-9");
+    expect(formatCommentRange(makeComment({ startLine: 0, endLine: 0 }))).toBe("File");
+  });
+
+  it("navigates when a card is clicked", () => {
     const comment = makeComment();
     const onGoToComment = vi.fn();
-    render(<RailComments comments={[comment]} onGoToComment={onGoToComment} />);
+    render(<RailComments {...makeProps({ comments: [comment], onGoToComment })} />);
 
-    fireEvent.click(screen.getByText("Review note"));
-
+    fireEvent.click(screen.getByText("Fix this"));
     expect(onGoToComment).toHaveBeenCalledWith(comment);
   });
 
-  it("shows File for whole-file comments", () => {
+  it("starts editing without navigating", () => {
+    const comment = makeComment();
+    const onGoToComment = vi.fn();
+    const onStartEditComment = vi.fn();
     render(
       <RailComments
-        comments={[makeComment({ startLine: 0, endLine: 0 })]}
-        onGoToComment={vi.fn()}
+        {...makeProps({ comments: [comment], onGoToComment, onStartEditComment })}
       />
     );
 
-    expect(screen.getByText("File")).toBeInTheDocument();
-    expect(screen.queryByText("L0")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Edit"));
+    expect(onStartEditComment).toHaveBeenCalledWith("c1");
+    expect(onGoToComment).not.toHaveBeenCalled();
   });
 
-  it("shows deleted for old-side comments", () => {
+  it("saves edits through existing handlers", () => {
+    const comment = makeComment();
+    const onEditComment = vi.fn();
+    const onStopEditComment = vi.fn();
     render(
       <RailComments
-        comments={[makeComment({ side: "old" })]}
-        onGoToComment={vi.fn()}
+        {...makeProps({
+          comments: [comment],
+          editingCommentId: "c1",
+          onEditComment,
+          onStopEditComment,
+        })}
       />
     );
 
-    expect(screen.getByText("deleted")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Updated" } });
+    fireEvent.click(screen.getByText("Save"));
+
+    expect(onEditComment).toHaveBeenCalledWith("c1", "Updated");
+    expect(onStopEditComment).toHaveBeenCalled();
   });
 
-  it("opens the overview when requested", () => {
+  it("deletes without navigating", () => {
+    const comment = makeComment();
+    const onGoToComment = vi.fn();
+    const onDeleteComment = vi.fn();
+    render(
+      <RailComments
+        {...makeProps({ comments: [comment], onGoToComment, onDeleteComment })}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Delete"));
+    expect(onDeleteComment).toHaveBeenCalledWith("c1");
+    expect(onGoToComment).not.toHaveBeenCalled();
+  });
+
+  it("opens the overview modal", () => {
     const onOpenOverview = vi.fn();
     render(
       <RailComments
-        comments={[makeComment()]}
-        onGoToComment={vi.fn()}
-        onOpenOverview={onOpenOverview}
+        {...makeProps({ comments: [makeComment()], onOpenOverview })}
       />
     );
 
     fireEvent.click(screen.getByText("Open overview"));
-
     expect(onOpenOverview).toHaveBeenCalled();
   });
 });

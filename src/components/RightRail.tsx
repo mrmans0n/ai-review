@@ -15,6 +15,11 @@ interface RightRailProps {
   onScrollToFile: (path: string) => void;
   onPreviewFile: (path: string) => void;
   onGoToComment: (comment: Comment) => void;
+  onEditComment: (id: string, text: string) => void;
+  onDeleteComment: (id: string) => void;
+  editingCommentId: string | null;
+  onStartEditComment: (id: string) => void;
+  onStopEditComment: () => void;
   onOpenCommentOverview: () => void;
 }
 
@@ -31,6 +36,11 @@ export function RightRail({
   onScrollToFile,
   onPreviewFile,
   onGoToComment,
+  onEditComment,
+  onDeleteComment,
+  editingCommentId,
+  onStartEditComment,
+  onStopEditComment,
   onOpenCommentOverview,
 }: RightRailProps) {
   if (!visible) return null;
@@ -91,6 +101,11 @@ export function RightRail({
           <RailComments
             comments={comments}
             onGoToComment={onGoToComment}
+            onEditComment={onEditComment}
+            onDeleteComment={onDeleteComment}
+            editingCommentId={editingCommentId}
+            onStartEditComment={onStartEditComment}
+            onStopEditComment={onStopEditComment}
             onOpenOverview={comments.length > 0 ? onOpenCommentOverview : undefined}
           />
         </div>

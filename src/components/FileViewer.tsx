@@ -11,6 +11,7 @@ interface FileViewerProps {
   isViewed: boolean;
   onToggleViewed: () => void;
   onLineClick: (file: string, line: number, side: "old" | "new") => void;
+  onFileCommentClick: (file: string) => void;
   addingCommentAt: {
     file: string;
     startLine: number;
@@ -47,6 +48,7 @@ export function FileViewer({
   isViewed,
   onToggleViewed,
   onLineClick,
+  onFileCommentClick,
   addingCommentAt,
   onAddComment,
   onCancelComment,
@@ -95,6 +97,7 @@ export function FileViewer({
       (c) =>
         c.file === fileName &&
         c.side === "new" &&
+        c.startLine > 0 &&
         c.endLine === lineNumber
     );
   };
@@ -126,6 +129,19 @@ export function FileViewer({
     }
     return false;
   };
+
+  const wholeFileComments = comments.filter(
+    (comment) =>
+      comment.file === fileName &&
+      comment.startLine === 0 &&
+      comment.endLine === 0
+  );
+
+  const isAddingFileComment =
+    addingCommentAt &&
+    addingCommentAt.file === fileName &&
+    addingCommentAt.startLine === 0 &&
+    addingCommentAt.endLine === 0;
 
   const isGutterHovered = (lineNumber: number): boolean => {
     return (
@@ -183,6 +199,7 @@ export function FileViewer({
   return (
     <div className="bg-surface rounded border border-divider" data-file-viewer={fileName} data-search-query={searchQuery} data-highlighted-word={highlightedWord || ""}>
       <div
+        data-comment-file-anchor={fileName}
         className={`sticky top-0 z-10 rounded-t px-4 py-2 border-b border-divider flex items-center justify-between transition-colors ${
           isViewed ? "bg-canvas/80 text-ink-secondary cursor-pointer" : "bg-canvas"
         }`}
@@ -207,8 +224,53 @@ export function FileViewer({
           </label>
           <span className="text-sm text-ink-primary font-medium">{fileName}</span>
         </div>
-        <span className="text-xs text-ink-secondary">{lines.length} lines</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onFileCommentClick(fileName);
+            }}
+            className="px-2 py-0.5 text-xs rounded-sm text-ink-secondary hover:text-ink-primary hover:bg-surface-hover transition-colors"
+          >
+            Comment
+          </button>
+          <span className="text-xs text-ink-secondary">{lines.length} lines</span>
+        </div>
       </div>
+
+      {!isViewed && (wholeFileComments.length > 0 || isAddingFileComment) && (
+        <div className="border-b border-ctp-surface1 px-4 py-2">
+          {wholeFileComments.length > 0 && (
+            <div
+              onMouseEnter={() => onHoverCommentIds(wholeFileComments.map((comment) => comment.id))}
+              onMouseLeave={() => onHoverCommentIds(null)}
+            >
+              <CommentWidget
+                comments={wholeFileComments}
+                onEdit={onEditComment}
+                onDelete={onDeleteComment}
+                editingId={editingCommentId}
+                onStartEdit={onStartEditComment}
+                onStopEdit={onStopEditComment}
+              />
+            </div>
+          )}
+          {isAddingFileComment && (
+            <div className={wholeFileComments.length > 0 ? "mt-2" : undefined}>
+              <AddCommentForm
+                file={fileName}
+                startLine={0}
+                endLine={0}
+                side="new"
+                onSubmit={onAddComment}
+                onCancel={onCancelComment}
+                language={language}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {!isViewed && lines.map((line, index) => {
         const lineNumber = index + 1;
@@ -222,7 +284,14 @@ export function FileViewer({
         const gutterHovered = isGutterHovered(lineNumber);
 
         return (
-          <div key={lineNumber} data-line-number={lineNumber} data-line-side="new">
+          <div
+            key={lineNumber}
+            data-line-number={lineNumber}
+            data-line-side="new"
+            data-comment-file={fileName}
+            data-comment-line={lineNumber}
+            data-comment-side="new"
+          >
             <div className={`flex transition-colors ${highlighted ? "bg-ctp-blue/10" : "hover:bg-canvas"}`}>
               {/* Line number gutter */}
               <div
