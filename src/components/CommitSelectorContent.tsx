@@ -266,18 +266,18 @@ export function CommitSelectorContent({
   return (
     <>
       {!isInline && (
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-ctp-surface1">
-          <div className="w-0.5 h-5 bg-ctp-peach rounded-full flex-shrink-0" />
-          <h2 className="text-base font-semibold text-ctp-text">Select Commit</h2>
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-divider">
+          <div className="w-0.5 h-5 bg-accent-review rounded-full flex-shrink-0" />
+          <h2 className="text-base font-semibold text-ink-primary">Select Commit</h2>
         </div>
       )}
 
-      <div className={`${isInline ? "px-6 pt-6 pb-3" : "p-4 border-b border-ctp-surface1"} space-y-3`}>
-        <div className="inline-flex bg-ctp-base border border-ctp-surface1 rounded-sm p-1">
+      <div className={`${isInline ? "px-6 pt-6 pb-3" : "p-4 border-b border-divider"} space-y-3`}>
+        <div className="inline-flex bg-canvas border border-divider rounded-sm p-1">
           <button
             onClick={() => setTab("commits")}
             className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
-              tab === "commits" ? "bg-ctp-mauve text-ctp-base" : "text-ctp-subtext hover:bg-ctp-surface0"
+              tab === "commits" ? "bg-accent-review text-white" : "text-ink-secondary hover:bg-surface-hover"
             }`}
           >
             Commits
@@ -285,7 +285,7 @@ export function CommitSelectorContent({
           <button
             onClick={() => setTab("branches")}
             className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
-              tab === "branches" ? "bg-ctp-mauve text-ctp-base" : "text-ctp-subtext hover:bg-ctp-surface0"
+              tab === "branches" ? "bg-accent-review text-white" : "text-ink-secondary hover:bg-surface-hover"
             }`}
           >
             Branches
@@ -294,7 +294,7 @@ export function CommitSelectorContent({
             <button
               onClick={() => setTab("stacks")}
               className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
-                tab === "stacks" ? "bg-ctp-mauve text-ctp-base" : "text-ctp-subtext hover:bg-ctp-surface0"
+                tab === "stacks" ? "bg-accent-review text-white" : "text-ink-secondary hover:bg-surface-hover"
               }`}
             >
               Stacks
@@ -304,7 +304,7 @@ export function CommitSelectorContent({
             <button
               onClick={() => setTab("worktrees")}
               className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
-                tab === "worktrees" ? "bg-ctp-mauve text-ctp-base" : "text-ctp-subtext hover:bg-ctp-surface0"
+                tab === "worktrees" ? "bg-accent-review text-white" : "text-ink-secondary hover:bg-surface-hover"
               }`}
             >
               Worktrees
@@ -313,7 +313,7 @@ export function CommitSelectorContent({
           <button
             onClick={() => setTab("ref")}
             className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
-              tab === "ref" ? "bg-ctp-mauve text-ctp-base" : "text-ctp-subtext hover:bg-ctp-surface0"
+              tab === "ref" ? "bg-accent-review text-white" : "text-ink-secondary hover:bg-surface-hover"
             }`}
           >
             Ref
@@ -337,17 +337,17 @@ export function CommitSelectorContent({
                       : "Search entries... (title, hash, gg-id)"
                     : "Search worktrees... (branch, path)"
             }
-            className="w-full bg-ctp-base border border-ctp-surface1 rounded-sm text-ctp-text text-sm px-3 py-2 placeholder:text-ctp-overlay0 focus:border-ctp-mauve focus:outline-none"
+            className="w-full bg-canvas border border-divider rounded-sm text-ink-primary text-sm px-3 py-2 placeholder:text-ink-muted focus:border-accent-review focus:outline-none"
           />
         )}
       </div>
 
       <div className={`${isInline ? "flex-1" : "max-h-96"} overflow-y-auto`} onMouseLeave={() => setHoveredCommitIndex(null)}>
         {loading ? (
-          <div className="p-8 text-center text-ctp-subtext">Loading {tab}...</div>
+          <div className="p-8 text-center text-ink-secondary">Loading {tab}...</div>
         ) : tab === "commits" ? (
           filteredCommits.length === 0 ? (
-            <div className="p-8 text-center text-ctp-subtext">
+            <div className="p-8 text-center text-ink-secondary">
               {searchQuery ? "No matching commits" : "No commits found"}
             </div>
           ) : (
@@ -368,26 +368,26 @@ export function CommitSelectorContent({
                   onMouseEnter={() => setHoveredCommitIndex(index)}
                   className={`cursor-pointer transition-colors px-4 py-3 ${
                     isSelected
-                      ? "bg-ctp-surface0 border-l-2 border-ctp-peach"
+                      ? "bg-surface border-l-2 border-accent-review"
                       : isAnchor
                         ? "border-l-2 border-ctp-blue/70"
-                        : "border-l-2 border-transparent hover:bg-ctp-surface0"
+                        : "border-l-2 border-transparent hover:bg-surface-hover"
                   } ${isInRangePreview ? "bg-ctp-blue/10" : ""}`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="font-mono text-xs px-2 py-1 rounded-sm bg-ctp-base text-ctp-overlay0 border border-ctp-surface1">
+                    <div className="font-mono text-xs px-2 py-1 rounded-sm bg-canvas text-ink-muted border border-divider">
                       {commit.short_hash}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <div className="font-semibold text-sm truncate text-ctp-text">{commit.message}</div>
+                        <div className="font-semibold text-sm truncate text-ink-primary">{commit.message}</div>
                         {isAnchor && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-ctp-blue/15 text-ctp-blue border border-ctp-blue/30">
                             start
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-ctp-overlay0">
+                      <div className="flex items-center gap-3 mt-1 text-xs text-ink-muted">
                         <span>{commit.author}</span>
                         <span>•</span>
                         <span>{commit.date}</span>
@@ -398,7 +398,7 @@ export function CommitSelectorContent({
                               {commit.refs.split(", ").map((ref, i) => (
                                 <span
                                   key={i}
-                                  className="px-1.5 py-0.5 rounded-sm text-xs bg-ctp-surface0 text-ctp-subtext border border-ctp-surface1"
+                                  className="px-1.5 py-0.5 rounded-sm text-xs bg-surface text-ink-secondary border border-divider"
                                 >
                                   {ref}
                                 </span>
@@ -417,7 +417,7 @@ export function CommitSelectorContent({
                       className={`flex-shrink-0 w-6 h-6 mt-0.5 rounded-sm border text-xs transition-colors ${
                         isAnchor
                           ? "bg-ctp-blue/15 border-ctp-blue/40 text-ctp-blue"
-                          : "bg-ctp-base border-ctp-surface1 text-ctp-overlay0 hover:text-ctp-blue hover:border-ctp-blue/30"
+                          : "bg-canvas border-divider text-ink-muted hover:text-ctp-blue hover:border-ctp-blue/30"
                       }`}
                       title={rangeAnchor === null ? "Set range start" : "Select range to this commit"}
                       aria-label={rangeAnchor === null ? `Set range start at ${commit.message}` : `Select range to ${commit.message}`}
@@ -431,7 +431,7 @@ export function CommitSelectorContent({
           )
         ) : tab === "branches" ? (
           filteredBranches.length === 0 ? (
-            <div className="p-8 text-center text-ctp-subtext">
+            <div className="p-8 text-center text-ink-secondary">
               {searchQuery ? "No matching branches" : "No branches found"}
             </div>
           ) : (
@@ -444,20 +444,20 @@ export function CommitSelectorContent({
                   onClick={() => onSelectBranch(branch)}
                   className={`cursor-pointer transition-colors ${
                     isSelected
-                      ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
-                      : "px-4 py-3 hover:bg-ctp-surface0"
+                      ? "px-4 py-3 bg-surface border-l-2 border-accent-review"
+                      : "px-4 py-3 hover:bg-surface-hover"
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="font-mono text-xs px-2 py-1 rounded-sm bg-ctp-base text-ctp-overlay0 border border-ctp-surface1">
+                    <div className="font-mono text-xs px-2 py-1 rounded-sm bg-canvas text-ink-muted border border-divider">
                       {branch.short_hash}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm truncate text-ctp-text">{branch.name}</div>
-                      <div className="text-xs mt-1 text-ctp-overlay0">
+                      <div className="font-semibold text-sm truncate text-ink-primary">{branch.name}</div>
+                      <div className="text-xs mt-1 text-ink-muted">
                         {branch.subject}
                       </div>
-                      <div className="text-xs mt-1 text-ctp-overlay0">
+                      <div className="text-xs mt-1 text-ink-muted">
                         {branch.author} • {branch.date}
                       </div>
                     </div>
@@ -470,7 +470,7 @@ export function CommitSelectorContent({
           stackView === "list" ? (
           <>
             {filteredStacks.length === 0 ? (
-              <div className="p-8 text-center text-ctp-subtext">
+              <div className="p-8 text-center text-ink-secondary">
                 {searchQuery ? "No matching stacks" : "No stacks found"}
               </div>
             ) : (
@@ -484,24 +484,24 @@ export function CommitSelectorContent({
                     onClick={() => onSelectStack(stackInfo)}
                     className={`cursor-pointer transition-colors ${
                       isSelected
-                        ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
-                        : "px-4 py-3 hover:bg-ctp-surface0"
+                        ? "px-4 py-3 bg-surface border-l-2 border-accent-review"
+                        : "px-4 py-3 hover:bg-surface-hover"
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="font-mono text-xs px-2 py-1 rounded-sm bg-ctp-base text-ctp-overlay0 border border-ctp-surface1">
+                      <div className="font-mono text-xs px-2 py-1 rounded-sm bg-canvas text-ink-muted border border-divider">
                         {stackInfo.commit_count}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm text-ctp-text">{stackInfo.name}</span>
+                          <span className="font-semibold text-sm text-ink-primary">{stackInfo.name}</span>
                           {stackInfo.is_current && (
                             <span className="text-xs px-1.5 py-0.5 rounded-sm bg-ctp-teal/20 text-ctp-teal border border-ctp-teal/30">
                               current
                             </span>
                           )}
                         </div>
-                        <div className="text-xs mt-1 text-ctp-overlay0">
+                        <div className="text-xs mt-1 text-ink-muted">
                           {stackInfo.username}/{stackInfo.name} • base: {stackInfo.base}
                         </div>
                       </div>
@@ -514,10 +514,10 @@ export function CommitSelectorContent({
         ) : (
           <>
             {selectedStack && (
-              <div className="bg-ctp-base border-b border-ctp-surface1 p-3 flex items-center gap-3">
+              <div className="bg-canvas border-b border-divider p-3 flex items-center gap-3">
                 <button
                   onClick={onBackToStacks}
-                  className="text-ctp-subtext hover:text-ctp-text text-sm px-3 py-1.5 rounded-sm hover:bg-ctp-surface0 transition-colors"
+                  className="text-ink-secondary hover:text-ink-primary text-sm px-3 py-1.5 rounded-sm hover:bg-surface-hover transition-colors"
                 >
                   ← Back to stacks
                 </button>
@@ -526,14 +526,14 @@ export function CommitSelectorContent({
                     const stack = ggStacks.find((s) => s.name === selectedStack);
                     if (stack) onSelectStackDiff(stack);
                   }}
-                  className="text-ctp-base text-sm px-3 py-1.5 rounded-sm bg-ctp-mauve hover:opacity-90 transition-opacity"
+                  className="text-white text-sm px-3 py-1.5 rounded-sm bg-accent-review hover:opacity-90 transition-opacity"
                 >
                   View full stack diff
                 </button>
               </div>
             )}
             {filteredStacks.length === 0 ? (
-              <div className="p-8 text-center text-ctp-subtext">
+              <div className="p-8 text-center text-ink-secondary">
                 {searchQuery ? "No matching entries" : "No entries found"}
               </div>
             ) : (
@@ -547,24 +547,24 @@ export function CommitSelectorContent({
                     onClick={() => onSelectStackEntry(stackEntry)}
                     className={`cursor-pointer transition-colors ${
                       isSelected
-                        ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
-                        : "px-4 py-3 hover:bg-ctp-surface0"
+                        ? "px-4 py-3 bg-surface border-l-2 border-accent-review"
+                        : "px-4 py-3 hover:bg-surface-hover"
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="font-mono text-xs px-2 py-1 rounded-sm bg-ctp-base text-ctp-overlay0 border border-ctp-surface1">
+                      <div className="font-mono text-xs px-2 py-1 rounded-sm bg-canvas text-ink-muted border border-divider">
                         {stackEntry.short_hash}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm truncate text-ctp-text">{stackEntry.title}</span>
+                          <span className="font-semibold text-sm truncate text-ink-primary">{stackEntry.title}</span>
                           {stackEntry.mr_number && (
-                            <span className="text-xs px-1.5 py-0.5 rounded-sm font-mono bg-ctp-mauve/20 text-ctp-mauve border border-ctp-mauve/30">
+                            <span className="text-xs px-1.5 py-0.5 rounded-sm font-mono bg-accent-review/20 text-accent-review border border-accent-review/30">
                               !{stackEntry.mr_number}
                             </span>
                           )}
                         </div>
-                        <div className="text-xs mt-1 text-ctp-overlay0">
+                        <div className="text-xs mt-1 text-ink-muted">
                           Position {stackEntry.position + 1}
                           {stackEntry.gg_id && ` • GG-ID: ${stackEntry.gg_id}`}
                         </div>
@@ -578,7 +578,7 @@ export function CommitSelectorContent({
         )
         ) : tab === "worktrees" ? (
           filteredWorktrees.length === 0 ? (
-            <div className="p-8 text-center text-ctp-subtext">
+            <div className="p-8 text-center text-ink-secondary">
               {searchQuery ? "No matching worktrees" : "No worktrees found"}
             </div>
           ) : (
@@ -591,24 +591,24 @@ export function CommitSelectorContent({
                   onClick={() => onSelectWorktree(worktree)}
                   className={`cursor-pointer transition-colors ${
                     isSelected
-                      ? "px-4 py-3 bg-ctp-surface0 border-l-2 border-ctp-peach"
-                      : "px-4 py-3 hover:bg-ctp-surface0"
+                      ? "px-4 py-3 bg-surface border-l-2 border-accent-review"
+                      : "px-4 py-3 hover:bg-surface-hover"
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="font-mono text-xs px-2 py-1 rounded-sm bg-ctp-base text-ctp-overlay0 border border-ctp-surface1">
+                    <div className="font-mono text-xs px-2 py-1 rounded-sm bg-canvas text-ink-muted border border-divider">
                       {worktree.commit_hash}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm truncate text-ctp-text">{worktree.branch}</span>
+                        <span className="font-semibold text-sm truncate text-ink-primary">{worktree.branch}</span>
                         {worktree.is_main && (
                           <span className="text-xs px-1.5 py-0.5 rounded-sm bg-ctp-teal/20 text-ctp-teal border border-ctp-teal/30">
                             main
                           </span>
                         )}
                       </div>
-                      <div className="text-xs mt-1 text-ctp-overlay0 font-mono truncate">
+                      <div className="text-xs mt-1 text-ink-muted font-mono truncate">
                         {shortenPath(worktree.path)}
                       </div>
                     </div>
@@ -619,7 +619,7 @@ export function CommitSelectorContent({
           )
         ) : tab === "ref" ? (
           <div className="p-6">
-            <div className="text-ctp-subtext text-sm mb-4">
+            <div className="text-ink-secondary text-sm mb-4">
               Enter a git ref to compare against (e.g., HEAD~1, main~3, abc1234, feature-branch)
             </div>
             <div className="flex gap-2">
@@ -629,15 +629,15 @@ export function CommitSelectorContent({
                 value={refValue}
                 onChange={(e) => setRefValue(e.target.value)}
                 placeholder="HEAD~1"
-                className="flex-1 bg-ctp-base border border-ctp-surface1 rounded-sm text-ctp-text text-sm px-3 py-2 placeholder:text-ctp-overlay0 focus:border-ctp-mauve focus:outline-none font-mono"
+                className="flex-1 bg-canvas border border-divider rounded-sm text-ink-primary text-sm px-3 py-2 placeholder:text-ink-muted focus:border-accent-review focus:outline-none font-mono"
               />
               <button
                 onClick={() => refValue.trim() && onSelectRef(refValue.trim())}
                 disabled={!refValue.trim()}
                 className={`px-4 py-2 rounded-sm text-sm transition-colors ${
                   refValue.trim()
-                    ? "bg-ctp-mauve text-ctp-base hover:opacity-90"
-                    : "bg-ctp-surface0 text-ctp-overlay0 cursor-not-allowed border border-ctp-surface1"
+                    ? "bg-accent-review text-white hover:opacity-90"
+                    : "bg-surface text-ink-muted cursor-not-allowed border border-divider"
                 }`}
               >
                 Compare
@@ -652,7 +652,7 @@ export function CommitSelectorContent({
         ) : null}
       </div>
 
-      <div className={`p-3 border-t border-ctp-surface1 ${isInline ? "" : "bg-ctp-base"} text-xs text-ctp-overlay0`}>
+      <div className={`p-3 border-t border-divider ${isInline ? "" : "bg-canvas"} text-xs text-ink-muted`}>
         {tab === "ref" ? (
           <>
             <span className="mr-4">Enter Compare</span>

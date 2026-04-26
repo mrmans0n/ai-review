@@ -24,6 +24,16 @@
   --color-ctp-red: var(--ctp-red);
   --color-ctp-yellow: var(--ctp-yellow);
   --color-ctp-teal: var(--ctp-teal);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-hover: var(--surface-hover);
+  --color-divider: var(--divider);
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-accent-review: var(--accent-review);
+  --color-accent-review-hover: var(--accent-review-hover);
   --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, 'Fira Code', monospace;
   --radius: 6px;
@@ -48,6 +58,18 @@
   --ctp-red:      rgb(210 15 57);
   --ctp-yellow:   rgb(223 142 29);
   --ctp-teal:     rgb(23 146 153);
+
+  /* Neutral workspace tokens */
+  --canvas:              rgb(246 247 249);
+  --surface:             rgb(255 255 255);
+  --surface-raised:      rgb(255 255 255);
+  --surface-hover:       rgb(238 241 245);
+  --divider:             rgb(214 219 229);
+  --ink-primary:         rgb(39 42 55);
+  --ink-secondary:       rgb(84 89 108);
+  --ink-muted:           rgb(122 128 148);
+  --accent-review:       var(--ctp-peach);
+  --accent-review-hover: rgb(224 86 9);
 
   /* Diff semantic tokens — Latte values */
   --diff-bg:               var(--ctp-base);
@@ -80,6 +102,18 @@
   --ctp-yellow:   rgb(229 192 123);
   --ctp-teal:     rgb(86 182 194);
 
+  /* Neutral workspace tokens */
+  --canvas:              rgb(31 35 42);
+  --surface:             rgb(37 41 49);
+  --surface-raised:      rgb(43 48 57);
+  --surface-hover:       rgb(48 54 64);
+  --divider:             rgb(62 68 81);
+  --ink-primary:         rgb(220 224 232);
+  --ink-secondary:       rgb(171 178 191);
+  --ink-muted:           rgb(130 137 151);
+  --accent-review:       var(--ctp-peach);
+  --accent-review-hover: rgb(224 168 111);
+
   /* Diff semantic tokens — One Dark values */
   --diff-bg:               var(--ctp-base);
   --diff-gutter-bg:        var(--ctp-mantle);
@@ -96,14 +130,14 @@
 
 /* ─── Base styles ─── */
 html {
-  background-color: var(--ctp-base);
-  color: var(--ctp-text);
+  background-color: var(--canvas);
+  color: var(--ink-primary);
   overscroll-behavior: none;
 }
 
 body {
-  background-color: var(--ctp-base);
-  color: var(--ctp-text);
+  background-color: var(--canvas);
+  color: var(--ink-primary);
   overscroll-behavior: none;
   font-family: 'Geist', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -140,19 +174,19 @@ code, pre, .font-mono {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--ctp-mantle);
+  background: var(--canvas);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--ctp-surface1);
+  background: var(--divider);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--ctp-overlay0);
+  background: var(--ink-muted);
 }
 
 /* ─── Aperture crosshair grid ─── */
 .aperture-grid {
-  background-image: radial-gradient(circle, var(--ctp-surface1) 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--divider) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
