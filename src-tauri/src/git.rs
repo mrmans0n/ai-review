@@ -346,7 +346,11 @@ fn parse_porcelain_status(output: &str, staged: bool) -> Vec<GitFile> {
             let raw_path = line[3..].trim();
             // For renames, porcelain shows "old -> new"; use the new path
             let path = if raw_path.contains(" -> ") {
-                raw_path.rsplit(" -> ").next().unwrap_or(raw_path).to_string()
+                raw_path
+                    .rsplit(" -> ")
+                    .next()
+                    .unwrap_or(raw_path)
+                    .to_string()
             } else {
                 raw_path.to_string()
             };
