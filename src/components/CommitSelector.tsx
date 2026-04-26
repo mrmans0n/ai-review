@@ -38,7 +38,7 @@ export function CommitSelector({
       onClick={onClose}
     >
       <div
-        className="bg-ctp-surface0 border border-ctp-surface1 rounded-md shadow-2xl w-full max-w-3xl overflow-hidden"
+        className="bg-surface-raised border border-divider rounded-md shadow-2xl w-full max-w-3xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <CommitSelectorContent

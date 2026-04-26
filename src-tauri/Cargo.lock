@@ -19,7 +19,7 @@ dependencies = [
 
 [[package]]
 name = "ai-review"
-version = "0.3.13"
+version = "0.3.16"
 dependencies = [
  "base64 0.22.1",
  "serde",

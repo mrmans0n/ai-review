@@ -31,19 +31,19 @@ export function CommentOverview({
       onClick={onClose}
     >
       <div
-        className="bg-ctp-surface0 border border-ctp-surface1 rounded-md shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col"
+        className="bg-surface-raised border border-divider rounded-md shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-ctp-surface1">
-          <div className="w-0.5 h-5 bg-ctp-peach rounded-full flex-shrink-0" />
-          <h2 className="text-base font-semibold text-ctp-text">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-divider">
+          <div className="w-0.5 h-5 bg-accent-review rounded-full flex-shrink-0" />
+          <h2 className="text-base font-semibold text-ink-primary">
             Review Overview — {comments.length} comment
             {comments.length !== 1 ? "s" : ""} across{" "}
             {commentsByFile.size} file{commentsByFile.size !== 1 ? "s" : ""}
           </h2>
           <button
             onClick={onClose}
-            className="ml-auto text-ctp-subtext hover:text-ctp-text transition-colors"
+            className="ml-auto text-ink-secondary hover:text-ink-primary transition-colors"
             aria-label="Close"
           >
             <svg
@@ -71,7 +71,7 @@ export function CommentOverview({
 
             return (
               <div key={file}>
-                <h3 className="text-sm font-mono text-ctp-mauve mb-3 pb-2 border-b border-ctp-surface1">
+                <h3 className="text-sm font-mono text-accent-review mb-3 pb-2 border-b border-divider">
                   {file}
                 </h3>
                 <div className="space-y-2">
@@ -81,9 +81,9 @@ export function CommentOverview({
                       onClick={() => onGoToComment(comment)}
                       className="w-full text-left group"
                     >
-                      <div className="px-4 py-3 hover:bg-ctp-surface0 cursor-pointer transition-colors rounded-sm flex items-center gap-3 border border-ctp-surface1">
+                      <div className="px-4 py-3 hover:bg-surface-hover cursor-pointer transition-colors rounded-sm flex items-center gap-3 border border-divider">
                         <div className="flex-shrink-0 flex items-center gap-1.5">
-                          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-sm text-xs font-mono bg-ctp-surface0 text-ctp-subtext border border-ctp-surface1">
+                          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-sm text-xs font-mono bg-surface text-ink-secondary border border-divider">
                             {comment.startLine === comment.endLine
                               ? `L${comment.startLine}`
                               : `L${comment.startLine}-${comment.endLine}`}
@@ -92,10 +92,10 @@ export function CommentOverview({
                             <span className="text-orange-400 text-xs">deleted</span>
                           )}
                         </div>
-                        <p className="text-ctp-text text-sm leading-relaxed flex-1">
+                        <p className="text-ink-primary text-sm leading-relaxed flex-1">
                           {comment.text}
                         </p>
-                        <span className="flex-shrink-0 text-ctp-overlay0 group-hover:text-ctp-subtext text-xs transition-colors">
+                        <span className="flex-shrink-0 text-ink-muted group-hover:text-ink-secondary text-xs transition-colors">
                           Go →
                         </span>
                       </div>
@@ -107,10 +107,10 @@ export function CommentOverview({
           })}
         </div>
 
-        <div className="px-6 py-4 border-t border-ctp-surface1 flex justify-end">
+        <div className="px-6 py-4 border-t border-divider flex justify-end">
           <button
             onClick={onClose}
-            className="text-ctp-subtext hover:text-ctp-text bg-ctp-surface0 rounded-sm px-4 py-2 text-sm border border-ctp-surface1 transition-colors"
+            className="text-ink-secondary hover:text-ink-primary bg-surface rounded-sm px-4 py-2 text-sm border border-divider transition-colors"
           >
             Close
           </button>

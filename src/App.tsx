@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { parseDiff, Diff, Hunk, Decoration, getChangeKey, getCollapsedLinesCountBetween, expandFromRawCode } from "react-diff-view";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -35,7 +35,9 @@ import { generatePrompt } from "./lib/promptGenerator";
 import { buildJsonFeedback } from "./lib/jsonFeedback";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
 import { extractLinesFromHunks } from "./lib/extractLinesFromHunks";
+import { detectLfsPointer, isTextPreviewable } from "./lib/lfsDetection";
 import { HunkExpandControl } from "./components/HunkExpandControl";
+import { LfsFileWrapper } from "./components/LfsFileWrapper";
 import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile, Comment } from "./types";
 
 type InitialDiffMode = {
@@ -123,6 +125,17 @@ function App() {
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
   const [mdPreviewFiles, setMdPreviewFiles] = useState<Set<string>>(new Set());
   const [mdContentCache, setMdContentCache] = useState<Record<string, string>>({});
+  const [lfsContentCache, setLfsContentCache] = useState<Record<string, {
+    oldText: string | null;
+    newText: string | null;
+    oldImage: string | null;
+    newImage: string | null;
+    loading: boolean;
+    error: string | null;
+  }>>({});
+  const lfsFetchingRef = useRef<Set<string>>(new Set());
+  const lfsRequestIdRef = useRef(0);
+  const [lfsVersion, setLfsVersion] = useState(0);
   const [initError, setInitError] = useState<string | null>(null);
 
   const { theme, toggle: toggleTheme } = useTheme();
@@ -293,12 +306,13 @@ function App() {
     applyInitialMode();
   }, [workingDir, isGitRepo, initialDiffMode]);
 
-  const files = (diffText ? parseDiff(diffText) : []).map((f: any) => ({
+  const files = useMemo(() => (diffText ? parseDiff(diffText) : []).map((f: any) => ({
     ...f,
     additions: f.hunks.flatMap((h: any) => h.changes).filter((c: any) => c.isInsert).length,
     deletions: f.hunks.flatMap((h: any) => h.changes).filter((c: any) => c.isDelete).length,
-  }));
-  const renderableFiles = files.filter((file: any) => file.hunks && file.hunks.length > 0);
+    lfsPointer: detectLfsPointer(f.hunks),
+  })), [diffText]);
+  const renderableFiles = useMemo(() => files.filter((file: any) => file.hunks && file.hunks.length > 0), [files]);
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
   const isEmptyState = renderableFiles.length === 0 && !selectedCommit && !selectedBranch;
 
@@ -336,10 +350,10 @@ function App() {
   }, [reviewingLabel]);
 
   const btnBase = "px-3 py-1.5 text-sm rounded-sm transition-colors border";
-  const btnDefault = `${btnBase} bg-transparent border-ctp-surface1 text-ctp-subtext hover:bg-ctp-surface0 hover:text-ctp-text hover:border-ctp-overlay0`;
-  const btnActive = `${btnBase} bg-ctp-surface1 border-ctp-peach text-ctp-text`;
-  const btnIcon = "p-1.5 rounded-sm text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface0 transition-colors";
-  const btnIconActive = "p-1.5 rounded-sm text-ctp-text bg-ctp-surface1 border border-ctp-peach transition-colors";
+  const btnDefault = `${btnBase} bg-transparent border-divider text-ink-secondary hover:bg-surface-hover hover:text-ink-primary hover:border-divider`;
+  const btnActive = `${btnBase} bg-surface-hover border-accent-review text-ink-primary`;
+  const btnIcon = "p-1.5 rounded-sm text-ink-secondary hover:text-ink-primary hover:bg-surface-hover transition-colors";
+  const btnIconActive = "p-1.5 rounded-sm text-ink-primary bg-surface-hover border border-accent-review transition-colors";
 
   useEffect(() => {
     window.localStorage.setItem("right-rail-width", String(rightRailWidth));
@@ -638,6 +652,10 @@ function App() {
       setViewedFiles(new Set());
       setMdPreviewFiles(new Set());
       setMdContentCache({});
+      setLfsContentCache({});
+      lfsFetchingRef.current.clear();
+      lfsRequestIdRef.current++;
+    setLfsVersion((v) => v + 1);
       setPendingSwitchPath(null);
       commitSelector.closeSelector();
     } catch (err) {
@@ -677,6 +695,10 @@ function App() {
     setOldSourceMap({});
     setMdPreviewFiles(new Set());
     setMdContentCache({});
+    setLfsContentCache({});
+    lfsFetchingRef.current.clear();
+    lfsRequestIdRef.current++;
+    setLfsVersion((v) => v + 1);
   }, [diffMode, selectedCommit, selectedBranch]);
 
   const fetchFileSource = async (filePath: string): Promise<string[]> => {
@@ -1382,7 +1404,7 @@ function App() {
       if (changeKey) {
         const commentWidget = wrapForSide(
           <div
-            className="px-4 py-2 bg-ctp-mantle border-t border-b border-ctp-surface1"
+            className="px-4 py-2 bg-surface border-t border-b border-divider"
             onMouseEnter={() => setHoveredCommentIds(commentsAtLine.map(c => c.id))}
             onMouseLeave={() => setHoveredCommentIds(null)}
           >
@@ -1407,7 +1429,7 @@ function App() {
       if (formChangeKey) {
         const existingWidget = widgets[formChangeKey];
         const formWidget = wrapForSide(
-          <div className="px-4 py-2 bg-ctp-mantle border-t border-b border-ctp-surface1">
+          <div className="px-4 py-2 bg-surface border-t border-b border-divider">
             <AddCommentForm
               file={addingCommentAt.file}
               startLine={addingCommentAt.startLine}
@@ -1433,11 +1455,169 @@ function App() {
     return widgets;
   };
 
+  // Normalize file status from different sources ("A"/"D"/"M" from stack diffs vs "added"/"deleted"/"modified")
+  const normalizeLfsStatus = (status: string): string => {
+    if (status === "A" || status === "added") return "added";
+    if (status === "D" || status === "deleted") return "deleted";
+    return "modified";
+  };
+
+  // Fetch resolved LFS content for a file (image or text)
+  const fetchLfsContent = async (filePath: string, oldFilePath: string, isImage: boolean, diffFileType?: string) => {
+    if (!workingDir || lfsFetchingRef.current.has(filePath)) return;
+    lfsFetchingRef.current.add(filePath);
+    const requestId = lfsRequestIdRef.current;
+    setLfsContentCache((prev) => ({
+      ...prev,
+      [filePath]: { oldText: null, newText: null, oldImage: null, newImage: null, loading: true, error: null },
+    }));
+
+    try {
+      const refs = await resolvePreviewRefs({ workingDir, diffMode, selectedCommit, selectedBranch });
+      const selectedChangedFile = changedFiles.find((f) => f.path === filePath);
+      const rawStatus = selectedChangedFile?.status
+        || (diffFileType === "add" ? "added" : diffFileType === "delete" ? "deleted" : "modified");
+      const fileStatus = normalizeLfsStatus(rawStatus);
+
+      if (isImage) {
+        const mimeType = getImageMimeType(filePath);
+        const makeDataUrl = (base64: string) => `data:${mimeType};base64,${base64}`;
+
+        let oldImage: string | null = null;
+        let newImage: string | null = null;
+
+        if (fileStatus === "added") {
+          const base64 = refs.readNewFromWorkingTree
+            ? await invoke<string>("read_file_content_base64", { path: workingDir, filePath })
+            : await invoke<string>("get_lfs_file_at_ref_base64", { path: workingDir, gitRef: refs.newRef, filePath });
+          newImage = makeDataUrl(base64);
+        } else if (fileStatus === "deleted") {
+          const base64 = await invoke<string>("get_lfs_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath });
+          oldImage = makeDataUrl(base64);
+        } else {
+          const [oldBase64, newBase64] = await Promise.all([
+            invoke<string>("get_lfs_file_at_ref_base64", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath }),
+            refs.readNewFromWorkingTree
+              ? invoke<string>("read_file_content_base64", { path: workingDir, filePath })
+              : invoke<string>("get_lfs_file_at_ref_base64", { path: workingDir, gitRef: refs.newRef, filePath }),
+          ]);
+          oldImage = makeDataUrl(oldBase64);
+          newImage = makeDataUrl(newBase64);
+        }
+
+        if (requestId !== lfsRequestIdRef.current) return;
+        lfsFetchingRef.current.delete(filePath);
+        setLfsContentCache((prev) => ({
+          ...prev,
+          [filePath]: { oldText: null, newText: null, oldImage, newImage, loading: false, error: null },
+        }));
+      } else {
+        let oldText: string | null = null;
+        let newText: string | null = null;
+
+        if (fileStatus === "added") {
+          newText = refs.readNewFromWorkingTree
+            ? await invoke<string>("read_file_content", { path: workingDir, filePath })
+            : await invoke<string>("get_lfs_file_at_ref", { path: workingDir, gitRef: refs.newRef, filePath });
+        } else if (fileStatus === "deleted") {
+          oldText = await invoke<string>("get_lfs_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath });
+        } else {
+          [oldText, newText] = await Promise.all([
+            invoke<string>("get_lfs_file_at_ref", { path: workingDir, gitRef: refs.oldRef, filePath: oldFilePath }),
+            refs.readNewFromWorkingTree
+              ? invoke<string>("read_file_content", { path: workingDir, filePath })
+              : invoke<string>("get_lfs_file_at_ref", { path: workingDir, gitRef: refs.newRef, filePath }),
+          ]);
+        }
+
+        if (requestId !== lfsRequestIdRef.current) return;
+        lfsFetchingRef.current.delete(filePath);
+        setLfsContentCache((prev) => ({
+          ...prev,
+          [filePath]: { oldText, newText, oldImage: null, newImage: null, loading: false, error: null },
+        }));
+      }
+    } catch (err) {
+      if (requestId !== lfsRequestIdRef.current) return;
+      lfsFetchingRef.current.delete(filePath);
+      const message = err instanceof Error ? err.message : String(err);
+      setLfsContentCache((prev) => ({
+        ...prev,
+        [filePath]: { oldText: null, newText: null, oldImage: null, newImage: null, loading: false, error: message },
+      }));
+    }
+  };
+
+  // Trigger LFS content fetches via useEffect instead of during render.
+  // Only depend on renderableFiles (not lfsContentCache) so this effect
+  // fires after loadDiff completes with fresh files, not immediately when
+  // the cache is cleared on a mode switch (which would prefetch against
+  // the stale previous file list).
+  useEffect(() => {
+    for (const file of renderableFiles) {
+      if (!file.lfsPointer) continue;
+      const fileName = file.newPath && file.newPath !== "/dev/null" ? file.newPath : file.oldPath;
+      const isImage = isImageFile(fileName);
+      const isText = isTextPreviewable(fileName);
+      if (isImage || isText) {
+        const oldFilePath = file.oldPath && file.oldPath !== "/dev/null" ? file.oldPath : fileName;
+        fetchLfsContent(fileName, oldFilePath, isImage, file.type);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderableFiles, lfsVersion]);
+
   const renderFile = (file: any) => {
-    const fileName = file.newPath || file.oldPath;
+    const fileName = file.newPath && file.newPath !== "/dev/null" ? file.newPath : file.oldPath;
     const isViewed = viewedFiles.has(fileName);
     const fileHunks = expandedHunksMap[fileName] || file.hunks;
     if (!fileHunks || fileHunks.length === 0) return null;
+
+    // LFS file rendering
+    if (file.lfsPointer) {
+      const isImage = isImageFile(fileName);
+      const isText = isTextPreviewable(fileName);
+      const previewMode = isImage ? "image" as const : isText ? "text" as const : "unsupported" as const;
+
+      const cached = lfsContentCache[fileName];
+      const selectedChangedFile = changedFiles.find((f) => f.path === fileName);
+      const fileStatus = normalizeLfsStatus(
+        selectedChangedFile?.status || (
+          file.type === "add" ? "added" : file.type === "delete" ? "deleted" : "modified"
+        )
+      );
+
+      return (
+        <LfsFileWrapper
+          key={file.oldPath + file.newPath}
+          fileName={fileName}
+          fileType={file.type}
+          lfsPointer={file.lfsPointer}
+          hunks={file.hunks}
+          isViewed={isViewed}
+          onToggleViewed={() => toggleViewed(fileName)}
+          previewMode={previewMode}
+          oldImageSrc={cached?.oldImage ?? null}
+          newImageSrc={cached?.newImage ?? null}
+          imageLoading={cached?.loading ?? true}
+          imageError={cached?.error ?? null}
+          oldTextContent={cached?.oldText ?? null}
+          newTextContent={cached?.newText ?? null}
+          textLoading={cached?.loading ?? true}
+          textError={cached?.error ?? null}
+          language={detectLanguage(fileName)}
+          status={fileStatus}
+          comments={comments}
+          onAddComment={addComment}
+          onEditComment={updateComment}
+          onDeleteComment={deleteComment}
+          editingCommentId={editingCommentId}
+          onStartEditComment={startEditing}
+          onStopEditComment={stopEditing}
+        />
+      );
+    }
+
     // For existing files, look up by oldPath; for new files (oldPath is /dev/null),
     // look up by newPath where we stored empty string as oldSource
     const oldSource = (file.oldPath && file.oldPath !== "/dev/null")
@@ -1471,8 +1651,8 @@ function App() {
     return (
       <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={file.newPath || file.oldPath}>
         <div
-          className={`sticky top-0 z-10 px-4 py-2 font-medium border-b border-ctp-surface1 flex justify-between items-center transition-colors text-sm ${
-            isViewed ? "bg-ctp-surface0/80 text-ctp-subtext" : "bg-ctp-surface0 text-ctp-text"
+          className={`sticky top-0 z-10 px-4 py-2 font-medium border-b border-divider flex justify-between items-center transition-colors text-sm ${
+            isViewed ? "bg-surface-hover/80 text-ink-secondary" : "bg-surface text-ink-primary"
           }`}
           onClick={() => {
             if (isViewed) {
@@ -1507,26 +1687,26 @@ function App() {
                 }}
                 className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${
                   mdPreviewFiles.has(fileName)
-                    ? "bg-ctp-mauve text-ctp-base"
-                    : "text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface1"
+                    ? "bg-accent-review text-accent-review-text"
+                    : "text-ink-secondary hover:text-ink-primary hover:bg-surface-hover"
                 }`}
               >
                 {mdPreviewFiles.has(fileName) ? "Source" : "Preview"}
               </button>
             )}
             <label
-              className="flex items-center gap-2 text-xs uppercase tracking-wide text-ctp-subtext cursor-pointer"
+              className="flex items-center gap-2 text-xs uppercase tracking-wide text-ink-secondary cursor-pointer"
               onClick={(event) => event.stopPropagation()}
             >
               <input
                 type="checkbox"
                 checked={isViewed}
                 onChange={() => toggleViewed(fileName)}
-                className="h-4 w-4 rounded border-ctp-surface1 bg-ctp-mantle text-ctp-blue focus:ring-ctp-blue focus:ring-offset-0"
+                className="h-4 w-4 rounded border-divider bg-surface text-ctp-blue focus:ring-accent-review focus:ring-offset-0"
               />
               Viewed
             </label>
-            <span className="text-xs text-ctp-subtext">
+            <span className="text-xs text-ink-secondary">
               +{file.additions ?? 0} / -{file.deletions ?? 0}
             </span>
           </div>
@@ -1535,7 +1715,7 @@ function App() {
           <MarkdownPreview
             content={mdContentCache[fileName]}
             fileName={fileName}
-            comments={comments.filter((c) => c.file === fileName)}
+            comments={comments.filter((c) => c.file === fileName && c.side === "new")}
             onAddComment={addComment}
             onEditComment={updateComment}
             onDeleteComment={deleteComment}
@@ -1561,7 +1741,7 @@ function App() {
               <span className="relative inline-flex items-center w-full">
                 {showButton && (
                   <span
-                    className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-ctp-mauve hover:opacity-90 cursor-pointer text-ctp-base opacity-80 hover:opacity-100 transition-all"
+                    className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-accent-review hover:opacity-90 cursor-pointer text-accent-review-text opacity-80 hover:opacity-100 transition-all"
                     title="Add comment"
                     onMouseDown={(e) => {
                       e.stopPropagation();
@@ -1752,14 +1932,14 @@ function App() {
 
   if (initError) {
     return (
-      <div className="min-h-screen bg-ctp-base flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="text-ctp-red text-4xl mb-4 select-none">!</div>
-          <p className="text-ctp-text text-sm mb-2 font-medium">Initialization Error</p>
-          <p className="text-ctp-subtext text-sm mb-4">{initError}</p>
+          <p className="text-ink-primary text-sm mb-2 font-medium">Initialization Error</p>
+          <p className="text-ink-secondary text-sm mb-4">{initError}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 text-sm rounded-sm bg-ctp-surface1 text-ctp-text hover:bg-ctp-surface0 transition-colors border border-ctp-overlay0"
+            className="px-4 py-2 text-sm rounded-sm bg-surface text-ink-primary hover:bg-surface-hover transition-colors border border-divider"
           >
             Retry
           </button>
@@ -1771,8 +1951,8 @@ function App() {
   if (!workingDir || !isGitRepo) {
     if (repoManager.loading) {
       return (
-        <div className="min-h-screen bg-ctp-base flex items-center justify-center">
-          <div className="text-ctp-subtext text-lg">Loading...</div>
+        <div className="min-h-screen bg-canvas flex items-center justify-center">
+          <div className="text-ink-secondary text-lg">Loading...</div>
         </div>
       );
     }
@@ -1787,16 +1967,15 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-ctp-base text-ctp-text">
+    <div className="min-h-screen bg-canvas text-ink-primary">
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 py-2.5 bg-ctp-mantle border-b border-ctp-surface1 flex-shrink-0"
-        style={theme === 'dark' ? { boxShadow: '0 4px 16px -4px rgba(250,179,135,0.15)' } : undefined}
+        className="flex items-center justify-between px-4 py-2.5 bg-surface border-b border-divider flex-shrink-0"
       >
         <div className="flex items-center gap-3">
           <div className="flex flex-col leading-none">
-            <span className="text-sm font-semibold text-ctp-text tracking-wide">
-              <span className="text-ctp-peach mr-1">●</span>ai-review
+            <span className="text-sm font-semibold text-ink-primary tracking-wide">
+              <span className="text-accent-review mr-1">●</span>ai-review
             </span>
           </div>
           <RepoSwitcher
@@ -1808,15 +1987,15 @@ function App() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-ctp-overlay0 hidden md:block">
-            Press <kbd className="px-2 py-1 bg-ctp-surface1 rounded text-xs">Ctrl/⌘</kbd>{" "}
-            <kbd className="px-2 py-1 bg-ctp-surface1 rounded text-xs">O</kbd> to open file
+          <span className="text-xs text-ink-muted hidden md:block">
+            Press <kbd className="px-2 py-1 bg-surface-hover rounded text-xs">Ctrl/⌘</kbd>{" "}
+            <kbd className="px-2 py-1 bg-surface-hover rounded text-xs">O</kbd> to open file
           </span>
 
           {/* Theme toggle button */}
           <button
             onClick={toggleTheme}
-            className="p-1.5 rounded text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface0 transition-colors"
+            className="p-1.5 rounded text-ink-secondary hover:text-ink-primary hover:bg-surface-hover transition-colors"
             title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-label="Toggle theme"
           >
@@ -1834,14 +2013,14 @@ function App() {
       </div>
 
       {!isEmptyState && (
-      <div className="flex items-center gap-1 px-3 py-2 bg-ctp-mantle border-b border-ctp-surface1 flex-shrink-0 flex-wrap">
+      <div className="flex items-center gap-1 px-3 py-2 bg-surface border-b border-divider flex-shrink-0 flex-wrap">
         {/* Group 1: View mode */}
-        <ViewTypeControl value={viewType} onChange={setViewType} />
+        <ViewTypeControl value={viewType} onChange={setViewType} /> origin/main
 
         {isGitRepo && (
           <>
             {/* Divider between group 1 and group 2 */}
-            <div className="w-px h-5 bg-ctp-surface1 mx-1" />
+            <div className="w-px h-5 bg-divider mx-1" />
 
             {/* Group 2: Diff target */}
             <div className="flex gap-1 items-center">
@@ -1887,7 +2066,7 @@ function App() {
         )}
 
         {/* Divider between group 2 and group 3 */}
-        <div className="w-px h-5 bg-ctp-surface1 mx-1" />
+        <div className="w-px h-5 bg-divider mx-1" />
 
         {/* Group 3: Tools */}
         <div className="ml-auto flex items-center gap-1">
@@ -1933,7 +2112,7 @@ function App() {
                 onClick={handleGeneratePrompt}
                 className={
                   jsonOutput
-                    ? "px-4 py-2 bg-ctp-green text-ctp-base rounded-sm text-sm hover:opacity-90 transition-opacity font-semibold flex items-center gap-1"
+                    ? "px-4 py-2 bg-ctp-green text-on-green rounded-sm text-sm hover:opacity-90 transition-opacity font-semibold flex items-center gap-1"
                     : btnActive + " flex items-center gap-1"
                 }
               >
@@ -1993,7 +2172,7 @@ function App() {
               )}
             </button>
             {installMessage && (
-              <div className="absolute top-full mt-2 right-0 bg-ctp-surface0 border border-ctp-surface1 rounded-sm px-4 py-2 text-sm text-ctp-text whitespace-pre-wrap max-w-md shadow-lg z-50">
+              <div className="absolute top-full mt-2 right-0 bg-surface border border-divider rounded-sm px-4 py-2 text-sm text-ink-primary whitespace-pre-wrap max-w-md shadow-lg z-50">
                 {installMessage}
               </div>
             )}
@@ -2003,29 +2182,30 @@ function App() {
       )}
 
       {selectedCommit && (
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-ctp-surface0 border-b border-ctp-surface1 text-xs text-ctp-subtext flex-shrink-0">
-          <span className="font-mono bg-ctp-surface1 text-ctp-text px-2 py-0.5 rounded-sm">
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-surface border-b border-divider text-xs text-ink-secondary flex-shrink-0">
+          <span className="font-mono bg-surface-hover text-ink-primary px-2 py-0.5 rounded-sm">
             {selectedCommit.short_hash}
           </span>
-          <span className="font-medium text-ctp-text">{selectedCommit.message}</span>
+          <span className="font-medium text-ink-primary">{selectedCommit.message}</span>
         </div>
       )}
 
       {selectedBranch && (
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-ctp-surface0 border-b border-ctp-surface1 text-xs text-ctp-subtext flex-shrink-0">
-          <span className="font-mono bg-ctp-surface1 text-ctp-text px-2 py-0.5 rounded-sm">
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-surface border-b border-divider text-xs text-ink-secondary flex-shrink-0">
+          <span className="font-mono bg-surface-hover text-ink-primary px-2 py-0.5 rounded-sm">
             {selectedBranch.short_hash}
           </span>
-          <span className="font-medium text-ctp-text">Branch: {selectedBranch.name}</span>
+          <span className="font-medium text-ink-primary">Branch: {selectedBranch.name}</span>
         </div>
       )}
 
       <ScrollProgressBar containerRef={mainContentRef} />
       <div className="flex h-[calc(100vh-140px)]">
+ origin/main
         <div ref={mainContentRef} className="flex-1 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-ctp-subtext text-lg">Loading...</div>
+              <div className="text-ink-secondary text-lg">Loading...</div>
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-full">
@@ -2033,10 +2213,10 @@ function App() {
             </div>
           ) : viewMode === "file" && currentFile ? (
             <div className="p-6">
-              <div className="bg-ctp-mantle px-4 py-2 mb-4 rounded">
+              <div className="bg-surface px-4 py-2 mb-4 rounded">
                 <button
                   onClick={() => setViewMode("diff")}
-                  className="text-ctp-blue hover:opacity-80 text-sm"
+                  className="text-accent-review hover:opacity-80 text-sm"
                 >
                   ← Back to diff
                 </button>
@@ -2088,7 +2268,7 @@ function App() {
             </div>
           ) : isEmptyState ? (
             isGitRepo ? (
-              <div className="flex flex-col h-full bg-ctp-surface0" data-inline-selector>
+              <div className="flex flex-col h-full bg-surface" data-inline-selector>
                 <CommitSelectorContent
                   commits={commitSelector.commits}
                   branches={commitSelector.branches}
@@ -2114,10 +2294,10 @@ function App() {
                 />
               </div>
             ) : (
-              <div className="flex-1 flex items-center justify-center aperture-grid bg-ctp-base h-full">
+              <div className="flex-1 flex items-center justify-center aperture-grid bg-canvas h-full">
                 <div className="text-center">
-                  <div className="text-ctp-surface1 text-4xl mb-4 select-none">⊕</div>
-                  <p className="text-ctp-subtext text-sm mb-4">No changes to review</p>
+                  <div className="text-ink-muted text-4xl mb-4 select-none">⊕</div>
+                  <p className="text-ink-secondary text-sm mb-4">No changes to review</p>
                 </div>
               </div>
             )

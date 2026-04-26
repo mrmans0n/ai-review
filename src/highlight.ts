@@ -31,6 +31,8 @@ hljs.registerLanguage("json", json);
 hljs.registerLanguage("markdown", markdown);
 hljs.registerLanguage("yaml", yaml);
 
+export { hljs };
+
 interface HighlightOptions {
   language?: string;
   enhance?: boolean;

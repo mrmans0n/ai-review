@@ -14,18 +14,18 @@ export function RepoLandingPage({
   onRemoveRepo,
 }: RepoLandingPageProps) {
   return (
-    <div className="min-h-screen bg-ctp-base aperture-grid flex items-center justify-center">
+    <div className="min-h-screen bg-canvas aperture-grid flex items-center justify-center">
       <div className="w-full max-w-lg px-6">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-ctp-text mb-2">AI Review</h1>
-          <p className="text-ctp-subtext">Select a repository to get started</p>
+          <h1 className="text-3xl font-bold text-ink-primary mb-2">AI Review</h1>
+          <p className="text-ink-secondary">Select a repository to get started</p>
         </div>
 
         {repos.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-0.5 h-3.5 bg-ctp-peach rounded-full flex-shrink-0" />
-              <span className="text-[10px] font-semibold tracking-widest text-ctp-overlay0 uppercase">
+              <div className="w-0.5 h-3.5 bg-accent-review rounded-full flex-shrink-0" />
+              <span className="text-[10px] font-semibold tracking-widest text-ink-muted uppercase">
                 Recent Repositories
               </span>
             </div>
@@ -33,14 +33,14 @@ export function RepoLandingPage({
               {repos.map((repo) => (
                 <div
                   key={repo.path}
-                  className="flex items-center justify-between px-4 py-3 bg-ctp-mantle border border-ctp-surface1 rounded-md hover:border-ctp-mauve cursor-pointer transition-colors group"
+                  className="flex items-center justify-between px-4 py-3 bg-surface border border-divider rounded-md hover:border-accent-review cursor-pointer transition-colors group"
                 >
                   <button
                     onClick={() => onSelectRepo(repo.path)}
                     className="flex-1 text-left min-w-0"
                   >
-                    <div className="text-ctp-text font-medium">{repo.name}</div>
-                    <div className="text-ctp-overlay0 text-sm truncate">
+                    <div className="text-ink-primary font-medium">{repo.name}</div>
+                    <div className="text-ink-muted text-sm truncate">
                       {repo.path}
                     </div>
                   </button>
@@ -49,7 +49,7 @@ export function RepoLandingPage({
                       e.stopPropagation();
                       onRemoveRepo(repo.path);
                     }}
-                    className="text-ctp-overlay0 hover:text-ctp-red transition-colors opacity-0 group-hover:opacity-100 p-1"
+                    className="text-ink-muted hover:text-ctp-red transition-colors opacity-0 group-hover:opacity-100 p-1"
                     title="Remove from list"
                   >
                     <svg
@@ -75,7 +75,7 @@ export function RepoLandingPage({
 
         <button
           onClick={onAddRepo}
-          className="w-full px-4 py-3 border border-dashed border-ctp-surface1 rounded-md text-ctp-subtext hover:border-ctp-mauve hover:text-ctp-text transition-colors text-sm"
+          className="w-full px-4 py-3 border border-dashed border-divider rounded-md text-ink-secondary hover:border-accent-review hover:text-ink-primary transition-colors text-sm"
         >
           <span className="flex items-center justify-center gap-2">
             <svg

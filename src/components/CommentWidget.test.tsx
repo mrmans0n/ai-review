@@ -75,6 +75,32 @@ describe("CommentWidget text rendering", () => {
     expect(code!.innerHTML).toContain("hljs-auto");
   });
 
+  it("renders 'Whole file' label for (0, 0) sentinel comments", () => {
+    vi.mocked(parseCommentText).mockReturnValue([
+      { type: "text", content: "overall feedback" },
+    ]);
+    const wholeFileComment: Comment = {
+      id: "c2",
+      file: "a.ts",
+      startLine: 0,
+      endLine: 0,
+      side: "new",
+      text: "overall feedback",
+      createdAt: "2024-01-01T00:00:00Z",
+    };
+    render(
+      <CommentWidget
+        comments={[wholeFileComment]}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        editingId={null}
+        onStartEdit={vi.fn()}
+        onStopEdit={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Whole file")).toBeTruthy();
+  });
+
   it("renders mixed text and code segments", () => {
     vi.mocked(parseCommentText).mockReturnValue([
       { type: "text", content: "Consider:" },

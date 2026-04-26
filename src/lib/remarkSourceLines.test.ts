@@ -21,10 +21,11 @@ function processMarkdown(md: string) {
 }
 
 describe("remarkSourceLines", () => {
-  it("adds source lines to a simple heading", () => {
+  it("adds source lines and type to a simple heading", () => {
     const { html, sourceMap } = processMarkdown("# Hello");
     expect(html).toContain('data-source-start="1"');
     expect(html).toContain('data-source-end="1"');
+    expect(html).toContain('data-source-type="heading"');
     expect(sourceMap).toContainEqual({
       startLine: 1,
       endLine: 1,
@@ -81,7 +82,32 @@ describe("remarkSourceLines", () => {
     expect(types).toContain("blockquote");
   });
 
-  // GFM tests
+  it("propagates data-source-type for all block types", () => {
+    const md = [
+      "# Heading",
+      "",
+      "A paragraph.",
+      "",
+      "- item one",
+      "",
+      "> a quote",
+      "",
+      "```js",
+      "code",
+      "```",
+      "",
+      "---",
+    ].join("\n");
+    const { html } = processMarkdown(md);
+    expect(html).toContain('data-source-type="heading"');
+    expect(html).toContain('data-source-type="paragraph"');
+    expect(html).toContain('data-source-type="listItem"');
+    expect(html).toContain('data-source-type="list"');
+    expect(html).toContain('data-source-type="blockquote"');
+    expect(html).toContain('data-source-type="code"');
+    expect(html).toContain('data-source-type="thematicBreak"');
+  });
+
   describe("GFM extensions", () => {
     function processGfm(md: string) {
       const processor = unified()
@@ -115,12 +141,23 @@ describe("remarkSourceLines", () => {
       expect(listItems[1].startLine).toBe(2);
     });
 
-    it("adds source lines to GFM strikethrough", () => {
+    it("injects data-source-type for GFM tables", () => {
+      const md = "| A | B |\n| --- | --- |\n| 1 | 2 |";
+      const { html } = processGfm(md);
+      expect(html).toContain('data-source-type="table"');
+      expect(html).toContain('data-source-type="tableRow"');
+      // tableCell is not in BLOCK_TYPES — only block-level nodes are annotated
+      expect(html).not.toContain('data-source-type="tableCell"');
+    });
+
+    it("does not annotate inline GFM strikethrough (block-level only)", () => {
       const md = "~~deleted text~~";
       const { html, sourceMap } = processGfm(md);
       expect(html).toContain("<del");
       const del = sourceMap.find((b) => b.nodeType === "delete");
-      expect(del?.startLine).toBe(1);
+      expect(del).toBeUndefined();
+      const para = sourceMap.find((b) => b.nodeType === "paragraph");
+      expect(para?.startLine).toBe(1);
     });
   });
 });

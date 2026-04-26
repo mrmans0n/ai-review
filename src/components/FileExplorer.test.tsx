@@ -66,14 +66,14 @@ describe("FileExplorer", () => {
     expect(onSelect).toHaveBeenCalledWith("src/App.tsx");
   });
 
-  it("highlights selected item with peach left border", () => {
+  it("highlights selected item with review accent left border", () => {
     const files = ["src/A.tsx", "src/B.tsx"];
     const { container } = render(
       <FileExplorer {...makeProps({ files, selectedIndex: 1 })} />
     );
     const items = container.querySelectorAll("[class*='cursor-pointer']");
-    expect(items[1].className).toContain("border-ctp-peach");
-    expect(items[0].className).not.toContain("border-ctp-peach");
+    expect(items[1].className).toContain("border-accent-review");
+    expect(items[0].className).not.toContain("border-accent-review");
   });
 
   it("list items have no horizontal row dividers", () => {

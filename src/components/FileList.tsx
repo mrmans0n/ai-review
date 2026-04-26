@@ -48,7 +48,7 @@ function getStatusColor(status: string): string {
     case "renamed":
       return "text-ctp-yellow";
     default:
-      return "text-ctp-overlay0";
+      return "text-ink-muted";
   }
 }
 
@@ -86,7 +86,7 @@ export function FileList({
 
   if (files.length === 0) {
     return (
-      <div className="p-4 text-center text-ctp-overlay0 text-sm">
+      <div className="p-4 text-center text-ink-muted text-sm">
         No changed files
       </div>
     );
@@ -97,7 +97,7 @@ export function FileList({
       {groups.map((group) => (
         <div key={group.directory}>
           {group.directory && (
-            <div className="px-3 pt-2.5 pb-1 text-[11px] font-mono text-ctp-overlay0">
+            <div className="px-3 pt-2.5 pb-1 text-[11px] font-mono text-ink-muted">
               <MiddleEllipsis text={group.directory} />
             </div>
           )}
@@ -108,8 +108,8 @@ export function FileList({
                 group.directory ? "pl-6 pr-3" : "px-4"
               } py-1.5 ${
                 activeFile === file.path
-                  ? "bg-ctp-surface0 border-ctp-peach"
-                  : "border-transparent hover:bg-ctp-surface0"
+                  ? "bg-surface border-accent-review"
+                  : "border-transparent hover:bg-surface-hover"
               }`}
             >
               <button
@@ -121,7 +121,7 @@ export function FileList({
                 <span className={`font-bold flex-shrink-0 ${getStatusColor(file.status)}`}>
                   {getStatusIcon(file.status)}
                 </span>
-                <span className="text-sm font-mono text-ctp-subtext min-w-0 flex-1">
+                <span className="text-sm font-mono text-ink-secondary min-w-0 flex-1">
                   <MiddleEllipsis text={getFileName(file.path)} />
                 </span>
               </button>

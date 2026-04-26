@@ -19,18 +19,18 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-ctp-surface0 border border-ctp-surface1 rounded-md shadow-2xl max-w-md w-full mx-4">
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-ctp-surface1">
-          <div className={`w-0.5 h-5 rounded-full flex-shrink-0 ${destructive ? "bg-ctp-red" : "bg-ctp-peach"}`} />
-          <h2 className="text-base font-semibold text-ctp-text">{title}</h2>
+      <div className="bg-surface-raised border border-divider rounded-md shadow-2xl max-w-md w-full mx-4">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-divider">
+          <div className={`w-0.5 h-5 rounded-full flex-shrink-0 ${destructive ? "bg-ctp-red" : "bg-accent-review"}`} />
+          <h2 className="text-base font-semibold text-ink-primary">{title}</h2>
         </div>
         <div className="px-6 py-4">
-          <p className="text-ctp-subtext">{message}</p>
+          <p className="text-ink-secondary">{message}</p>
         </div>
-        <div className="px-6 py-4 border-t border-ctp-surface1 flex justify-end gap-2">
+        <div className="px-6 py-4 border-t border-divider flex justify-end gap-2">
           <button
             onClick={onCancel}
-            className="text-ctp-subtext hover:text-ctp-text bg-ctp-surface0 rounded-sm px-4 py-2 text-sm border border-ctp-surface1 transition-colors"
+            className="text-ink-secondary hover:text-ink-primary bg-surface rounded-sm px-4 py-2 text-sm border border-divider transition-colors"
           >
             {cancelLabel}
           </button>
@@ -38,8 +38,8 @@ export function ConfirmModal({
             onClick={onConfirm}
             className={`px-4 py-2 rounded-sm text-sm font-medium hover:opacity-90 transition-opacity ${
               destructive
-                ? "bg-ctp-red text-ctp-base"
-                : "bg-ctp-mauve text-ctp-base"
+                ? "bg-ctp-red text-white"
+                : "bg-accent-review text-accent-review-text"
             }`}
           >
             {confirmLabel}

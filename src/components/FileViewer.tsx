@@ -181,10 +181,10 @@ export function FileViewer({
   };
 
   return (
-    <div className="bg-ctp-mantle rounded border border-ctp-surface1" data-file-viewer={fileName} data-search-query={searchQuery} data-highlighted-word={highlightedWord || ""}>
+    <div className="bg-surface rounded border border-divider" data-file-viewer={fileName} data-search-query={searchQuery} data-highlighted-word={highlightedWord || ""}>
       <div
-        className={`sticky top-0 z-10 rounded-t px-4 py-2 border-b border-ctp-surface1 flex items-center justify-between transition-colors ${
-          isViewed ? "bg-ctp-base/80 text-ctp-subtext cursor-pointer" : "bg-ctp-base"
+        className={`sticky top-0 z-10 rounded-t px-4 py-2 border-b border-divider flex items-center justify-between transition-colors ${
+          isViewed ? "bg-canvas/80 text-ink-secondary cursor-pointer" : "bg-canvas"
         }`}
         onClick={() => {
           if (isViewed) {
@@ -194,20 +194,20 @@ export function FileViewer({
       >
         <div className="flex items-center gap-3">
           <label
-            className="flex items-center gap-2 text-xs uppercase tracking-wide text-ctp-subtext"
+            className="flex items-center gap-2 text-xs uppercase tracking-wide text-ink-secondary"
             onClick={(event) => event.stopPropagation()}
           >
             <input
               type="checkbox"
               checked={isViewed}
               onChange={onToggleViewed}
-              className="h-4 w-4 rounded border-ctp-surface1 bg-ctp-mantle text-ctp-blue focus:ring-ctp-blue focus:ring-offset-0"
+              className="h-4 w-4 rounded border-divider bg-surface text-ctp-blue focus:ring-ctp-blue focus:ring-offset-0"
             />
             Viewed
           </label>
-          <span className="text-sm text-ctp-text font-medium">{fileName}</span>
+          <span className="text-sm text-ink-primary font-medium">{fileName}</span>
         </div>
-        <span className="text-xs text-ctp-subtext">{lines.length} lines</span>
+        <span className="text-xs text-ink-secondary">{lines.length} lines</span>
       </div>
 
       {!isViewed && lines.map((line, index) => {
@@ -223,13 +223,13 @@ export function FileViewer({
 
         return (
           <div key={lineNumber} data-line-number={lineNumber} data-line-side="new">
-            <div className={`flex transition-colors ${highlighted ? "bg-ctp-blue/10" : "hover:bg-ctp-base"}`}>
+            <div className={`flex transition-colors ${highlighted ? "bg-ctp-blue/10" : "hover:bg-canvas"}`}>
               {/* Line number gutter */}
               <div
-                className={`relative flex-shrink-0 w-16 px-3 py-1 text-right font-mono text-[13px] leading-normal text-ctp-subtext border-r border-ctp-surface1 select-none cursor-pointer transition-colors ${
+                className={`relative flex-shrink-0 w-16 px-3 py-1 text-right font-mono text-[13px] leading-normal text-ink-secondary border-r border-divider select-none cursor-pointer transition-colors ${
                   highlighted
                     ? "bg-ctp-blue/20 text-ctp-blue"
-                    : "bg-ctp-mantle hover:bg-ctp-surface0 hover:text-ctp-text"
+                    : "bg-surface hover:bg-surface-hover hover:text-ink-primary"
                 }`}
                 onMouseDown={(e) => {
                   e.preventDefault();
@@ -255,7 +255,7 @@ export function FileViewer({
               {/* Code content */}
               <div className="diff-code-cell flex-1 px-4 py-1 overflow-x-auto">
                 <code
-                  className="diff-code font-mono text-[13px] leading-normal text-ctp-text whitespace-pre"
+                  className="diff-code font-mono text-[13px] leading-normal text-ink-primary whitespace-pre"
                   dangerouslySetInnerHTML={{
                     __html: highlightedLines[index] || line,
                   }}

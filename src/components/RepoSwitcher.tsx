@@ -49,7 +49,7 @@ export function RepoSwitcher({
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-ctp-surface0 border border-ctp-surface1 rounded text-sm text-ctp-text px-3 py-1.5 hover:border-ctp-mauve transition-colors"
+        className="flex items-center gap-2 bg-surface border border-divider rounded text-sm text-ink-primary px-3 py-1.5 hover:border-accent-review transition-colors"
       >
         <span className="font-medium">{currentName}</span>
         <svg
@@ -69,15 +69,15 @@ export function RepoSwitcher({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-80 bg-ctp-surface0 border border-ctp-surface1 rounded-md shadow-2xl z-50 overflow-hidden">
+        <div className="absolute top-full left-0 mt-2 w-80 bg-surface border border-divider rounded-md shadow-2xl z-50 overflow-hidden">
           <div className="max-h-64 overflow-auto">
             {repos.map((repo) => (
               <div
                 key={repo.path}
                 className={`flex items-center gap-2 transition-colors group ${
                   repo.path === currentPath
-                    ? "px-3 py-2 text-sm text-ctp-text bg-ctp-surface0 border-l-2 border-ctp-peach"
-                    : "px-3 py-2 text-sm text-ctp-subtext hover:bg-ctp-surface0 hover:text-ctp-text cursor-pointer"
+                    ? "px-3 py-2 text-sm text-ink-primary bg-surface border-l-2 border-accent-review"
+                    : "px-3 py-2 text-sm text-ink-secondary hover:bg-surface-hover hover:text-ink-primary cursor-pointer"
                 }`}
               >
                 <button
@@ -92,10 +92,10 @@ export function RepoSwitcher({
                   <div className="font-medium flex items-center gap-2">
                     {repo.name}
                     {repo.path === currentPath && (
-                      <span className="text-ctp-peach text-xs">current</span>
+                      <span className="text-accent-review text-xs">current</span>
                     )}
                   </div>
-                  <div className="text-xs text-ctp-overlay0 truncate">
+                  <div className="text-xs text-ink-muted truncate">
                     {repo.path}
                   </div>
                 </button>
@@ -104,7 +104,7 @@ export function RepoSwitcher({
                     e.stopPropagation();
                     onRemoveRepo(repo.path);
                   }}
-                  className="text-ctp-overlay0 hover:text-ctp-red transition-colors opacity-0 group-hover:opacity-100 p-1 shrink-0"
+                  className="text-ink-muted hover:text-ctp-red transition-colors opacity-0 group-hover:opacity-100 p-1 shrink-0"
                   title="Remove from list"
                 >
                   <svg
@@ -125,13 +125,13 @@ export function RepoSwitcher({
               </div>
             ))}
           </div>
-          <div className="border-t border-ctp-surface1">
+          <div className="border-t border-divider">
             <button
               onClick={() => {
                 onAddRepo();
                 setIsOpen(false);
               }}
-              className="w-full px-3 py-2 text-left text-sm text-ctp-subtext hover:bg-ctp-surface0 hover:text-ctp-text transition-colors flex items-center gap-2"
+              className="w-full px-3 py-2 text-left text-sm text-ink-secondary hover:bg-surface-hover hover:text-ink-primary transition-colors flex items-center gap-2"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
