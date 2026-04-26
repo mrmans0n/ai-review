@@ -2015,7 +2015,7 @@ function App() {
       {!isEmptyState && (
       <div className="flex items-center gap-1 px-3 py-2 bg-surface border-b border-divider flex-shrink-0 flex-wrap">
         {/* Group 1: View mode */}
-        <ViewTypeControl value={viewType} onChange={setViewType} /> origin/main
+        <ViewTypeControl value={viewType} onChange={(v) => { setViewType(v); if (v === "unified") setMdPreviewFiles(new Set()); }} />
 
         {isGitRepo && (
           <>
@@ -2201,7 +2201,6 @@ function App() {
 
       <ScrollProgressBar containerRef={mainContentRef} />
       <div className="flex h-[calc(100vh-140px)]">
- origin/main
         <div ref={mainContentRef} className="flex-1 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full">
