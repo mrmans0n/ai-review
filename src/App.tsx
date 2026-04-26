@@ -38,9 +38,10 @@ import { buildJsonFeedback } from "./lib/jsonFeedback";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
 import { extractLinesFromHunks } from "./lib/extractLinesFromHunks";
 import { detectLfsPointer, isTextPreviewable } from "./lib/lfsDetection";
+import { normalizeFileStatus, normalizePath } from "./lib/fileTree";
 import { HunkExpandControl } from "./components/HunkExpandControl";
 import { LfsFileWrapper } from "./components/LfsFileWrapper";
-import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile, Comment } from "./types";
+import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile, ChangedFileRailItem, Comment } from "./types";
 
 type InitialDiffMode = {
   type: "commit" | "range" | "branch";
@@ -322,6 +323,37 @@ function App() {
     [renderableFiles]
   );
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(getDiffFilePath(file))).length;
+  const railFiles = useMemo<ChangedFileRailItem[]>(() => {
+    const statsByPath = new Map<string, { additions: number; deletions: number }>();
+    for (const file of files) {
+      const path = normalizePath(getDiffFilePath(file));
+      if (!path) continue;
+      statsByPath.set(path, {
+        additions: file.additions ?? 0,
+        deletions: file.deletions ?? 0,
+      });
+    }
+
+    const commentsByPath = new Map<string, number>();
+    for (const comment of comments) {
+      const path = normalizePath(comment.file);
+      commentsByPath.set(path, (commentsByPath.get(path) ?? 0) + 1);
+    }
+
+    return changedFiles.map((file) => {
+      const path = normalizePath(file.path);
+      const stats = statsByPath.get(path);
+      return {
+        path,
+        displayPath: path,
+        status: normalizeFileStatus(file.status),
+        additions: stats?.additions ?? 0,
+        deletions: stats?.deletions ?? 0,
+        viewed: viewedFiles.has(file.path) || viewedFiles.has(path),
+        commentCount: commentsByPath.get(path) ?? 0,
+      };
+    });
+  }, [changedFiles, comments, files, viewedFiles]);
   const isEmptyState = renderableFiles.length === 0 && !selectedCommit && !selectedBranch;
 
   const visibleDiffFile = useVisibleDiffFile({
@@ -905,8 +937,8 @@ function App() {
     setOldImageSrc(null);
     setNewImageSrc(null);
 
-    const selectedChangedFile = changedFiles.find((file) => file.path === filePath);
-    const fileStatus = selectedChangedFile?.status || "modified";
+    const selectedChangedFile = changedFiles.find((file) => normalizePath(file.path) === normalizePath(filePath));
+    const fileStatus = normalizeFileStatus(selectedChangedFile?.status || "modified");
 
     if (isImageFile(filePath)) {
       const requestId = ++imageRequestIdRef.current;
@@ -2334,7 +2366,7 @@ function App() {
         </div>
         {(changedFiles.length > 0 || comments.length > 0) && (
           <RightRail
-            files={changedFiles}
+            files={railFiles}
             comments={comments}
             width={rightRailWidth}
             visible={isRightRailVisible}

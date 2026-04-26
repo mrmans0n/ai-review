@@ -1,9 +1,9 @@
-import type { Comment, ChangedFile } from "../types";
+import type { Comment, ChangedFileRailItem } from "../types";
 import { FileList } from "./FileList";
 import { RailComments } from "./RailComments";
 
 interface RightRailProps {
-  files: ChangedFile[];
+  files: ChangedFileRailItem[];
   comments: Comment[];
   width: number;
   visible: boolean;
@@ -68,7 +68,7 @@ export function RightRail({
         <div className="min-h-0 flex-1 overflow-auto">
           <FileList
             files={files}
-            activeFile={activeFile}
+            selectedFile={activeFile}
             onSelectFile={onScrollToFile}
             onPreviewFile={onPreviewFile}
           />
