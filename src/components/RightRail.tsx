@@ -1,9 +1,9 @@
-import type { Comment, ChangedFile } from "../types";
+import type { Comment, ChangedFileRailItem } from "../types";
 import { FileList } from "./FileList";
 import { RailComments } from "./RailComments";
 
 interface RightRailProps {
-  files: ChangedFile[];
+  files: ChangedFileRailItem[];
   comments: Comment[];
   width: number;
   visible: boolean;
@@ -15,12 +15,12 @@ interface RightRailProps {
   onScrollToFile: (path: string) => void;
   onPreviewFile: (path: string) => void;
   onGoToComment: (comment: Comment) => void;
-  onOpenCommentOverview: () => void;
   onEditComment: (id: string, text: string) => void;
   onDeleteComment: (id: string) => void;
   editingCommentId: string | null;
   onStartEditComment: (id: string) => void;
   onStopEditComment: () => void;
+  onOpenCommentOverview: () => void;
 }
 
 export function RightRail({
@@ -36,12 +36,12 @@ export function RightRail({
   onScrollToFile,
   onPreviewFile,
   onGoToComment,
-  onOpenCommentOverview,
   onEditComment,
   onDeleteComment,
   editingCommentId,
   onStartEditComment,
   onStopEditComment,
+  onOpenCommentOverview,
 }: RightRailProps) {
   if (!visible) return null;
 
@@ -78,7 +78,7 @@ export function RightRail({
         <div className="min-h-0 flex-1 overflow-auto">
           <FileList
             files={files}
-            activeFile={activeFile}
+            selectedFile={activeFile}
             onSelectFile={onScrollToFile}
             onPreviewFile={onPreviewFile}
           />
@@ -101,12 +101,12 @@ export function RightRail({
           <RailComments
             comments={comments}
             onGoToComment={onGoToComment}
-            onOpenOverview={comments.length > 0 ? onOpenCommentOverview : undefined}
             onEditComment={onEditComment}
             onDeleteComment={onDeleteComment}
             editingCommentId={editingCommentId}
             onStartEditComment={onStartEditComment}
             onStopEditComment={onStopEditComment}
+            onOpenOverview={comments.length > 0 ? onOpenCommentOverview : undefined}
           />
         </div>
       </section>

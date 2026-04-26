@@ -3,6 +3,24 @@ export interface ChangedFile {
   status: string;
 }
 
+export type NormalizedFileStatus =
+  | "added"
+  | "modified"
+  | "deleted"
+  | "renamed"
+  | "copied"
+  | "unknown";
+
+export interface ChangedFileRailItem {
+  path: string;
+  displayPath: string;
+  status: NormalizedFileStatus;
+  additions: number;
+  deletions: number;
+  viewed: boolean;
+  commentCount: number;
+}
+
 export interface GitDiffResult {
   diff: string;
   files: ChangedFile[];

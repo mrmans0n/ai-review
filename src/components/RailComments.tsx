@@ -1,176 +1,164 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Comment } from "../types";
 import { useGroupedComments } from "../hooks/useGroupedComments";
+import { isWholeFileComment, formatCommentRange } from "../hooks/commentHelpers";
 import { MiddleEllipsis } from "./MiddleEllipsis";
 
 interface RailCommentsProps {
   comments: Comment[];
   onGoToComment: (comment: Comment) => void;
-  onOpenOverview?: () => void;
   onEditComment: (id: string, text: string) => void;
   onDeleteComment: (id: string) => void;
   editingCommentId: string | null;
   onStartEditComment: (id: string) => void;
   onStopEditComment: () => void;
+  onOpenOverview?: () => void;
 }
 
-export function formatCommentRange(comment: Comment): string {
-  if (comment.startLine <= 0 && comment.endLine <= 0) return "File";
-  if (comment.startLine === comment.endLine) return `L${comment.startLine}`;
-  return `L${comment.startLine}-${comment.endLine}`;
-}
-
-function getFileName(path: string): string {
-  const lastSlash = path.lastIndexOf("/");
-  return lastSlash >= 0 ? path.slice(lastSlash + 1) : path;
-}
-
-function CommentCard({
+function RailCommentCard({
   comment,
+  isEditing,
   onGoToComment,
   onEditComment,
   onDeleteComment,
-  editingCommentId,
   onStartEditComment,
   onStopEditComment,
 }: {
   comment: Comment;
+  isEditing: boolean;
   onGoToComment: (comment: Comment) => void;
   onEditComment: (id: string, text: string) => void;
   onDeleteComment: (id: string) => void;
-  editingCommentId: string | null;
   onStartEditComment: (id: string) => void;
   onStopEditComment: () => void;
 }) {
   const [editText, setEditText] = useState(comment.text);
-  const isEditing = editingCommentId === comment.id;
 
-  if (isEditing) {
-    return (
-      <div className="rounded-sm border border-ctp-surface1 bg-ctp-mantle px-3 py-2">
-        <div className="mb-1 flex items-center gap-2 min-w-0">
-          <span className="min-w-0 flex-1 text-xs font-mono text-ctp-subtext">
-            <MiddleEllipsis text={getFileName(comment.file)} />
-          </span>
-          <span className="flex-shrink-0 rounded-sm bg-ctp-surface0 px-1.5 py-0.5 text-[11px] font-mono text-ctp-overlay0">
-            {formatCommentRange(comment)}
-          </span>
-        </div>
-        <textarea
-          className="mt-1 w-full rounded-sm border border-ctp-surface1 bg-ctp-base px-2 py-1 text-xs text-ctp-text focus:border-accent-review focus:outline-none resize-y"
-          rows={3}
-          value={editText}
-          onChange={(e) => setEditText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              if (editText.trim()) {
-                onEditComment(comment.id, editText.trim());
-                onStopEditComment();
-              }
-            } else if (e.key === "Escape") {
-              onStopEditComment();
-            }
-          }}
-          autoFocus
-        />
-        <div className="mt-1 flex gap-1 justify-end">
-          <button
-            type="button"
-            onClick={() => onStopEditComment()}
-            className="px-2 py-0.5 text-[11px] text-ctp-subtext hover:text-ctp-text transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (editText.trim()) {
-                onEditComment(comment.id, editText.trim());
-                onStopEditComment();
-              }
-            }}
-            className="px-2 py-0.5 text-[11px] rounded-sm bg-accent-review text-accent-review-text hover:opacity-90 transition-colors"
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (isEditing) setEditText(comment.text);
+  }, [comment.text, isEditing]);
+
+  const saveEdit = () => {
+    if (!editText.trim()) return;
+    onEditComment(comment.id, editText.trim());
+    onStopEditComment();
+  };
 
   return (
-    <article
+    <div
       role="button"
-      aria-label={`Comment on ${comment.file} ${formatCommentRange(comment)}`}
       tabIndex={0}
       onClick={() => onGoToComment(comment)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
           onGoToComment(comment);
         }
       }}
-      className="w-full rounded-sm border border-ctp-surface1 bg-ctp-mantle px-3 py-2 text-left hover:bg-ctp-surface0 transition-colors cursor-pointer"
+      className="w-full text-left rounded-sm border border-divider bg-surface-hover/70 px-3 py-2 transition-colors hover:border-ink-muted hover:bg-surface-hover focus:outline-none focus:ring-1 focus:ring-accent-review/50"
+      data-comment-id={comment.id}
     >
-      <div className="mb-1 flex items-center gap-2 min-w-0">
-        <span className="min-w-0 flex-1 text-xs font-mono text-ctp-subtext">
-          <MiddleEllipsis text={getFileName(comment.file)} />
-        </span>
-        <span className="flex-shrink-0 rounded-sm bg-ctp-surface0 px-1.5 py-0.5 text-[11px] font-mono text-ctp-overlay0">
+      <div className="flex items-start gap-2">
+        <span className="min-w-fit rounded-sm border border-divider bg-surface px-1.5 py-0.5 font-mono text-[10px] text-ink-secondary">
           {formatCommentRange(comment)}
         </span>
-        {comment.side === "old" && (
-          <span className="flex-shrink-0 text-[11px] text-orange-400">
+        {comment.side === "old" && !isWholeFileComment(comment) && (
+          <span className="min-w-fit rounded-sm bg-ctp-red/10 px-1.5 py-0.5 text-[10px] text-ctp-red">
             deleted
           </span>
         )}
       </div>
-      <p className="line-clamp-3 text-xs leading-relaxed text-ctp-text">
-        {comment.text}
-      </p>
-      <div className="mt-1 flex gap-2 justify-end" onKeyDown={(e) => e.stopPropagation()}>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setEditText(comment.text);
-            onStartEditComment(comment.id);
-          }}
-          className="text-[11px] text-ctp-overlay0 hover:text-ctp-text transition-colors"
+
+      {isEditing ? (
+        <div
+          className="mt-2"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
         >
-          Edit
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDeleteComment(comment.id);
-          }}
-          className="text-[11px] text-ctp-overlay0 hover:text-ctp-red transition-colors"
-        >
-          Delete
-        </button>
-      </div>
-    </article>
+          <textarea
+            value={editText}
+            onChange={(event) => setEditText(event.target.value)}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+              if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+                event.preventDefault();
+                saveEdit();
+              } else if (event.key === "Escape") {
+                event.preventDefault();
+                onStopEditComment();
+              }
+            }}
+            className="h-24 w-full resize-none rounded-sm border border-divider bg-surface p-2 text-xs text-ink-primary placeholder:text-ink-muted focus:border-ctp-mauve focus:outline-none focus:ring-1 focus:ring-ctp-mauve/30"
+            autoFocus
+          />
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={saveEdit}
+              disabled={!editText.trim()}
+              className="rounded-sm bg-ctp-mauve px-2 py-1 text-xs font-medium text-ctp-base transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={onStopEditComment}
+              className="rounded-sm px-2 py-1 text-xs text-ink-secondary transition-colors hover:bg-surface-hover hover:text-ink-primary"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="mt-2 line-clamp-4 whitespace-pre-wrap text-xs leading-relaxed text-ink-primary">
+            {comment.text}
+          </p>
+          <div className="mt-2 flex items-center gap-2 text-[11px] text-ink-secondary">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onStartEditComment(comment.id);
+              }}
+              className="transition-colors hover:text-ctp-blue"
+            >
+              Edit
+            </button>
+            <span aria-hidden="true">/</span>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDeleteComment(comment.id);
+              }}
+              className="transition-colors hover:text-ctp-red"
+            >
+              Delete
+            </button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
 export function RailComments({
   comments,
   onGoToComment,
-  onOpenOverview,
   onEditComment,
   onDeleteComment,
   editingCommentId,
   onStartEditComment,
   onStopEditComment,
+  onOpenOverview,
 }: RailCommentsProps) {
   const groups = useGroupedComments(comments);
 
   if (comments.length === 0) {
     return (
-      <div className="px-3 py-4 text-sm text-ctp-overlay0">
+      <div className="px-3 py-4 text-sm text-ink-muted">
         No comments yet
       </div>
     );
@@ -182,7 +170,7 @@ export function RailComments({
         <button
           type="button"
           onClick={onOpenOverview}
-          className="self-start rounded-sm border border-ctp-surface1 px-2.5 py-1 text-xs text-ctp-subtext hover:bg-ctp-surface0 hover:text-ctp-text transition-colors"
+          className="self-start rounded-sm border border-divider px-2.5 py-1 text-xs text-ink-secondary hover:bg-surface-hover hover:text-ink-primary transition-colors"
         >
           Open overview
         </button>
@@ -190,17 +178,17 @@ export function RailComments({
 
       {groups.map((group) => (
         <div key={group.file} className="space-y-1.5">
-          <div className="px-1 text-[11px] font-mono text-ctp-overlay0">
+          <div className="px-1 text-[11px] font-mono text-ink-muted">
             <MiddleEllipsis text={group.file} />
           </div>
           {group.comments.map((comment) => (
-            <CommentCard
+            <RailCommentCard
               key={comment.id}
               comment={comment}
+              isEditing={editingCommentId === comment.id}
               onGoToComment={onGoToComment}
               onEditComment={onEditComment}
               onDeleteComment={onDeleteComment}
-              editingCommentId={editingCommentId}
               onStartEditComment={onStartEditComment}
               onStopEditComment={onStopEditComment}
             />

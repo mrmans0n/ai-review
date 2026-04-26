@@ -116,6 +116,12 @@ describe("CommentOverview", () => {
     expect(screen.getByText("L7")).toBeTruthy();
   });
 
+  it("shows file label for whole-file comments", () => {
+    const comment = makeComment({ startLine: 0, endLine: 0 });
+    render(<CommentOverview {...makeProps({ comments: [comment] })} />);
+    expect(screen.getByText("File")).toBeTruthy();
+  });
+
   it("shows deleted label for old-side comments", () => {
     const comment = makeComment({ side: "old" });
     render(<CommentOverview {...makeProps({ comments: [comment] })} />);
