@@ -17,7 +17,6 @@ import { useTheme } from './hooks/useTheme';
 import { FileExplorer } from "./components/FileExplorer";
 import { CommitSelector } from "./components/CommitSelector";
 import { CommitSelectorContent } from "./components/CommitSelectorContent";
-import { FileList } from "./components/FileList";
 import { FileViewer } from "./components/FileViewer";
 import { ImagePreview } from "./components/ImagePreview";
 import { MarkdownPreview } from "./components/MarkdownPreview";
@@ -30,6 +29,8 @@ import { RepoLandingPage } from "./components/RepoLandingPage";
 import { RepoSwitcher } from "./components/RepoSwitcher";
 import { ConfirmModal } from "./components/ConfirmModal";
 import { ScrollProgressBar } from "./components/ScrollProgressBar";
+import { RightRail } from "./components/RightRail";
+import { ViewTypeControl } from "./components/ViewTypeControl";
 import { generatePrompt } from "./lib/promptGenerator";
 import { buildJsonFeedback } from "./lib/jsonFeedback";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
@@ -37,12 +38,27 @@ import { extractLinesFromHunks } from "./lib/extractLinesFromHunks";
 import { detectLfsPointer, isTextPreviewable } from "./lib/lfsDetection";
 import { HunkExpandControl } from "./components/HunkExpandControl";
 import { LfsFileWrapper } from "./components/LfsFileWrapper";
-import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile } from "./types";
+import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile, Comment } from "./types";
 
 type InitialDiffMode = {
   type: "commit" | "range" | "branch";
   value: string;
 };
+
+const MIN_RIGHT_RAIL_WIDTH = 240;
+const DEFAULT_RIGHT_RAIL_WIDTH = 320;
+
+function getMaxRightRailWidth() {
+  return Math.floor(window.innerWidth * 0.45);
+}
+
+function clampRightRailWidth(width: number) {
+  return Math.min(getMaxRightRailWidth(), Math.max(MIN_RIGHT_RAIL_WIDTH, width));
+}
+
+function escapeAttributeSelector(value: string) {
+  return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(value) : value.replace(/"/g, '\\"');
+}
 
 function App() {
   const [workingDir, setWorkingDir] = useState<string | null>(null);
@@ -58,7 +74,6 @@ function App() {
   const [imagePreviewStatus, setImagePreviewStatus] = useState("modified");
   const [oldImageSrc, setOldImageSrc] = useState<string | null>(null);
   const [newImageSrc, setNewImageSrc] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<string | undefined>();
   const [addingCommentAt, setAddingCommentAt] = useState<{
     file: string;
     startLine: number;
@@ -103,9 +118,10 @@ function App() {
   const imageRequestIdRef = useRef(0);
   const [oldSourceMap, setOldSourceMap] = useState<Record<string, string>>({});
   const [changedFiles, setChangedFiles] = useState<ChangedFile[]>([]);
-  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
-  const [sidebarWidth, setSidebarWidth] = useState(256);
-  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const [isRightRailVisible, setIsRightRailVisible] = useState(true);
+  const [rightRailWidth, setRightRailWidth] = useState(DEFAULT_RIGHT_RAIL_WIDTH);
+  const [isResizingRightRail, setIsResizingRightRail] = useState(false);
+  const [activeDiffFile, setActiveDiffFile] = useState<string | undefined>();
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(new Set());
   const [mdPreviewFiles, setMdPreviewFiles] = useState<Set<string>>(new Set());
   const [mdContentCache, setMdContentCache] = useState<Record<string, string>>({});
@@ -200,17 +216,21 @@ function App() {
         console.error("Failed to check CLI installation:", err);
       });
 
-    const savedSidebarWidth = window.localStorage.getItem("changed-files-sidebar-width");
-    if (savedSidebarWidth) {
-      const parsedWidth = Number.parseInt(savedSidebarWidth, 10);
+    const savedRightRailWidth =
+      window.localStorage.getItem("right-rail-width") ??
+      window.localStorage.getItem("changed-files-sidebar-width");
+    if (savedRightRailWidth) {
+      const parsedWidth = Number.parseInt(savedRightRailWidth, 10);
       if (!Number.isNaN(parsedWidth)) {
-        setSidebarWidth(Math.min(Math.floor(window.innerWidth * 2 / 3), Math.max(150, parsedWidth)));
+        setRightRailWidth(clampRightRailWidth(parsedWidth));
       }
     }
 
-    const savedSidebarVisibility = window.localStorage.getItem("changed-files-sidebar-visible");
-    if (savedSidebarVisibility !== null) {
-      setIsSidebarVisible(savedSidebarVisibility === "true");
+    const savedRightRailVisibility =
+      window.localStorage.getItem("right-rail-visible") ??
+      window.localStorage.getItem("changed-files-sidebar-visible");
+    if (savedRightRailVisibility !== null) {
+      setIsRightRailVisible(savedRightRailVisibility === "true");
     }
   }, []);
 
@@ -229,6 +249,7 @@ function App() {
       setDiffText(diffResult.diff || "No changes");
       setChangedFiles(diffResult.files);
       setViewMode("diff");
+      setActiveDiffFile(undefined);
     }
   }, [diffResult]);
 
@@ -335,23 +356,22 @@ function App() {
   const btnIconActive = "p-1.5 rounded-sm text-ink-primary bg-surface-hover border border-accent-review transition-colors";
 
   useEffect(() => {
-    window.localStorage.setItem("changed-files-sidebar-width", String(sidebarWidth));
-  }, [sidebarWidth]);
+    window.localStorage.setItem("right-rail-width", String(rightRailWidth));
+  }, [rightRailWidth]);
 
   useEffect(() => {
-    window.localStorage.setItem("changed-files-sidebar-visible", String(isSidebarVisible));
-  }, [isSidebarVisible]);
+    window.localStorage.setItem("right-rail-visible", String(isRightRailVisible));
+  }, [isRightRailVisible]);
 
   useEffect(() => {
-    if (!isResizingSidebar) return;
+    if (!isResizingRightRail) return;
 
     const handleMouseMove = (event: MouseEvent) => {
-      const nextWidth = Math.min(Math.floor(window.innerWidth * 2 / 3), Math.max(150, event.clientX));
-      setSidebarWidth(nextWidth);
+      setRightRailWidth(clampRightRailWidth(window.innerWidth - event.clientX));
     };
 
     const stopResizing = () => {
-      setIsResizingSidebar(false);
+      setIsResizingRightRail(false);
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     };
@@ -368,7 +388,7 @@ function App() {
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     };
-  }, [isResizingSidebar]);
+  }, [isResizingRightRail]);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -622,7 +642,7 @@ function App() {
       sourceCache.current = {};
       setOldSourceMap({});
       setViewMode("diff");
-      setSelectedFile(undefined);
+      setActiveDiffFile(undefined);
       setCurrentFile(null);
       setAddingCommentAt(null);
       setSelectingRange(null);
@@ -857,8 +877,6 @@ function App() {
   };
 
   const handleFileSelect = async (filePath: string) => {
-    setSelectedFile(filePath);
-
     if (!workingDir) return;
 
     setImagePreviewError(null);
@@ -985,6 +1003,46 @@ function App() {
     }
   };
 
+  const scrollToDiffFile = (filePath: string) => {
+    setViewMode("diff");
+    setActiveDiffFile(filePath);
+
+    requestAnimationFrame(() => {
+      const fileEl = document.querySelector(
+        `[data-diff-file="${escapeAttributeSelector(filePath)}"]`
+      );
+      fileEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  const goToComment = async (comment: Comment, options: { closeOverview?: boolean } = {}) => {
+    if (options.closeOverview) {
+      setShowCommentOverview(false);
+    }
+
+    setHoveredCommentIds([comment.id]);
+    setTimeout(() => setHoveredCommentIds(null), 3000);
+
+    const isInDiff = files.some(
+      (file: any) => (file.newPath || file.oldPath) === comment.file
+    );
+
+    if (isInDiff) {
+      setViewMode("diff");
+      setActiveDiffFile(comment.file);
+    } else {
+      await handleFileSelect(comment.file);
+    }
+
+    requestAnimationFrame(() => {
+      const escapedFile = escapeAttributeSelector(comment.file);
+      const fileEl =
+        document.querySelector(`[data-diff-file="${escapedFile}"]`) ||
+        document.querySelector(`[data-file-viewer="${escapedFile}"]`);
+      fileEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   // Handle Enter key selection in file explorer
   useEffect(() => {
     if (fileExplorer.pendingSelection) {
@@ -1009,6 +1067,7 @@ function App() {
       });
       setDiffText(result.diff || "No changes in this commit");
       setChangedFiles(result.files);
+      setActiveDiffFile(undefined);
       setSelectedCommit(commit);
       setSelectedBranch(null);
       setReviewingLabel(`${commit.short_hash} ${commit.message}`);
@@ -1030,6 +1089,7 @@ function App() {
       });
       setDiffText(result.diff || "No changes in this range");
       setChangedFiles(result.files);
+      setActiveDiffFile(undefined);
       setDiffMode({ mode: "range", range });
       setSelectedCommit(null);
       setSelectedBranch(null);
@@ -1051,6 +1111,7 @@ function App() {
       });
       setDiffText(result.diff || "No changes in this branch comparison");
       setChangedFiles(result.files);
+      setActiveDiffFile(undefined);
       setSelectedBranch(branch);
       setSelectedCommit(null);
       setReviewingLabel(branch.name);
@@ -1080,6 +1141,7 @@ function App() {
         path: f.newPath || f.oldPath,
         status: f.type === "add" ? "A" : f.type === "delete" ? "D" : "M",
       })));
+      setActiveDiffFile(undefined);
       setDiffMode({ mode: "commit", commitRef: entry.hash });
       setSelectedCommit(null);
       setSelectedBranch(null);
@@ -1111,6 +1173,7 @@ function App() {
         path: f.newPath || f.oldPath,
         status: f.type === "add" ? "A" : f.type === "delete" ? "D" : "M",
       })));
+      setActiveDiffFile(undefined);
       setDiffMode({ mode: "range", range: `${stackBaseInfo.base}..${stackBaseInfo.branch}` });
       setSelectedCommit(null);
       setSelectedBranch(null);
@@ -1133,6 +1196,7 @@ function App() {
       });
       setDiffText(result.diff || "No changes in this worktree");
       setChangedFiles(result.files);
+      setActiveDiffFile(undefined);
       setSelectedBranch({
         name: worktree.branch,
         short_hash: worktree.commit_hash.slice(0, 7),
@@ -1159,6 +1223,7 @@ function App() {
       });
       setDiffText(result.diff || "No changes for this ref");
       setChangedFiles(result.files);
+      setActiveDiffFile(undefined);
       setDiffMode({ mode: "commit", commitRef: ref });
       setSelectedCommit(null);
       setSelectedBranch(null);
@@ -1950,20 +2015,7 @@ function App() {
       {!isEmptyState && (
       <div className="flex items-center gap-1 px-3 py-2 bg-surface border-b border-divider flex-shrink-0 flex-wrap">
         {/* Group 1: View mode */}
-        <div className="flex gap-1">
-          <button
-            onClick={() => setViewType("split")}
-            className={viewType === "split" ? btnActive : btnDefault}
-          >
-            Split
-          </button>
-          <button
-            onClick={() => { setViewType("unified"); setMdPreviewFiles(new Set()); }}
-            className={viewType === "unified" ? btnActive : btnDefault}
-          >
-            Unified
-          </button>
-        </div>
+        <ViewTypeControl value={viewType} onChange={(v) => { setViewType(v); if (v === "unified") setMdPreviewFiles(new Set()); }} />
 
         {isGitRepo && (
           <>
@@ -2018,12 +2070,12 @@ function App() {
 
         {/* Group 3: Tools */}
         <div className="ml-auto flex items-center gap-1">
-          {changedFiles.length > 0 && (
+          {(changedFiles.length > 0 || comments.length > 0) && (
             <button
-              onClick={() => setIsSidebarVisible((prev) => !prev)}
-              className={isSidebarVisible ? btnIconActive : btnIcon}
-              title={isSidebarVisible ? "Hide changed files sidebar" : "Show changed files sidebar"}
-              aria-label={isSidebarVisible ? "Hide changed files sidebar" : "Show changed files sidebar"}
+              onClick={() => setIsRightRailVisible((prev) => !prev)}
+              className={isRightRailVisible ? btnIconActive : btnIcon}
+              title={isRightRailVisible ? "Hide review rail" : "Show review rail"}
+              aria-label={isRightRailVisible ? "Hide review rail" : "Show review rail"}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -2034,8 +2086,8 @@ function App() {
                 className="w-4 h-4"
               >
                 <rect x="3" y="4" width="18" height="16" rx="2" />
-                <path d="M9 4v16" />
-                {!isSidebarVisible && <path d="M6 12h6" />}
+                <path d="M15 4v16" />
+                {!isRightRailVisible && <path d="M12 12h6" />}
               </svg>
             </button>
           )}
@@ -2149,80 +2201,6 @@ function App() {
 
       <ScrollProgressBar containerRef={mainContentRef} />
       <div className="flex h-[calc(100vh-140px)]">
-        {changedFiles.length > 0 && isSidebarVisible && (
-          <div
-            className="border-r border-divider flex flex-col bg-surface relative"
-            style={{ width: `${sidebarWidth}px` }}
-          >
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-divider">
-              <div className="w-0.5 h-3.5 bg-accent-review rounded-full flex-shrink-0" />
-              <span className="text-[10px] font-semibold tracking-widest text-ink-muted uppercase">
-                Changed Files
-              </span>
-              {renderableFiles.length > 0 && (
-                <span className="ml-auto text-[10px] text-ink-muted">
-                  {viewedCount}/{renderableFiles.length} viewed
-                </span>
-              )}
-            </div>
-            <div className="flex-1 overflow-auto">
-              <FileList
-                files={changedFiles}
-                selectedFile={selectedFile}
-                onSelectFile={handleFileSelect}
-              />
-              {(() => {
-                // Get unique files with comments
-                const filesWithComments = Array.from(
-                  new Set(comments.map((c) => c.file))
-                ).sort();
-
-                if (filesWithComments.length > 0) {
-                  return (
-                    <>
-                      <div className="flex items-center gap-2 px-3 py-2 border-t border-b border-divider bg-surface sticky top-0">
-                        <div className="w-0.5 h-3.5 bg-accent-review rounded-full flex-shrink-0" />
-                        <span className="text-[10px] font-semibold tracking-widest text-ink-muted uppercase">
-                          Commented Files
-                        </span>
-                      </div>
-                      <div className="space-y-1">
-                        {filesWithComments.map((file) => (
-                          <button
-                            key={file}
-                            onClick={() => handleFileSelect(file)}
-                            className={`w-full px-4 py-2 text-left text-sm transition-colors rounded-sm ${
-                              selectedFile === file
-                                ? "bg-surface border-l-2 border-accent-review text-ink-primary"
-                                : "text-ink-secondary hover:bg-surface-hover"
-                            }`}
-                          >
-                            {file.split("/").pop()}
-                            <div className="text-xs opacity-70 truncate">
-                              {file}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  );
-                }
-                return null;
-              })()}
-            </div>
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="Resize changed files sidebar"
-              onMouseDown={(event) => {
-                event.preventDefault();
-                setIsResizingSidebar(true);
-              }}
-              className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-accent-review/30 transition-colors"
-            />
-          </div>
-        )}
-
         <div ref={mainContentRef} className="flex-1 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full">
@@ -2328,6 +2306,23 @@ function App() {
             </div>
           )}
         </div>
+        {(changedFiles.length > 0 || comments.length > 0) && (
+          <RightRail
+            files={changedFiles}
+            comments={comments}
+            width={rightRailWidth}
+            visible={isRightRailVisible}
+            resizing={isResizingRightRail}
+            viewedCount={viewedCount}
+            renderableFilesCount={renderableFiles.length}
+            activeFile={activeDiffFile}
+            onStartResize={() => setIsResizingRightRail(true)}
+            onScrollToFile={scrollToDiffFile}
+            onPreviewFile={handleFileSelect}
+            onGoToComment={(comment) => void goToComment(comment)}
+            onOpenCommentOverview={() => setShowCommentOverview(true)}
+          />
+        )}
       </div>
 
       <FileExplorer
@@ -2358,32 +2353,7 @@ function App() {
         <CommentOverview
           comments={comments}
           onClose={() => setShowCommentOverview(false)}
-          onGoToComment={async (comment) => {
-            setShowCommentOverview(false);
-            // Highlight the comment
-            setHoveredCommentIds([comment.id]);
-            setTimeout(() => setHoveredCommentIds(null), 3000);
-
-            // Switch to the correct view if needed
-            const isInDiff = files.some(
-              (f: any) => (f.newPath || f.oldPath) === comment.file
-            );
-            if (isInDiff) {
-              setViewMode("diff");
-            } else {
-              await handleFileSelect(comment.file);
-            }
-
-            // Wait for React to render the new view, then scroll
-            requestAnimationFrame(() => {
-              const fileEl =
-                document.querySelector(`[data-diff-file="${comment.file}"]`) ||
-                document.querySelector(`[data-file-viewer="${comment.file}"]`);
-              if (fileEl) {
-                fileEl.scrollIntoView({ behavior: "smooth", block: "start" });
-              }
-            });
-          }}
+          onGoToComment={(comment) => void goToComment(comment, { closeOverview: true })}
         />
       )}
 

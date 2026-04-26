@@ -1,11 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, type MouseEvent } from "react";
 import type { ChangedFile } from "../types";
 import { MiddleEllipsis } from "./MiddleEllipsis";
 
 interface FileListProps {
   files: ChangedFile[];
-  selectedFile?: string;
+  activeFile?: string;
   onSelectFile: (file: string) => void;
+  onPreviewFile?: (file: string) => void;
 }
 
 interface FileGroup {
@@ -66,8 +67,22 @@ function getStatusIcon(status: string): string {
   }
 }
 
-export function FileList({ files, selectedFile, onSelectFile }: FileListProps) {
+export function FileList({
+  files,
+  activeFile,
+  onSelectFile,
+  onPreviewFile,
+}: FileListProps) {
   const groups = useMemo(() => groupFilesByDirectory(files), [files]);
+
+  const handleFileClick = (event: MouseEvent<HTMLButtonElement>, file: string) => {
+    if ((event.metaKey || event.ctrlKey) && onPreviewFile) {
+      onPreviewFile(file);
+      return;
+    }
+
+    onSelectFile(file);
+  };
 
   if (files.length === 0) {
     return (
@@ -87,26 +102,56 @@ export function FileList({ files, selectedFile, onSelectFile }: FileListProps) {
             </div>
           )}
           {group.files.map((file) => (
-            <button
+            <div
               key={file.path}
-              onClick={() => onSelectFile(file.path)}
-              className={`w-full text-left transition-colors border-l-2 rounded-sm ${
+              className={`flex items-center gap-1 transition-colors border-l-2 rounded-sm ${
                 group.directory ? "pl-6 pr-3" : "px-4"
               } py-1.5 ${
-                selectedFile === file.path
+                activeFile === file.path
                   ? "bg-surface border-accent-review"
                   : "border-transparent hover:bg-surface-hover"
               }`}
             >
-              <div className="flex items-center gap-2 min-w-0">
+              <button
+                type="button"
+                aria-label={`Go to ${file.path}`}
+                onClick={(event) => handleFileClick(event, file.path)}
+                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+              >
                 <span className={`font-bold flex-shrink-0 ${getStatusColor(file.status)}`}>
                   {getStatusIcon(file.status)}
                 </span>
                 <span className="text-sm font-mono text-ink-secondary min-w-0 flex-1">
                   <MiddleEllipsis text={getFileName(file.path)} />
                 </span>
-              </div>
-            </button>
+              </button>
+              {onPreviewFile && (
+                <button
+                  type="button"
+                  aria-label={`Preview ${file.path}`}
+                  title="Preview full file"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onPreviewFile(file.path);
+                  }}
+                  className="flex-shrink-0 rounded-sm p-1 text-ctp-overlay0 hover:bg-ctp-surface1 hover:text-ctp-text transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-3.5 w-3.5"
+                  >
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+              )}
+            </div>
           ))}
         </div>
       ))}
