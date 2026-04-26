@@ -1622,7 +1622,7 @@ function App() {
                 }}
                 className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${
                   mdPreviewFiles.has(fileName)
-                    ? "bg-accent-review text-white"
+                    ? "bg-accent-review text-accent-review-text"
                     : "text-ink-secondary hover:text-ink-primary hover:bg-surface-hover"
                 }`}
               >
@@ -1676,7 +1676,7 @@ function App() {
               <span className="relative inline-flex items-center w-full">
                 {showButton && (
                   <span
-                    className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-accent-review hover:opacity-90 cursor-pointer text-white opacity-80 hover:opacity-100 transition-all"
+                    className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-accent-review hover:opacity-90 cursor-pointer text-accent-review-text opacity-80 hover:opacity-100 transition-all"
                     title="Add comment"
                     onMouseDown={(e) => {
                       e.stopPropagation();
@@ -1874,7 +1874,7 @@ function App() {
           <p className="text-ink-secondary text-sm mb-4">{initError}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 text-sm rounded-sm bg-surface-hover text-ink-primary hover:bg-surface-hover transition-colors border border-divider"
+            className="px-4 py-2 text-sm rounded-sm bg-surface text-ink-primary hover:bg-surface-hover transition-colors border border-divider"
           >
             Retry
           </button>
@@ -2060,7 +2060,7 @@ function App() {
                 onClick={handleGeneratePrompt}
                 className={
                   jsonOutput
-                    ? "px-4 py-2 bg-ctp-green text-white rounded-sm text-sm hover:opacity-90 transition-opacity font-semibold flex items-center gap-1"
+                    ? "px-4 py-2 bg-ctp-green text-on-green rounded-sm text-sm hover:opacity-90 transition-opacity font-semibold flex items-center gap-1"
                     : btnActive + " flex items-center gap-1"
                 }
               >

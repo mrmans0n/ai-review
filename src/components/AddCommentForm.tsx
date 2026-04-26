@@ -72,9 +72,9 @@ export function AddCommentForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-l-2 border-ctp-mauve bg-ctp-surface0 p-3"
+      className="border-l-2 border-ctp-mauve bg-surface-hover p-3"
     >
-      <div className="text-xs text-ctp-subtext mb-2">
+      <div className="text-xs text-ink-secondary mb-2">
         {startLine === 0 && endLine === 0
           ? `Adding comment on ${file} (whole file)`
           : `Adding comment on ${file} lines ${startLine}${endLine !== startLine ? `-${endLine}` : ""} (${side} side)`}
@@ -85,7 +85,7 @@ export function AddCommentForm({
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Enter your comment... (Ctrl+Enter to submit, Esc to cancel)"
-        className="w-full bg-ctp-mantle border border-ctp-surface1 rounded-sm text-ctp-text text-sm p-2 placeholder:text-ctp-overlay0 focus:border-ctp-mauve focus:outline-none focus:ring-1 focus:ring-ctp-mauve/30 resize-none"
+        className="w-full bg-surface border border-divider rounded-sm text-ink-primary text-sm p-2 placeholder:text-ink-muted focus:border-ctp-mauve focus:outline-none focus:ring-1 focus:ring-ctp-mauve/30 resize-none"
         rows={4}
       />
       <div className="flex gap-2 mt-2">
@@ -100,7 +100,7 @@ export function AddCommentForm({
           <button
             type="button"
             onClick={insertCode}
-            className="px-3 py-1.5 text-ctp-subtext text-sm rounded-sm hover:text-ctp-text hover:bg-ctp-surface0 transition-colors"
+            className="px-3 py-1.5 text-ink-secondary text-sm rounded-sm hover:text-ink-primary hover:bg-surface-hover transition-colors"
           >
             Insert code
           </button>
@@ -108,7 +108,7 @@ export function AddCommentForm({
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1.5 text-ctp-subtext text-sm rounded-sm hover:text-ctp-text hover:bg-ctp-surface0 transition-colors"
+          className="px-3 py-1.5 text-ink-secondary text-sm rounded-sm hover:text-ink-primary hover:bg-surface-hover transition-colors"
         >
           Cancel
         </button>

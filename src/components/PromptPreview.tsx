@@ -148,14 +148,14 @@ export function PromptPreview({ prompt, onClose, waitMode }: PromptPreviewProps)
           </button>
           <button
             onClick={handleCopy}
-            className="px-4 py-2 bg-accent-review text-white rounded-sm text-sm hover:opacity-90 transition-opacity"
+            className="px-4 py-2 bg-accent-review text-accent-review-text rounded-sm text-sm hover:opacity-90 transition-opacity"
           >
             {copied ? "Copied!" : "Copy to Clipboard"}
           </button>
           {waitMode && (
             <button
               onClick={handleSubmitAndExit}
-              className="px-4 py-2 bg-ctp-green text-white rounded-sm text-sm hover:opacity-90 transition-opacity font-semibold"
+              className="px-4 py-2 bg-ctp-green text-on-green rounded-sm text-sm hover:opacity-90 transition-opacity font-semibold"
             >
               Submit & Exit
             </button>

@@ -277,7 +277,7 @@ export function CommitSelectorContent({
           <button
             onClick={() => setTab("commits")}
             className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
-              tab === "commits" ? "bg-accent-review text-white" : "text-ink-secondary hover:bg-surface-hover"
+              tab === "commits" ? "bg-accent-review text-accent-review-text" : "text-ink-secondary hover:bg-surface-hover"
             }`}
           >
             Commits
@@ -285,7 +285,7 @@ export function CommitSelectorContent({
           <button
             onClick={() => setTab("branches")}
             className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
-              tab === "branches" ? "bg-accent-review text-white" : "text-ink-secondary hover:bg-surface-hover"
+              tab === "branches" ? "bg-accent-review text-accent-review-text" : "text-ink-secondary hover:bg-surface-hover"
             }`}
           >
             Branches
@@ -294,7 +294,7 @@ export function CommitSelectorContent({
             <button
               onClick={() => setTab("stacks")}
               className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
-                tab === "stacks" ? "bg-accent-review text-white" : "text-ink-secondary hover:bg-surface-hover"
+                tab === "stacks" ? "bg-accent-review text-accent-review-text" : "text-ink-secondary hover:bg-surface-hover"
               }`}
             >
               Stacks
@@ -304,7 +304,7 @@ export function CommitSelectorContent({
             <button
               onClick={() => setTab("worktrees")}
               className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
-                tab === "worktrees" ? "bg-accent-review text-white" : "text-ink-secondary hover:bg-surface-hover"
+                tab === "worktrees" ? "bg-accent-review text-accent-review-text" : "text-ink-secondary hover:bg-surface-hover"
               }`}
             >
               Worktrees
@@ -313,7 +313,7 @@ export function CommitSelectorContent({
           <button
             onClick={() => setTab("ref")}
             className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
-              tab === "ref" ? "bg-accent-review text-white" : "text-ink-secondary hover:bg-surface-hover"
+              tab === "ref" ? "bg-accent-review text-accent-review-text" : "text-ink-secondary hover:bg-surface-hover"
             }`}
           >
             Ref
@@ -526,7 +526,7 @@ export function CommitSelectorContent({
                     const stack = ggStacks.find((s) => s.name === selectedStack);
                     if (stack) onSelectStackDiff(stack);
                   }}
-                  className="text-white text-sm px-3 py-1.5 rounded-sm bg-accent-review hover:opacity-90 transition-opacity"
+                  className="text-accent-review-text text-sm px-3 py-1.5 rounded-sm bg-accent-review hover:opacity-90 transition-opacity"
                 >
                   View full stack diff
                 </button>
@@ -636,7 +636,7 @@ export function CommitSelectorContent({
                 disabled={!refValue.trim()}
                 className={`px-4 py-2 rounded-sm text-sm transition-colors ${
                   refValue.trim()
-                    ? "bg-accent-review text-white hover:opacity-90"
+                    ? "bg-accent-review text-accent-review-text hover:opacity-90"
                     : "bg-surface text-ink-muted cursor-not-allowed border border-divider"
                 }`}
               >

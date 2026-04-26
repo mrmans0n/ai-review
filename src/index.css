@@ -34,6 +34,8 @@
   --color-ink-muted: var(--ink-muted);
   --color-accent-review: var(--accent-review);
   --color-accent-review-hover: var(--accent-review-hover);
+  --color-accent-review-text: var(--accent-review-text);
+  --color-on-green: var(--on-green);
   --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, 'Fira Code', monospace;
   --radius: 6px;
@@ -70,6 +72,8 @@
   --ink-muted:           rgb(122 128 148);
   --accent-review:       var(--ctp-peach);
   --accent-review-hover: rgb(224 86 9);
+  --accent-review-text:  rgb(255 255 255);
+  --on-green:            rgb(255 255 255);
 
   /* Diff semantic tokens — Latte values */
   --diff-bg:               var(--ctp-base);
@@ -113,6 +117,8 @@
   --ink-muted:           rgb(130 137 151);
   --accent-review:       var(--ctp-peach);
   --accent-review-hover: rgb(224 168 111);
+  --accent-review-text:  rgb(31 35 42);
+  --on-green:            rgb(31 35 42);
 
   /* Diff semantic tokens — One Dark values */
   --diff-bg:               var(--ctp-base);

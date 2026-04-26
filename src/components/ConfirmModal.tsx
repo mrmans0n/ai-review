@@ -39,7 +39,7 @@ export function ConfirmModal({
             className={`px-4 py-2 rounded-sm text-sm font-medium hover:opacity-90 transition-opacity ${
               destructive
                 ? "bg-ctp-red text-white"
-                : "bg-accent-review text-white"
+                : "bg-accent-review text-accent-review-text"
             }`}
           >
             {confirmLabel}
