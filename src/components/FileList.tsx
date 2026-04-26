@@ -1,4 +1,4 @@
-import { useMemo, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, type MouseEvent } from "react";
 import type { ChangedFile } from "../types";
 import { MiddleEllipsis } from "./MiddleEllipsis";
 
@@ -74,14 +74,20 @@ export function FileList({
   onPreviewFile,
 }: FileListProps) {
   const groups = useMemo(() => groupFilesByDirectory(files), [files]);
+  const rowRefs = useRef(new Map<string, HTMLDivElement>());
 
-  const handleFileClick = (event: MouseEvent<HTMLButtonElement>, file: string) => {
+  useEffect(() => {
+    if (!activeFile) return;
+    rowRefs.current.get(activeFile)?.scrollIntoView({ block: "nearest" });
+  }, [activeFile]);
+
+  const handleFileClick = (event: MouseEvent<HTMLButtonElement>, filePath: string) => {
     if ((event.metaKey || event.ctrlKey) && onPreviewFile) {
-      onPreviewFile(file);
+      onPreviewFile(filePath);
       return;
     }
 
-    onSelectFile(file);
+    onSelectFile(filePath);
   };
 
   if (files.length === 0) {
@@ -104,6 +110,13 @@ export function FileList({
           {group.files.map((file) => (
             <div
               key={file.path}
+              ref={(element) => {
+                if (element) {
+                  rowRefs.current.set(file.path, element);
+                } else {
+                  rowRefs.current.delete(file.path);
+                }
+              }}
               className={`flex items-center gap-1 transition-colors border-l-2 rounded-sm ${
                 group.directory ? "pl-6 pr-3" : "px-4"
               } py-1.5 ${
@@ -111,6 +124,7 @@ export function FileList({
                   ? "bg-surface border-accent-review"
                   : "border-transparent hover:bg-surface-hover"
               }`}
+              data-active-file-row={activeFile === file.path ? "true" : undefined}
             >
               <button
                 type="button"

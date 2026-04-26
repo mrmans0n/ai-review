@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { FileList } from "./FileList";
 import type { ChangedFile } from "../types";
@@ -9,6 +9,16 @@ const files: ChangedFile[] = [
 ];
 
 describe("FileList", () => {
+  const scrollIntoView = vi.fn();
+
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = scrollIntoView;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("calls onSelectFile when a file row is clicked", () => {
     const onSelectFile = vi.fn();
     render(<FileList files={files} onSelectFile={onSelectFile} />);
@@ -50,5 +60,26 @@ describe("FileList", () => {
 
     expect(onPreviewFile).toHaveBeenCalledWith("README.md");
     expect(onSelectFile).not.toHaveBeenCalled();
+  });
+
+  it("marks the active file row and scrolls it into view", () => {
+    const { rerender } = render(
+      <FileList files={files} activeFile="README.md" onSelectFile={vi.fn()} />
+    );
+
+    expect(screen.getByRole("button", { name: "Go to README.md" }).closest("[data-active-file-row]")).toHaveAttribute(
+      "data-active-file-row",
+      "true"
+    );
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+
+    scrollIntoView.mockClear();
+    rerender(<FileList files={files} activeFile="src/App.tsx" onSelectFile={vi.fn()} />);
+
+    expect(screen.getByRole("button", { name: "Go to src/App.tsx" }).closest("[data-active-file-row]")).toHaveAttribute(
+      "data-active-file-row",
+      "true"
+    );
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
   });
 });

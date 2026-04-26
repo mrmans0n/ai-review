@@ -5,6 +5,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import "react-diff-view/style/index.css";
 import "./diff.css";
+import { getDiffFilePath } from "./utils/getDiffFilePath";
 import { highlight } from "./highlight";
 import { useGit } from "./hooks/useGit";
 import { useFileExplorer } from "./hooks/useFileExplorer";
@@ -13,6 +14,7 @@ import { useComments } from "./hooks/useComments";
 import { useRepoManager } from "./hooks/useRepoManager";
 import { useSearch } from "./hooks/useSearch";
 import { useWordHighlight } from "./hooks/useWordHighlight";
+import { useVisibleDiffFile } from "./hooks/useVisibleDiffFile";
 import { useTheme } from './hooks/useTheme';
 import { FileExplorer } from "./components/FileExplorer";
 import { CommitSelector } from "./components/CommitSelector";
@@ -112,6 +114,7 @@ function App() {
   const [hoveredCommentIds, setHoveredCommentIds] = useState<string[] | null>(null);
   const [showCommentOverview, setShowCommentOverview] = useState(false);
   const suppressNextClickRef = useRef(false);
+  const suppressVisibleDiffFileRef = useRef(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const [expandedHunksMap, setExpandedHunksMap] = useState<Record<string, any[]>>({});
   const sourceCache = useRef<Record<string, string[]>>({});
@@ -248,6 +251,7 @@ function App() {
     if (diffResult) {
       setDiffText(diffResult.diff || "No changes");
       setChangedFiles(diffResult.files);
+      setActiveDiffFile(undefined);
       setViewMode("diff");
       setActiveDiffFile(undefined);
     }
@@ -313,8 +317,25 @@ function App() {
     lfsPointer: detectLfsPointer(f.hunks),
   })), [diffText]);
   const renderableFiles = useMemo(() => files.filter((file: any) => file.hunks && file.hunks.length > 0), [files]);
-  const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
+  const diffFilePaths = useMemo(
+    () => renderableFiles.map((file: any) => getDiffFilePath(file)).filter(Boolean),
+    [renderableFiles]
+  );
+  const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(getDiffFilePath(file))).length;
   const isEmptyState = renderableFiles.length === 0 && !selectedCommit && !selectedBranch;
+
+  const visibleDiffFile = useVisibleDiffFile({
+    containerRef: mainContentRef,
+    filePaths: diffFilePaths,
+    enabled: viewMode === "diff",
+    suppressRef: suppressVisibleDiffFileRef,
+  });
+
+  useEffect(() => {
+    if (visibleDiffFile) {
+      setActiveDiffFile(visibleDiffFile);
+    }
+  }, [visibleDiffFile]);
 
   const { loadData } = commitSelector;
   useEffect(() => {
@@ -435,7 +456,7 @@ function App() {
         if (targetLine) {
           handleLineClick(targetLine.file, targetLine.line, targetLine.side);
         } else if (files.length > 0) {
-          const fileName = files[0].newPath || files[0].oldPath;
+          const fileName = getDiffFilePath(files[0]);
           handleLineClick(fileName, 1, "new");
         }
       }
@@ -1006,6 +1027,11 @@ function App() {
   const scrollToDiffFile = (filePath: string) => {
     setViewMode("diff");
     setActiveDiffFile(filePath);
+    suppressVisibleDiffFileRef.current = true;
+
+    window.setTimeout(() => {
+      suppressVisibleDiffFileRef.current = false;
+    }, 600);
 
     requestAnimationFrame(() => {
       const fileEl = document.querySelector(
@@ -1024,7 +1050,7 @@ function App() {
     setTimeout(() => setHoveredCommentIds(null), 3000);
 
     const isInDiff = files.some(
-      (file: any) => (file.newPath || file.oldPath) === comment.file
+      (file: any) => getDiffFilePath(file) === comment.file
     );
 
     if (isInDiff) {
@@ -1138,7 +1164,7 @@ function App() {
       const diffContent = result || "No changes in this entry";
       setDiffText(diffContent);
       setChangedFiles(parseDiff(diffContent).map((f: any) => ({
-        path: f.newPath || f.oldPath,
+        path: getDiffFilePath(f),
         status: f.type === "add" ? "A" : f.type === "delete" ? "D" : "M",
       })));
       setActiveDiffFile(undefined);
@@ -1170,7 +1196,7 @@ function App() {
       const diffContent = result || "No changes in this stack";
       setDiffText(diffContent);
       setChangedFiles(parseDiff(diffContent).map((f: any) => ({
-        path: f.newPath || f.oldPath,
+        path: getDiffFilePath(f),
         status: f.type === "add" ? "A" : f.type === "delete" ? "D" : "M",
       })));
       setActiveDiffFile(undefined);
@@ -1376,7 +1402,7 @@ function App() {
     fileHunks: any[],
   ): Record<string, React.ReactNode> => {
     const widgets: Record<string, React.ReactNode> = {};
-    const fileName = file.newPath || file.oldPath;
+    const fileName = getDiffFilePath(file);
 
     // Group comments by endLine + side
     const commentsByEndLine = new Map<string, import("./types").Comment[]>();
@@ -1568,7 +1594,7 @@ function App() {
   }, [renderableFiles, lfsVersion]);
 
   const renderFile = (file: any) => {
-    const fileName = file.newPath && file.newPath !== "/dev/null" ? file.newPath : file.oldPath;
+    const fileName = getDiffFilePath(file);
     const isViewed = viewedFiles.has(fileName);
     const fileHunks = expandedHunksMap[fileName] || file.hunks;
     if (!fileHunks || fileHunks.length === 0) return null;
@@ -1649,7 +1675,7 @@ function App() {
     }
 
     return (
-      <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={file.newPath || file.oldPath}>
+      <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={getDiffFilePath(file)}>
         <div
           className={`sticky top-0 z-10 px-4 py-2 font-medium border-b border-divider flex justify-between items-center transition-colors text-sm ${
             isViewed ? "bg-surface-hover/80 text-ink-secondary" : "bg-surface text-ink-primary"
@@ -1778,7 +1804,7 @@ function App() {
 
               const { change } = event;
               if (change) {
-                const fileName = file.newPath || file.oldPath;
+                const fileName = getDiffFilePath(file);
                 const side = change.isNormal
                   ? "new"
                   : change.type === "insert"
@@ -1806,7 +1832,7 @@ function App() {
             onMouseDown: (event: any) => {
               const { change } = event;
               if (change) {
-                const fileName = file.newPath || file.oldPath;
+                const fileName = getDiffFilePath(file);
                 const side = change.isNormal
                   ? "new"
                   : change.type === "insert"
@@ -1831,7 +1857,7 @@ function App() {
             onMouseEnter: (event: any) => {
               const { change } = event;
               if (change) {
-                const fileName = file.newPath || file.oldPath;
+                const fileName = getDiffFilePath(file);
                 const side = change.isNormal
                   ? "new"
                   : change.type === "insert"
