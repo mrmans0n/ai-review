@@ -1,16 +1,11 @@
-import { useMemo } from "react";
 import type { Comment } from "../types";
+import { useGroupedComments } from "../hooks/useGroupedComments";
 import { MiddleEllipsis } from "./MiddleEllipsis";
 
 interface RailCommentsProps {
   comments: Comment[];
   onGoToComment: (comment: Comment) => void;
   onOpenOverview?: () => void;
-}
-
-interface CommentGroup {
-  file: string;
-  comments: Comment[];
 }
 
 export function formatCommentRange(comment: Comment): string {
@@ -24,30 +19,12 @@ function getFileName(path: string): string {
   return lastSlash >= 0 ? path.slice(lastSlash + 1) : path;
 }
 
-function groupComments(comments: Comment[]): CommentGroup[] {
-  const groups = new Map<string, Comment[]>();
-
-  for (const comment of comments) {
-    if (!groups.has(comment.file)) {
-      groups.set(comment.file, []);
-    }
-    groups.get(comment.file)!.push(comment);
-  }
-
-  return Array.from(groups.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([file, fileComments]) => ({
-      file,
-      comments: [...fileComments].sort((a, b) => a.startLine - b.startLine),
-    }));
-}
-
 export function RailComments({
   comments,
   onGoToComment,
   onOpenOverview,
 }: RailCommentsProps) {
-  const groups = useMemo(() => groupComments(comments), [comments]);
+  const groups = useGroupedComments(comments);
 
   if (comments.length === 0) {
     return (
