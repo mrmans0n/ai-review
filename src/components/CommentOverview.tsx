@@ -1,4 +1,5 @@
 import type { Comment } from "../types";
+import { formatCommentRange } from "../lib/commentLabels";
 
 interface CommentOverviewProps {
   comments: Comment[];
@@ -84,9 +85,7 @@ export function CommentOverview({
                       <div className="px-4 py-3 hover:bg-ctp-surface0 cursor-pointer transition-colors rounded-sm flex items-center gap-3 border border-ctp-surface1">
                         <div className="flex-shrink-0 flex items-center gap-1.5">
                           <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-sm text-xs font-mono bg-ctp-surface0 text-ctp-subtext border border-ctp-surface1">
-                            {comment.startLine === comment.endLine
-                              ? `L${comment.startLine}`
-                              : `L${comment.startLine}-${comment.endLine}`}
+                            {formatCommentRange(comment)}
                           </span>
                           {comment.side === "old" && (
                             <span className="text-orange-400 text-xs">deleted</span>

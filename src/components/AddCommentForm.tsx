@@ -69,14 +69,17 @@ export function AddCommentForm({
     }
   };
 
+  const targetLabel = startLine === 0 && endLine === 0
+    ? `Adding file comment on ${file}`
+    : `Adding comment on ${file} lines ${startLine}${endLine !== startLine ? `-${endLine}` : ""} (${side} side)`;
+
   return (
     <form
       onSubmit={handleSubmit}
       className="border-l-2 border-ctp-mauve bg-ctp-surface0 p-3"
     >
       <div className="text-xs text-ctp-subtext mb-2">
-        Adding comment on {file} lines {startLine}
-        {endLine !== startLine && `-${endLine}`} ({side} side)
+        {targetLabel}
       </div>
       <textarea
         ref={textareaRef}

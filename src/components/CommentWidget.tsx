@@ -3,6 +3,7 @@ import hljs from "highlight.js/lib/core";
 import { parseCommentText } from "../lib/parseCommentText";
 import type { CommentSegment } from "../lib/parseCommentText";
 import type { Comment } from "../types";
+import { formatCommentRange } from "../lib/commentLabels";
 
 interface CommentWidgetProps {
   comments: Comment[];
@@ -115,8 +116,7 @@ export function CommentWidget({
               </div>
               <div className="flex gap-2 items-center text-xs text-ctp-subtext">
                 <span>
-                  Lines {comment.startLine}
-                  {comment.endLine !== comment.startLine && `-${comment.endLine}`}
+                  {formatCommentRange(comment)}
                 </span>
                 <span>•</span>
                 <button

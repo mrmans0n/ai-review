@@ -43,6 +43,12 @@ describe("AddCommentForm", () => {
     expect(screen.queryByText("Insert code")).toBeNull();
   });
 
+  it("shows file-level label for file comments", () => {
+    render(<AddCommentForm {...makeProps({ startLine: 0, endLine: 0 })} />);
+    expect(screen.getByText("Adding file comment on src/app.ts")).toBeTruthy();
+    expect(screen.queryByText(/lines 0/)).toBeNull();
+  });
+
   it("clicking Insert code inserts a fenced block with language tag", () => {
     render(
       <AddCommentForm {...makeProps({ prefilledCode: "const x = 1;", language: "typescript" })} />

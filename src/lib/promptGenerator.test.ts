@@ -406,4 +406,23 @@ describe("generatePrompt", () => {
       `Please address these review comments:\n\n- \`src/auth.ts:10 (deleted)\` — This was wrong\n- \`src/auth.ts:20-25\` — Good replacement`
     );
   });
+
+  it("should label file-level comments without line 0", () => {
+    const comments: Comment[] = [
+      {
+        id: "1",
+        file: "src/config.ts",
+        startLine: 0,
+        endLine: 0,
+        side: "new",
+        text: "This file needs a module comment",
+        createdAt: "2024-01-01T00:00:00Z",
+      },
+    ];
+
+    const result = generatePrompt(comments);
+    expect(result).toBe(
+      `Please address these review comments:\n\n- \`src/config.ts:file\` — This file needs a module comment`
+    );
+  });
 });

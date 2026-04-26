@@ -1,4 +1,5 @@
 import type { Comment, PromptContext } from "../types";
+import { formatPromptCommentLocation } from "./commentLabels";
 
 /**
  * Groups comments by file and generates a compact prompt for AI review.
@@ -59,11 +60,7 @@ export function generatePrompt(comments: Comment[], context?: PromptContext): st
     fileComments.sort((a, b) => a.startLine - b.startLine);
 
     for (const comment of fileComments) {
-      const lineRef = comment.startLine === comment.endLine
-        ? `${comment.startLine}`
-        : `${comment.startLine}-${comment.endLine}`;
-      const deleted = comment.side === "old" ? " (deleted)" : "";
-      const location = `${file}:${lineRef}${deleted}`;
+      const location = formatPromptCommentLocation(comment);
 
       lines.push(`- \`${location}\` — ${comment.text}`);
     }

@@ -71,6 +71,17 @@ export function FileViewer({
   highlightedWord,
 }: FileViewerProps) {
   const lines = content.split("\n");
+  const fileLevelComments = comments.filter(
+    (comment) =>
+      comment.file === fileName &&
+      comment.side === "new" &&
+      comment.startLine === 0 &&
+      comment.endLine === 0
+  );
+  const isAddingFileComment =
+    addingCommentAt?.file === fileName &&
+    addingCommentAt.startLine === 0 &&
+    addingCommentAt.endLine === 0;
 
   // Highlight the entire content
   let highlightedLines: string[] = [];
@@ -207,8 +218,53 @@ export function FileViewer({
           </label>
           <span className="text-sm text-ctp-text font-medium">{fileName}</span>
         </div>
-        <span className="text-xs text-ctp-subtext">{lines.length} lines</span>
+        <div className="flex items-center gap-2">
+          {!isViewed && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onLineClick(fileName, 0, "new");
+              }}
+              className="px-2 py-0.5 text-xs rounded-sm text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface1 transition-colors"
+            >
+              Comment
+            </button>
+          )}
+          <span className="text-xs text-ctp-subtext">{lines.length} lines</span>
+        </div>
       </div>
+
+      {!isViewed && (fileLevelComments.length > 0 || isAddingFileComment) && (
+        <div className="border-b border-ctp-surface1 bg-ctp-mantle px-4 py-3 space-y-3">
+          {fileLevelComments.length > 0 && (
+            <div
+              onMouseEnter={() => onHoverCommentIds(fileLevelComments.map((comment) => comment.id))}
+              onMouseLeave={() => onHoverCommentIds(null)}
+            >
+              <CommentWidget
+                comments={fileLevelComments}
+                onEdit={onEditComment}
+                onDelete={onDeleteComment}
+                editingId={editingCommentId}
+                onStartEdit={onStartEditComment}
+                onStopEdit={onStopEditComment}
+              />
+            </div>
+          )}
+          {isAddingFileComment && (
+            <AddCommentForm
+              file={fileName}
+              startLine={0}
+              endLine={0}
+              side="new"
+              onSubmit={onAddComment}
+              onCancel={onCancelComment}
+              language={language}
+            />
+          )}
+        </div>
+      )}
 
       {!isViewed && lines.map((line, index) => {
         const lineNumber = index + 1;

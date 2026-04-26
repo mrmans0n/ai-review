@@ -26,6 +26,7 @@ import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
 import { PromptPreview } from "./components/PromptPreview";
 import { CommentOverview } from "./components/CommentOverview";
+import { RailComments } from "./components/RailComments";
 import { RepoLandingPage } from "./components/RepoLandingPage";
 import { RepoSwitcher } from "./components/RepoSwitcher";
 import { ConfirmModal } from "./components/ConfirmModal";
@@ -35,7 +36,16 @@ import { buildJsonFeedback } from "./lib/jsonFeedback";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
 import { extractLinesFromHunks } from "./lib/extractLinesFromHunks";
 import { HunkExpandControl } from "./components/HunkExpandControl";
-import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile } from "./types";
+import type { Comment, DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile } from "./types";
+
+function escapeAttributeValue(value: string): string {
+  if (typeof CSS !== "undefined" && CSS.escape) return CSS.escape(value);
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function attributeSelector(name: string, value: string): string {
+  return `[${name}="${escapeAttributeValue(value)}"]`;
+}
 
 type InitialDiffMode = {
   type: "commit" | "range" | "branch";
@@ -1174,6 +1184,81 @@ function App() {
     }
   };
 
+  const addFileComment = (file: string) => {
+    setAddingCommentAt({ file, startLine: 0, endLine: 0, side: "new" });
+  };
+
+  const findCommentScrollTarget = (comment: Comment): Element | null => {
+    const fileSelector = attributeSelector("data-diff-file", comment.file);
+    const fileViewerSelector = attributeSelector("data-file-viewer", comment.file);
+    const diffFileEl = document.querySelector(fileSelector);
+    const fileViewerEl = document.querySelector(fileViewerSelector);
+
+    if (comment.startLine === 0 && comment.endLine === 0) {
+      return diffFileEl || fileViewerEl;
+    }
+
+    if (diffFileEl) {
+      const diffFile = files.find(
+        (file: any) => (file.newPath || file.oldPath) === comment.file
+      );
+      const fileHunks = expandedHunksMap[comment.file] || diffFile?.hunks;
+      const changeKey = fileHunks
+        ? findChangeKey(fileHunks, comment.endLine, comment.side)
+        : null;
+
+      if (changeKey) {
+        const changeEl = diffFileEl.querySelector(
+          attributeSelector("data-change-key", changeKey)
+        );
+        if (changeEl) return changeEl;
+      }
+
+      return diffFileEl;
+    }
+
+    if (fileViewerEl) {
+      const lineEl = fileViewerEl.querySelector(
+        `${attributeSelector("data-line-number", String(comment.endLine))}${attributeSelector("data-line-side", comment.side)}`
+      );
+      return lineEl || fileViewerEl;
+    }
+
+    return null;
+  };
+
+  const scrollToComment = (comment: Comment) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const target = findCommentScrollTarget(comment);
+        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    });
+  };
+
+  const goToComment = async (comment: Comment) => {
+    setHoveredCommentIds([comment.id]);
+    setTimeout(() => setHoveredCommentIds(null), 3000);
+
+    const isInDiff = files.some(
+      (file: any) => (file.newPath || file.oldPath) === comment.file
+    );
+
+    if (isInDiff) {
+      setViewedFiles((prev) => {
+        if (!prev.has(comment.file)) return prev;
+        const next = new Set(prev);
+        next.delete(comment.file);
+        return next;
+      });
+      setViewMode("diff");
+    } else {
+      await handleFileSelect(comment.file);
+    }
+
+    scrollToComment(comment);
+  };
+
   const handlePreviewPrompt = () => {
     setShowPromptPreview(true);
   };
@@ -1294,6 +1379,7 @@ function App() {
     // Group comments by endLine + side
     const commentsByEndLine = new Map<string, import("./types").Comment[]>();
     for (const comment of fileComments) {
+      if (comment.startLine === 0 && comment.endLine === 0) continue;
       const key = `${comment.side}-${comment.endLine}`;
       if (!commentsByEndLine.has(key)) commentsByEndLine.set(key, []);
       commentsByEndLine.get(key)!.push(comment);
@@ -1383,7 +1469,18 @@ function App() {
       oldSource,
     });
     const fileComments = comments.filter((c) => c.file === fileName);
-    const fileWidgets = buildFileWidgets(file, fileComments, fileHunks);
+    const fileLevelComments = fileComments.filter(
+      (comment) => comment.startLine === 0 && comment.endLine === 0
+    );
+    const lineComments = fileComments.filter(
+      (comment) => comment.startLine !== 0 || comment.endLine !== 0
+    );
+    const isAddingFileComment =
+      addingCommentAt !== null &&
+      addingCommentAt.file === fileName &&
+      addingCommentAt.startLine === 0 &&
+      addingCommentAt.endLine === 0;
+    const fileWidgets = buildFileWidgets(file, lineComments, fileHunks);
 
     // Build selectedChanges for hover highlighting and drag selection
     const highlightedChangeKeys: string[] = [];
@@ -1449,6 +1546,17 @@ function App() {
                 {mdPreviewFiles.has(fileName) ? "Source" : "Preview"}
               </button>
             )}
+            {!isViewed && file.newPath !== "/dev/null" && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addFileComment(fileName);
+                }}
+                className="px-2 py-0.5 text-xs rounded-sm text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface1 transition-colors"
+              >
+                Comment
+              </button>
+            )}
             <label
               className="flex items-center gap-2 text-xs uppercase tracking-wide text-ctp-subtext cursor-pointer"
               onClick={(event) => event.stopPropagation()}
@@ -1466,6 +1574,36 @@ function App() {
             </span>
           </div>
         </div>
+        {!isViewed && (fileLevelComments.length > 0 || isAddingFileComment) && (
+          <div className="border-b border-ctp-surface1 bg-ctp-mantle px-4 py-3 space-y-3">
+            {fileLevelComments.length > 0 && (
+              <div
+                onMouseEnter={() => setHoveredCommentIds(fileLevelComments.map((comment) => comment.id))}
+                onMouseLeave={() => setHoveredCommentIds(null)}
+              >
+                <CommentWidget
+                  comments={fileLevelComments}
+                  onEdit={updateComment}
+                  onDelete={deleteComment}
+                  editingId={editingCommentId}
+                  onStartEdit={startEditing}
+                  onStopEdit={stopEditing}
+                />
+              </div>
+            )}
+            {isAddingFileComment && (
+              <AddCommentForm
+                file={fileName}
+                startLine={0}
+                endLine={0}
+                side="new"
+                onSubmit={handleAddComment}
+                onCancel={() => setAddingCommentAt(null)}
+                language={detectLanguage(fileName)}
+              />
+            )}
+          </div>
+        )}
         {!isViewed && mdPreviewFiles.has(fileName) && mdContentCache[fileName] !== undefined ? (
           <MarkdownPreview
             content={mdContentCache[fileName]}
@@ -1986,50 +2124,26 @@ function App() {
                 </span>
               )}
             </div>
-            <div className="flex-1 overflow-auto">
-              <FileList
-                files={changedFiles}
-                selectedFile={selectedFile}
-                onSelectFile={handleFileSelect}
-              />
-              {(() => {
-                // Get unique files with comments
-                const filesWithComments = Array.from(
-                  new Set(comments.map((c) => c.file))
-                ).sort();
-
-                if (filesWithComments.length > 0) {
-                  return (
-                    <>
-                      <div className="flex items-center gap-2 px-3 py-2 border-t border-b border-ctp-surface1 bg-ctp-mantle sticky top-0">
-                        <div className="w-0.5 h-3.5 bg-ctp-peach rounded-full flex-shrink-0" />
-                        <span className="text-[10px] font-semibold tracking-widest text-ctp-overlay0 uppercase">
-                          Commented Files
-                        </span>
-                      </div>
-                      <div className="space-y-1">
-                        {filesWithComments.map((file) => (
-                          <button
-                            key={file}
-                            onClick={() => handleFileSelect(file)}
-                            className={`w-full px-4 py-2 text-left text-sm transition-colors rounded-sm ${
-                              selectedFile === file
-                                ? "bg-ctp-surface0 border-l-2 border-ctp-peach text-ctp-text"
-                                : "text-ctp-subtext hover:bg-ctp-surface0"
-                            }`}
-                          >
-                            {file.split("/").pop()}
-                            <div className="text-xs opacity-70 truncate">
-                              {file}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  );
-                }
-                return null;
-              })()}
+            <div className="flex-1 min-h-0 flex flex-col">
+              <div className="flex-1 min-h-0 overflow-auto">
+                <FileList
+                  files={changedFiles}
+                  selectedFile={selectedFile}
+                  onSelectFile={handleFileSelect}
+                />
+              </div>
+              <div className="max-h-[45%] min-h-[132px] flex flex-col">
+                <RailComments
+                  comments={comments}
+                  onGoToComment={goToComment}
+                  onOpenOverview={() => setShowCommentOverview(true)}
+                  onEditComment={updateComment}
+                  onDeleteComment={deleteComment}
+                  editingCommentId={editingCommentId}
+                  onStartEditComment={startEditing}
+                  onStopEditComment={stopEditing}
+                />
+              </div>
             </div>
             <div
               role="separator"
@@ -2181,29 +2295,7 @@ function App() {
           onClose={() => setShowCommentOverview(false)}
           onGoToComment={async (comment) => {
             setShowCommentOverview(false);
-            // Highlight the comment
-            setHoveredCommentIds([comment.id]);
-            setTimeout(() => setHoveredCommentIds(null), 3000);
-
-            // Switch to the correct view if needed
-            const isInDiff = files.some(
-              (f: any) => (f.newPath || f.oldPath) === comment.file
-            );
-            if (isInDiff) {
-              setViewMode("diff");
-            } else {
-              await handleFileSelect(comment.file);
-            }
-
-            // Wait for React to render the new view, then scroll
-            requestAnimationFrame(() => {
-              const fileEl =
-                document.querySelector(`[data-diff-file="${comment.file}"]`) ||
-                document.querySelector(`[data-file-viewer="${comment.file}"]`);
-              if (fileEl) {
-                fileEl.scrollIntoView({ behavior: "smooth", block: "start" });
-              }
-            });
+            await goToComment(comment);
           }}
         />
       )}
