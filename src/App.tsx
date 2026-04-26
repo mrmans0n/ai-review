@@ -59,7 +59,8 @@ function clampRightRailWidth(width: number) {
 }
 
 function escapeAttributeSelector(value: string) {
-  return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(value) : value.replace(/"/g, '\\"');
+  if (typeof CSS !== "undefined" && CSS.escape) return CSS.escape(value);
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/'/g, "\\'").replace(/\[/g, "\\[").replace(/\]/g, "\\]");
 }
 
 function App() {
@@ -1041,6 +1042,44 @@ function App() {
     });
   };
 
+  const findCommentScrollTarget = (comment: Comment): Element | null => {
+    const escapedFile = escapeAttributeSelector(comment.file);
+    const diffFileEl = document.querySelector(`[data-diff-file="${escapedFile}"]`);
+    const fileViewerEl = document.querySelector(`[data-file-viewer="${escapedFile}"]`);
+
+    if (comment.startLine === 0 && comment.endLine === 0) {
+      return diffFileEl || fileViewerEl;
+    }
+
+    if (diffFileEl) {
+      const diffFile = files.find(
+        (file: any) => getDiffFilePath(file) === comment.file
+      );
+      const fileHunks = expandedHunksMap[comment.file] || diffFile?.hunks;
+      const changeKey = fileHunks
+        ? findChangeKey(fileHunks, comment.endLine, comment.side)
+        : null;
+
+      if (changeKey) {
+        const changeEl = diffFileEl.querySelector(
+          `[data-change-key="${escapeAttributeSelector(changeKey)}"]`
+        );
+        if (changeEl) return changeEl;
+      }
+
+      return diffFileEl;
+    }
+
+    if (fileViewerEl) {
+      const lineEl = fileViewerEl.querySelector(
+        `[data-line-number="${escapeAttributeSelector(String(comment.endLine))}"][data-line-side="${escapeAttributeSelector(comment.side)}"]`
+      );
+      return lineEl || fileViewerEl;
+    }
+
+    return null;
+  };
+
   const goToComment = async (comment: Comment, options: { closeOverview?: boolean } = {}) => {
     if (options.closeOverview) {
       setShowCommentOverview(false);
@@ -1054,6 +1093,13 @@ function App() {
     );
 
     if (isInDiff) {
+      // Un-collapse viewed files so the target is visible
+      setViewedFiles((prev) => {
+        if (!prev.has(comment.file)) return prev;
+        const next = new Set(prev);
+        next.delete(comment.file);
+        return next;
+      });
       setViewMode("diff");
       setActiveDiffFile(comment.file);
     } else {
@@ -1061,11 +1107,10 @@ function App() {
     }
 
     requestAnimationFrame(() => {
-      const escapedFile = escapeAttributeSelector(comment.file);
-      const fileEl =
-        document.querySelector(`[data-diff-file="${escapedFile}"]`) ||
-        document.querySelector(`[data-file-viewer="${escapedFile}"]`);
-      fileEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+      requestAnimationFrame(() => {
+        const target = findCommentScrollTarget(comment);
+        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
     });
   };
 
@@ -1285,6 +1330,10 @@ function App() {
       );
       setAddingCommentAt(null);
     }
+  };
+
+  const addFileComment = (file: string) => {
+    setAddingCommentAt({ file, startLine: 0, endLine: 0, side: "new" });
   };
 
   const handlePreviewPrompt = () => {
@@ -1720,6 +1769,16 @@ function App() {
                 {mdPreviewFiles.has(fileName) ? "Source" : "Preview"}
               </button>
             )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                addFileComment(fileName);
+              }}
+              className="px-2 py-0.5 text-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-hover rounded-sm transition-colors"
+            >
+              Comment
+            </button>
             <label
               className="flex items-center gap-2 text-xs uppercase tracking-wide text-ink-secondary cursor-pointer"
               onClick={(event) => event.stopPropagation()}
@@ -1741,7 +1800,7 @@ function App() {
           <MarkdownPreview
             content={mdContentCache[fileName]}
             fileName={fileName}
-            comments={comments.filter((c) => c.file === fileName && c.side === "new")}
+            comments={comments.filter((c) => c.file === fileName && c.side === "new" && !(c.startLine === 0 && c.endLine === 0))}
             onAddComment={addComment}
             onEditComment={updateComment}
             onDeleteComment={deleteComment}
@@ -2347,6 +2406,11 @@ function App() {
             onPreviewFile={handleFileSelect}
             onGoToComment={(comment) => void goToComment(comment)}
             onOpenCommentOverview={() => setShowCommentOverview(true)}
+            onEditComment={updateComment}
+            onDeleteComment={deleteComment}
+            editingCommentId={editingCommentId}
+            onStartEditComment={startEditing}
+            onStopEditComment={stopEditing}
           />
         )}
       </div>

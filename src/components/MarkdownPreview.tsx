@@ -233,6 +233,7 @@ export function MarkdownPreview({
   return (
     <div
       className="markdown-preview"
+      data-diff-file={fileName}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       ref={containerRef}
