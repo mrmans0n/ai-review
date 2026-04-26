@@ -1796,6 +1796,19 @@ function App() {
             </span>
           </div>
         </div>
+        {addingCommentAt && addingCommentAt.file === fileName && addingCommentAt.startLine === 0 && addingCommentAt.endLine === 0 && (
+          <div className="px-4 py-2 bg-surface border-b border-divider">
+            <AddCommentForm
+              file={addingCommentAt.file}
+              startLine={0}
+              endLine={0}
+              side={addingCommentAt.side}
+              onSubmit={handleAddComment}
+              onCancel={() => setAddingCommentAt(null)}
+              language={detectLanguage(fileName)}
+            />
+          </div>
+        )}
         {!isViewed && mdPreviewFiles.has(fileName) && mdContentCache[fileName] !== undefined ? (
           <MarkdownPreview
             content={mdContentCache[fileName]}

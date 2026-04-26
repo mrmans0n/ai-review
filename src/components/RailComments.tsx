@@ -129,7 +129,7 @@ function CommentCard({
       <p className="line-clamp-3 text-xs leading-relaxed text-ctp-text">
         {comment.text}
       </p>
-      <div className="mt-1 flex gap-2 justify-end">
+      <div className="mt-1 flex gap-2 justify-end" onKeyDown={(e) => e.stopPropagation()}>
         <button
           type="button"
           onClick={(e) => {
