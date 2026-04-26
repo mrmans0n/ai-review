@@ -40,7 +40,7 @@ import type { Comment, DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgSt
 
 function escapeAttributeValue(value: string): string {
   if (typeof CSS !== "undefined" && CSS.escape) return CSS.escape(value);
-  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/'/g, "\\'").replace(/\[/g, "\\[").replace(/\]/g, "\\]");
 }
 
 function attributeSelector(name: string, value: string): string {
@@ -1608,7 +1608,7 @@ function App() {
           <MarkdownPreview
             content={mdContentCache[fileName]}
             fileName={fileName}
-            comments={comments.filter((c) => c.file === fileName)}
+            comments={comments.filter((c) => c.file === fileName && !(c.startLine === 0 && c.endLine === 0))}
             onAddComment={addComment}
             onEditComment={updateComment}
             onDeleteComment={deleteComment}
