@@ -34,7 +34,7 @@ function renderCommentText(text: string): React.ReactNode {
       highlightedHtml = seg.content;
     }
     return (
-      <pre key={i} className="bg-ctp-mantle rounded p-2 my-1 overflow-x-auto text-sm">
+      <pre key={i} className="bg-surface rounded p-2 my-1 overflow-x-auto text-sm">
         <code
           className="hljs"
           dangerouslySetInnerHTML={{ __html: highlightedHtml }}
@@ -71,7 +71,7 @@ export function CommentWidget({
   };
 
   return (
-    <div className="border-l-2 border-ctp-peach bg-ctp-surface0 p-3 text-sm">
+    <div className="border-l-2 border-accent-review bg-surface-hover p-3 text-sm">
       {comments.map((comment) => (
         <div key={comment.id} className="mb-2 last:mb-0">
           {editingId === comment.id ? (
@@ -88,7 +88,7 @@ export function CommentWidget({
                     handleCancelEdit();
                   }
                 }}
-                className="w-full bg-ctp-mantle border border-ctp-surface1 rounded-sm text-ctp-text text-sm p-2 placeholder:text-ctp-overlay0 focus:border-ctp-mauve focus:outline-none focus:ring-1 focus:ring-ctp-mauve/30 resize-none"
+                className="w-full bg-surface border border-divider rounded-sm text-ink-primary text-sm p-2 placeholder:text-ink-muted focus:border-ctp-mauve focus:outline-none focus:ring-1 focus:ring-ctp-mauve/30 resize-none"
                 rows={3}
                 autoFocus
                 placeholder="Edit comment... (Ctrl+Enter to save, Esc to cancel)"
@@ -102,7 +102,7 @@ export function CommentWidget({
                 </button>
                 <button
                   onClick={handleCancelEdit}
-                  className="px-3 py-1.5 text-ctp-subtext text-sm rounded-sm hover:text-ctp-text hover:bg-ctp-surface0 transition-colors"
+                  className="px-3 py-1.5 text-ink-secondary text-sm rounded-sm hover:text-ink-primary hover:bg-surface-hover transition-colors"
                 >
                   Cancel
                 </button>
@@ -110,10 +110,10 @@ export function CommentWidget({
             </div>
           ) : (
             <div>
-              <div className="text-ctp-text leading-relaxed mb-1">
+              <div className="text-ink-primary leading-relaxed mb-1">
                 {renderCommentText(comment.text)}
               </div>
-              <div className="flex gap-2 items-center text-xs text-ctp-subtext">
+              <div className="flex gap-2 items-center text-xs text-ink-secondary">
                 <span>
                   {comment.startLine === 0 && comment.endLine === 0
                     ? "Whole file"
@@ -128,7 +128,7 @@ export function CommentWidget({
                 </button>
                 <button
                   onClick={() => onDelete(comment.id)}
-                  className="text-ctp-subtext hover:text-ctp-red transition-colors text-xs"
+                  className="text-ink-secondary hover:text-ctp-red transition-colors text-xs"
                 >
                   Delete
                 </button>

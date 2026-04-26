@@ -329,10 +329,10 @@ function App() {
   }, [reviewingLabel]);
 
   const btnBase = "px-3 py-1.5 text-sm rounded-sm transition-colors border";
-  const btnDefault = `${btnBase} bg-transparent border-ctp-surface1 text-ctp-subtext hover:bg-ctp-surface0 hover:text-ctp-text hover:border-ctp-overlay0`;
-  const btnActive = `${btnBase} bg-ctp-surface1 border-ctp-peach text-ctp-text`;
-  const btnIcon = "p-1.5 rounded-sm text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface0 transition-colors";
-  const btnIconActive = "p-1.5 rounded-sm text-ctp-text bg-ctp-surface1 border border-ctp-peach transition-colors";
+  const btnDefault = `${btnBase} bg-transparent border-divider text-ink-secondary hover:bg-surface-hover hover:text-ink-primary hover:border-divider`;
+  const btnActive = `${btnBase} bg-surface-hover border-accent-review text-ink-primary`;
+  const btnIcon = "p-1.5 rounded-sm text-ink-secondary hover:text-ink-primary hover:bg-surface-hover transition-colors";
+  const btnIconActive = "p-1.5 rounded-sm text-ink-primary bg-surface-hover border border-accent-review transition-colors";
 
   useEffect(() => {
     window.localStorage.setItem("changed-files-sidebar-width", String(sidebarWidth));
@@ -1339,7 +1339,7 @@ function App() {
       if (changeKey) {
         const commentWidget = wrapForSide(
           <div
-            className="px-4 py-2 bg-ctp-mantle border-t border-b border-ctp-surface1"
+            className="px-4 py-2 bg-surface border-t border-b border-divider"
             onMouseEnter={() => setHoveredCommentIds(commentsAtLine.map(c => c.id))}
             onMouseLeave={() => setHoveredCommentIds(null)}
           >
@@ -1364,7 +1364,7 @@ function App() {
       if (formChangeKey) {
         const existingWidget = widgets[formChangeKey];
         const formWidget = wrapForSide(
-          <div className="px-4 py-2 bg-ctp-mantle border-t border-b border-ctp-surface1">
+          <div className="px-4 py-2 bg-surface border-t border-b border-divider">
             <AddCommentForm
               file={addingCommentAt.file}
               startLine={addingCommentAt.startLine}
@@ -1586,8 +1586,8 @@ function App() {
     return (
       <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={file.newPath || file.oldPath}>
         <div
-          className={`sticky top-0 z-10 px-4 py-2 font-medium border-b border-ctp-surface1 flex justify-between items-center transition-colors text-sm ${
-            isViewed ? "bg-ctp-surface0/80 text-ctp-subtext" : "bg-ctp-surface0 text-ctp-text"
+          className={`sticky top-0 z-10 px-4 py-2 font-medium border-b border-divider flex justify-between items-center transition-colors text-sm ${
+            isViewed ? "bg-surface-hover/80 text-ink-secondary" : "bg-surface text-ink-primary"
           }`}
           onClick={() => {
             if (isViewed) {
@@ -1622,26 +1622,26 @@ function App() {
                 }}
                 className={`px-2 py-0.5 text-xs rounded-sm transition-colors ${
                   mdPreviewFiles.has(fileName)
-                    ? "bg-ctp-mauve text-ctp-base"
-                    : "text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface1"
+                    ? "bg-accent-review text-accent-review-text"
+                    : "text-ink-secondary hover:text-ink-primary hover:bg-surface-hover"
                 }`}
               >
                 {mdPreviewFiles.has(fileName) ? "Source" : "Preview"}
               </button>
             )}
             <label
-              className="flex items-center gap-2 text-xs uppercase tracking-wide text-ctp-subtext cursor-pointer"
+              className="flex items-center gap-2 text-xs uppercase tracking-wide text-ink-secondary cursor-pointer"
               onClick={(event) => event.stopPropagation()}
             >
               <input
                 type="checkbox"
                 checked={isViewed}
                 onChange={() => toggleViewed(fileName)}
-                className="h-4 w-4 rounded border-ctp-surface1 bg-ctp-mantle text-ctp-blue focus:ring-ctp-blue focus:ring-offset-0"
+                className="h-4 w-4 rounded border-divider bg-surface text-ctp-blue focus:ring-accent-review focus:ring-offset-0"
               />
               Viewed
             </label>
-            <span className="text-xs text-ctp-subtext">
+            <span className="text-xs text-ink-secondary">
               +{file.additions ?? 0} / -{file.deletions ?? 0}
             </span>
           </div>
@@ -1676,7 +1676,7 @@ function App() {
               <span className="relative inline-flex items-center w-full">
                 {showButton && (
                   <span
-                    className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-ctp-mauve hover:opacity-90 cursor-pointer text-ctp-base opacity-80 hover:opacity-100 transition-all"
+                    className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-accent-review hover:opacity-90 cursor-pointer text-accent-review-text opacity-80 hover:opacity-100 transition-all"
                     title="Add comment"
                     onMouseDown={(e) => {
                       e.stopPropagation();
@@ -1867,14 +1867,14 @@ function App() {
 
   if (initError) {
     return (
-      <div className="min-h-screen bg-ctp-base flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="text-ctp-red text-4xl mb-4 select-none">!</div>
-          <p className="text-ctp-text text-sm mb-2 font-medium">Initialization Error</p>
-          <p className="text-ctp-subtext text-sm mb-4">{initError}</p>
+          <p className="text-ink-primary text-sm mb-2 font-medium">Initialization Error</p>
+          <p className="text-ink-secondary text-sm mb-4">{initError}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 text-sm rounded-sm bg-ctp-surface1 text-ctp-text hover:bg-ctp-surface0 transition-colors border border-ctp-overlay0"
+            className="px-4 py-2 text-sm rounded-sm bg-surface text-ink-primary hover:bg-surface-hover transition-colors border border-divider"
           >
             Retry
           </button>
@@ -1886,8 +1886,8 @@ function App() {
   if (!workingDir || !isGitRepo) {
     if (repoManager.loading) {
       return (
-        <div className="min-h-screen bg-ctp-base flex items-center justify-center">
-          <div className="text-ctp-subtext text-lg">Loading...</div>
+        <div className="min-h-screen bg-canvas flex items-center justify-center">
+          <div className="text-ink-secondary text-lg">Loading...</div>
         </div>
       );
     }
@@ -1902,16 +1902,15 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-ctp-base text-ctp-text">
+    <div className="min-h-screen bg-canvas text-ink-primary">
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 py-2.5 bg-ctp-mantle border-b border-ctp-surface1 flex-shrink-0"
-        style={theme === 'dark' ? { boxShadow: '0 4px 16px -4px rgba(250,179,135,0.15)' } : undefined}
+        className="flex items-center justify-between px-4 py-2.5 bg-surface border-b border-divider flex-shrink-0"
       >
         <div className="flex items-center gap-3">
           <div className="flex flex-col leading-none">
-            <span className="text-sm font-semibold text-ctp-text tracking-wide">
-              <span className="text-ctp-peach mr-1">●</span>ai-review
+            <span className="text-sm font-semibold text-ink-primary tracking-wide">
+              <span className="text-accent-review mr-1">●</span>ai-review
             </span>
           </div>
           <RepoSwitcher
@@ -1923,15 +1922,15 @@ function App() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-ctp-overlay0 hidden md:block">
-            Press <kbd className="px-2 py-1 bg-ctp-surface1 rounded text-xs">Ctrl/⌘</kbd>{" "}
-            <kbd className="px-2 py-1 bg-ctp-surface1 rounded text-xs">O</kbd> to open file
+          <span className="text-xs text-ink-muted hidden md:block">
+            Press <kbd className="px-2 py-1 bg-surface-hover rounded text-xs">Ctrl/⌘</kbd>{" "}
+            <kbd className="px-2 py-1 bg-surface-hover rounded text-xs">O</kbd> to open file
           </span>
 
           {/* Theme toggle button */}
           <button
             onClick={toggleTheme}
-            className="p-1.5 rounded text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface0 transition-colors"
+            className="p-1.5 rounded text-ink-secondary hover:text-ink-primary hover:bg-surface-hover transition-colors"
             title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-label="Toggle theme"
           >
@@ -1949,7 +1948,7 @@ function App() {
       </div>
 
       {!isEmptyState && (
-      <div className="flex items-center gap-1 px-3 py-2 bg-ctp-mantle border-b border-ctp-surface1 flex-shrink-0 flex-wrap">
+      <div className="flex items-center gap-1 px-3 py-2 bg-surface border-b border-divider flex-shrink-0 flex-wrap">
         {/* Group 1: View mode */}
         <div className="flex gap-1">
           <button
@@ -1969,7 +1968,7 @@ function App() {
         {isGitRepo && (
           <>
             {/* Divider between group 1 and group 2 */}
-            <div className="w-px h-5 bg-ctp-surface1 mx-1" />
+            <div className="w-px h-5 bg-divider mx-1" />
 
             {/* Group 2: Diff target */}
             <div className="flex gap-1 items-center">
@@ -2015,7 +2014,7 @@ function App() {
         )}
 
         {/* Divider between group 2 and group 3 */}
-        <div className="w-px h-5 bg-ctp-surface1 mx-1" />
+        <div className="w-px h-5 bg-divider mx-1" />
 
         {/* Group 3: Tools */}
         <div className="ml-auto flex items-center gap-1">
@@ -2061,7 +2060,7 @@ function App() {
                 onClick={handleGeneratePrompt}
                 className={
                   jsonOutput
-                    ? "px-4 py-2 bg-ctp-green text-ctp-base rounded-sm text-sm hover:opacity-90 transition-opacity font-semibold flex items-center gap-1"
+                    ? "px-4 py-2 bg-ctp-green text-on-green rounded-sm text-sm hover:opacity-90 transition-opacity font-semibold flex items-center gap-1"
                     : btnActive + " flex items-center gap-1"
                 }
               >
@@ -2121,7 +2120,7 @@ function App() {
               )}
             </button>
             {installMessage && (
-              <div className="absolute top-full mt-2 right-0 bg-ctp-surface0 border border-ctp-surface1 rounded-sm px-4 py-2 text-sm text-ctp-text whitespace-pre-wrap max-w-md shadow-lg z-50">
+              <div className="absolute top-full mt-2 right-0 bg-surface border border-divider rounded-sm px-4 py-2 text-sm text-ink-primary whitespace-pre-wrap max-w-md shadow-lg z-50">
                 {installMessage}
               </div>
             )}
@@ -2131,20 +2130,20 @@ function App() {
       )}
 
       {selectedCommit && (
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-ctp-surface0 border-b border-ctp-surface1 text-xs text-ctp-subtext flex-shrink-0">
-          <span className="font-mono bg-ctp-surface1 text-ctp-text px-2 py-0.5 rounded-sm">
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-surface border-b border-divider text-xs text-ink-secondary flex-shrink-0">
+          <span className="font-mono bg-surface-hover text-ink-primary px-2 py-0.5 rounded-sm">
             {selectedCommit.short_hash}
           </span>
-          <span className="font-medium text-ctp-text">{selectedCommit.message}</span>
+          <span className="font-medium text-ink-primary">{selectedCommit.message}</span>
         </div>
       )}
 
       {selectedBranch && (
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-ctp-surface0 border-b border-ctp-surface1 text-xs text-ctp-subtext flex-shrink-0">
-          <span className="font-mono bg-ctp-surface1 text-ctp-text px-2 py-0.5 rounded-sm">
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-surface border-b border-divider text-xs text-ink-secondary flex-shrink-0">
+          <span className="font-mono bg-surface-hover text-ink-primary px-2 py-0.5 rounded-sm">
             {selectedBranch.short_hash}
           </span>
-          <span className="font-medium text-ctp-text">Branch: {selectedBranch.name}</span>
+          <span className="font-medium text-ink-primary">Branch: {selectedBranch.name}</span>
         </div>
       )}
 
@@ -2152,16 +2151,16 @@ function App() {
       <div className="flex h-[calc(100vh-140px)]">
         {changedFiles.length > 0 && isSidebarVisible && (
           <div
-            className="border-r border-ctp-surface1 flex flex-col bg-ctp-mantle relative"
+            className="border-r border-divider flex flex-col bg-surface relative"
             style={{ width: `${sidebarWidth}px` }}
           >
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-ctp-surface1">
-              <div className="w-0.5 h-3.5 bg-ctp-peach rounded-full flex-shrink-0" />
-              <span className="text-[10px] font-semibold tracking-widest text-ctp-overlay0 uppercase">
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-divider">
+              <div className="w-0.5 h-3.5 bg-accent-review rounded-full flex-shrink-0" />
+              <span className="text-[10px] font-semibold tracking-widest text-ink-muted uppercase">
                 Changed Files
               </span>
               {renderableFiles.length > 0 && (
-                <span className="ml-auto text-[10px] text-ctp-overlay0">
+                <span className="ml-auto text-[10px] text-ink-muted">
                   {viewedCount}/{renderableFiles.length} viewed
                 </span>
               )}
@@ -2181,9 +2180,9 @@ function App() {
                 if (filesWithComments.length > 0) {
                   return (
                     <>
-                      <div className="flex items-center gap-2 px-3 py-2 border-t border-b border-ctp-surface1 bg-ctp-mantle sticky top-0">
-                        <div className="w-0.5 h-3.5 bg-ctp-peach rounded-full flex-shrink-0" />
-                        <span className="text-[10px] font-semibold tracking-widest text-ctp-overlay0 uppercase">
+                      <div className="flex items-center gap-2 px-3 py-2 border-t border-b border-divider bg-surface sticky top-0">
+                        <div className="w-0.5 h-3.5 bg-accent-review rounded-full flex-shrink-0" />
+                        <span className="text-[10px] font-semibold tracking-widest text-ink-muted uppercase">
                           Commented Files
                         </span>
                       </div>
@@ -2194,8 +2193,8 @@ function App() {
                             onClick={() => handleFileSelect(file)}
                             className={`w-full px-4 py-2 text-left text-sm transition-colors rounded-sm ${
                               selectedFile === file
-                                ? "bg-ctp-surface0 border-l-2 border-ctp-peach text-ctp-text"
-                                : "text-ctp-subtext hover:bg-ctp-surface0"
+                                ? "bg-surface border-l-2 border-accent-review text-ink-primary"
+                                : "text-ink-secondary hover:bg-surface-hover"
                             }`}
                           >
                             {file.split("/").pop()}
@@ -2219,7 +2218,7 @@ function App() {
                 event.preventDefault();
                 setIsResizingSidebar(true);
               }}
-              className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-ctp-peach/30 transition-colors"
+              className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-accent-review/30 transition-colors"
             />
           </div>
         )}
@@ -2227,7 +2226,7 @@ function App() {
         <div ref={mainContentRef} className="flex-1 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-ctp-subtext text-lg">Loading...</div>
+              <div className="text-ink-secondary text-lg">Loading...</div>
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-full">
@@ -2235,10 +2234,10 @@ function App() {
             </div>
           ) : viewMode === "file" && currentFile ? (
             <div className="p-6">
-              <div className="bg-ctp-mantle px-4 py-2 mb-4 rounded">
+              <div className="bg-surface px-4 py-2 mb-4 rounded">
                 <button
                   onClick={() => setViewMode("diff")}
-                  className="text-ctp-blue hover:opacity-80 text-sm"
+                  className="text-accent-review hover:opacity-80 text-sm"
                 >
                   ← Back to diff
                 </button>
@@ -2290,7 +2289,7 @@ function App() {
             </div>
           ) : isEmptyState ? (
             isGitRepo ? (
-              <div className="flex flex-col h-full bg-ctp-surface0" data-inline-selector>
+              <div className="flex flex-col h-full bg-surface" data-inline-selector>
                 <CommitSelectorContent
                   commits={commitSelector.commits}
                   branches={commitSelector.branches}
@@ -2316,10 +2315,10 @@ function App() {
                 />
               </div>
             ) : (
-              <div className="flex-1 flex items-center justify-center aperture-grid bg-ctp-base h-full">
+              <div className="flex-1 flex items-center justify-center aperture-grid bg-canvas h-full">
                 <div className="text-center">
-                  <div className="text-ctp-surface1 text-4xl mb-4 select-none">⊕</div>
-                  <p className="text-ctp-subtext text-sm mb-4">No changes to review</p>
+                  <div className="text-ink-muted text-4xl mb-4 select-none">⊕</div>
+                  <p className="text-ink-secondary text-sm mb-4">No changes to review</p>
                 </div>
               </div>
             )
