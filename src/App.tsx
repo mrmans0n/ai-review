@@ -2070,7 +2070,7 @@ function App() {
 
         {/* Group 3: Tools */}
         <div className="ml-auto flex items-center gap-1">
-          {changedFiles.length > 0 && (
+          {(changedFiles.length > 0 || comments.length > 0) && (
             <button
               onClick={() => setIsRightRailVisible((prev) => !prev)}
               className={isRightRailVisible ? btnIconActive : btnIcon}
