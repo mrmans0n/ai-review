@@ -1364,10 +1364,6 @@ function App() {
     }
   };
 
-  const addFileComment = (file: string) => {
-    setAddingCommentAt({ file, startLine: 0, endLine: 0, side: "new" });
-  };
-
   const handlePreviewPrompt = () => {
     setShowPromptPreview(true);
   };
@@ -1815,16 +1811,6 @@ function App() {
                 {mdPreviewFiles.has(fileName) ? "Source" : "Preview"}
               </button>
             )}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                addFileComment(fileName);
-              }}
-              className="px-2 py-0.5 text-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-hover rounded-sm transition-colors"
-            >
-              Comment
-            </button>
             <label
               className="flex items-center gap-2 text-xs uppercase tracking-wide text-ink-secondary cursor-pointer"
               onClick={(event) => event.stopPropagation()}
