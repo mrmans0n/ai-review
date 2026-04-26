@@ -37,6 +37,7 @@ function makeProps(overrides: Partial<Parameters<typeof FileViewer>[0]> = {}) {
     isViewed: false,
     onToggleViewed: vi.fn(),
     onLineClick: vi.fn(),
+    onFileCommentClick: vi.fn(),
     addingCommentAt: null,
     onAddComment: vi.fn(),
     onCancelComment: vi.fn(),
@@ -71,14 +72,23 @@ describe("FileViewer", () => {
       expect(root).toBeTruthy();
     });
 
-    it("renders data-line-number and data-line-side on each line", () => {
+    it("renders data-line-number, data-line-side, and comment anchors on each line", () => {
       const props = makeProps();
       const { container } = render(<FileViewer {...props} />);
       const lineEls = container.querySelectorAll("[data-line-number]");
       expect(lineEls.length).toBe(3);
       expect(lineEls[0].getAttribute("data-line-number")).toBe("1");
       expect(lineEls[0].getAttribute("data-line-side")).toBe("new");
+      expect(lineEls[0].getAttribute("data-comment-file")).toBe("src/app.ts");
+      expect(lineEls[0].getAttribute("data-comment-line")).toBe("1");
+      expect(lineEls[0].getAttribute("data-comment-side")).toBe("new");
       expect(lineEls[2].getAttribute("data-line-number")).toBe("3");
+    });
+
+    it("renders a file-level comment anchor", () => {
+      const props = makeProps();
+      const { container } = render(<FileViewer {...props} />);
+      expect(container.querySelector("[data-comment-file-anchor='src/app.ts']")).toBeTruthy();
     });
   });
 
@@ -217,6 +227,50 @@ describe("FileViewer", () => {
       // Verify it's on line 2 by checking parent
       const lineEl = icons[0].closest("[data-line-number]");
       expect(lineEl?.getAttribute("data-line-number")).toBe("2");
+    });
+  });
+
+  describe("file-level comments", () => {
+    it("calls onFileCommentClick from the header comment action", () => {
+      const props = makeProps();
+      render(<FileViewer {...props} />);
+      fireEvent.click(screen.getByText("Comment"));
+      expect(props.onFileCommentClick).toHaveBeenCalledWith("src/app.ts");
+    });
+
+    it("shows whole-file add comment form without attaching it to line zero", () => {
+      const props = makeProps({
+        addingCommentAt: {
+          file: "src/app.ts",
+          startLine: 0,
+          endLine: 0,
+          side: "new",
+        },
+      });
+      const { container } = render(<FileViewer {...props} />);
+      const form = screen.getByTestId("add-comment-form");
+      expect(form.getAttribute("data-start")).toBe("0");
+      expect(form.getAttribute("data-end")).toBe("0");
+      expect(container.querySelector("[data-line-number='0']")).toBeNull();
+      expect(form.closest("[data-line-number]")).toBeNull();
+    });
+
+    it("does not render whole-file comments as line comments", () => {
+      const comments: Comment[] = [
+        {
+          id: "c-file",
+          file: "src/app.ts",
+          startLine: 0,
+          endLine: 0,
+          side: "new",
+          text: "file comment",
+          createdAt: "2024-01-01T00:00:00Z",
+        },
+      ];
+      const { container } = render(<FileViewer {...makeProps({ comments })} />);
+      expect(screen.getByTestId("comment-widget").getAttribute("data-comment-count")).toBe("1");
+      expect(container.querySelector("[data-line-number='0']")).toBeNull();
+      expect(screen.getByTestId("comment-widget").closest("[data-line-number]")).toBeNull();
     });
   });
 

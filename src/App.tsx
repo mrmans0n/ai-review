@@ -27,6 +27,7 @@ import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
 import { PromptPreview } from "./components/PromptPreview";
 import { CommentOverview } from "./components/CommentOverview";
+import { isWholeFileComment } from "./hooks/commentHelpers";
 import { RepoLandingPage } from "./components/RepoLandingPage";
 import { RepoSwitcher } from "./components/RepoSwitcher";
 import { ConfirmModal } from "./components/ConfirmModal";
@@ -61,6 +62,35 @@ function clampRightRailWidth(width: number) {
 
 function escapeAttributeSelector(value: string) {
   return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(value) : value.replace(/"/g, '\\"');
+}
+
+function scrollToCommentTarget(comment: Comment) {
+  const file = escapeAttributeSelector(comment.file);
+  const selectors = isWholeFileComment(comment)
+    ? [
+        `[data-comment-file-anchor="${file}"]`,
+        `[data-diff-file="${file}"]`,
+        `[data-file-viewer="${file}"]`,
+      ]
+    : [
+        `[data-comment-file="${file}"][data-comment-line="${comment.startLine}"][data-comment-side="${comment.side}"]`,
+        `[data-file-viewer="${file}"] [data-line-number="${comment.startLine}"][data-line-side="${comment.side}"]`,
+        `[data-comment-file-anchor="${file}"]`,
+        `[data-diff-file="${file}"]`,
+        `[data-file-viewer="${file}"]`,
+      ];
+
+  const target = selectors
+    .map((selector) => document.querySelector<HTMLElement>(selector))
+    .find((element): element is HTMLElement => Boolean(element));
+
+  if (!target) return;
+
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  if (!target.hasAttribute("tabindex")) {
+    target.setAttribute("tabindex", "-1");
+  }
+  target.focus({ preventScroll: true });
 }
 
 function App() {
@@ -1093,11 +1123,7 @@ function App() {
     }
 
     requestAnimationFrame(() => {
-      const escapedFile = escapeAttributeSelector(comment.file);
-      const fileEl =
-        document.querySelector(`[data-diff-file="${escapedFile}"]`) ||
-        document.querySelector(`[data-file-viewer="${escapedFile}"]`);
-      fileEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+      requestAnimationFrame(() => scrollToCommentTarget(comment));
     });
   };
 
@@ -1306,6 +1332,17 @@ function App() {
     });
   };
 
+  const handleFileCommentClick = (file: string) => {
+    setAddingCommentAt({
+      file,
+      startLine: 0,
+      endLine: 0,
+      side: "new",
+    });
+    setSelectingRange(null);
+    setSelectedRange(null);
+  };
+
   const handleAddComment = (text: string) => {
     if (addingCommentAt) {
       addComment(
@@ -1439,6 +1476,7 @@ function App() {
     // Group comments by endLine + side
     const commentsByEndLine = new Map<string, import("./types").Comment[]>();
     for (const comment of fileComments) {
+      if (isWholeFileComment(comment)) continue;
       const key = `${comment.side}-${comment.endLine}`;
       if (!commentsByEndLine.has(key)) commentsByEndLine.set(key, []);
       commentsByEndLine.get(key)!.push(comment);
@@ -1686,12 +1724,14 @@ function App() {
       oldSource,
     });
     const fileComments = comments.filter((c) => c.file === fileName);
-    const fileWidgets = buildFileWidgets(file, fileComments, fileHunks);
+    const wholeFileComments = fileComments.filter(isWholeFileComment);
+    const lineComments = fileComments.filter((comment) => !isWholeFileComment(comment));
+    const fileWidgets = buildFileWidgets(file, lineComments, fileHunks);
 
     // Build selectedChanges for hover highlighting and drag selection
     const highlightedChangeKeys: string[] = [];
     if (hoveredCommentIds && hoveredCommentIds.length > 0) {
-      for (const comment of fileComments) {
+      for (const comment of lineComments) {
         if (hoveredCommentIds.includes(comment.id)) {
           highlightedChangeKeys.push(
             ...getChangeKeysForRange(fileHunks, comment.startLine, comment.endLine, comment.side)
@@ -1709,6 +1749,7 @@ function App() {
     return (
       <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={getDiffFilePath(file)}>
         <div
+          data-comment-file-anchor={fileName}
           className={`sticky top-0 z-10 px-4 py-2 font-medium border-b border-divider flex justify-between items-center transition-colors text-sm ${
             isViewed ? "bg-surface-hover/80 text-ink-secondary" : "bg-surface text-ink-primary"
           }`}
@@ -1737,6 +1778,16 @@ function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleFileCommentClick(fileName);
+              }}
+              className="px-2 py-0.5 text-xs rounded-sm text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface1 transition-colors"
+            >
+              Comment
+            </button>
             {detectLanguage(fileName) === "markdown" && viewType === "split" && file.newPath !== "/dev/null" && (
               <button
                 onClick={(e) => {
@@ -1769,11 +1820,43 @@ function App() {
             </span>
           </div>
         </div>
+        {!isViewed && (wholeFileComments.length > 0 || (addingCommentAt && addingCommentAt.file === fileName && isWholeFileComment(addingCommentAt))) && (
+          <div className="border-b border-ctp-surface1 bg-ctp-mantle px-4 py-2">
+            {wholeFileComments.length > 0 && (
+              <div
+                onMouseEnter={() => setHoveredCommentIds(wholeFileComments.map((comment) => comment.id))}
+                onMouseLeave={() => setHoveredCommentIds(null)}
+              >
+                <CommentWidget
+                  comments={wholeFileComments}
+                  onEdit={updateComment}
+                  onDelete={deleteComment}
+                  editingId={editingCommentId}
+                  onStartEdit={startEditing}
+                  onStopEdit={stopEditing}
+                />
+              </div>
+            )}
+            {addingCommentAt && addingCommentAt.file === fileName && isWholeFileComment(addingCommentAt) && (
+              <div className={wholeFileComments.length > 0 ? "mt-2" : undefined}>
+                <AddCommentForm
+                  file={addingCommentAt.file}
+                  startLine={0}
+                  endLine={0}
+                  side="new"
+                  onSubmit={handleAddComment}
+                  onCancel={() => setAddingCommentAt(null)}
+                  language={detectLanguage(fileName)}
+                />
+              </div>
+            )}
+          </div>
+        )}
         {!isViewed && mdPreviewFiles.has(fileName) && mdContentCache[fileName] !== undefined ? (
           <MarkdownPreview
             content={mdContentCache[fileName]}
             fileName={fileName}
-            comments={comments.filter((c) => c.file === fileName && c.side === "new")}
+            comments={comments.filter((c) => c.file === fileName && !isWholeFileComment(c))}
             onAddComment={addComment}
             onEditComment={updateComment}
             onDeleteComment={deleteComment}
@@ -1796,7 +1879,12 @@ function App() {
             // Only show button on the "new" side gutter (or matching side)
             const showButton = inHoverState && side === changeSide && lineNumber;
             return (
-              <span className="relative inline-flex items-center w-full">
+              <span
+                className="relative inline-flex items-center w-full"
+                data-comment-file={fileName}
+                data-comment-line={lineNumber}
+                data-comment-side={changeSide}
+              >
                 {showButton && (
                   <span
                     className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-accent-review hover:opacity-90 cursor-pointer text-accent-review-text opacity-80 hover:opacity-100 transition-all"
@@ -2296,6 +2384,7 @@ function App() {
                   isViewed={viewedFiles.has(currentFile)}
                   onToggleViewed={() => toggleViewed(currentFile)}
                   onLineClick={handleLineClick}
+                  onFileCommentClick={handleFileCommentClick}
                   addingCommentAt={addingCommentAt}
                   onAddComment={handleAddComment}
                   onCancelComment={() => setAddingCommentAt(null)}
@@ -2378,6 +2467,11 @@ function App() {
             onScrollToFile={scrollToDiffFile}
             onPreviewFile={handleFileSelect}
             onGoToComment={(comment) => void goToComment(comment)}
+            onEditComment={updateComment}
+            onDeleteComment={deleteComment}
+            editingCommentId={editingCommentId}
+            onStartEditComment={startEditing}
+            onStopEditComment={stopEditing}
             onOpenCommentOverview={() => setShowCommentOverview(true)}
           />
         )}
