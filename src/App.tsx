@@ -13,6 +13,7 @@ import { useComments } from "./hooks/useComments";
 import { useRepoManager } from "./hooks/useRepoManager";
 import { useSearch } from "./hooks/useSearch";
 import { useWordHighlight } from "./hooks/useWordHighlight";
+import { useVisibleDiffFile } from "./hooks/useVisibleDiffFile";
 import { useTheme } from './hooks/useTheme';
 import { FileExplorer } from "./components/FileExplorer";
 import { CommitSelector } from "./components/CommitSelector";
@@ -112,6 +113,7 @@ function App() {
   const [hoveredCommentIds, setHoveredCommentIds] = useState<string[] | null>(null);
   const [showCommentOverview, setShowCommentOverview] = useState(false);
   const suppressNextClickRef = useRef(false);
+  const suppressVisibleDiffFileRef = useRef(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const [expandedHunksMap, setExpandedHunksMap] = useState<Record<string, any[]>>({});
   const sourceCache = useRef<Record<string, string[]>>({});
@@ -248,6 +250,7 @@ function App() {
     if (diffResult) {
       setDiffText(diffResult.diff || "No changes");
       setChangedFiles(diffResult.files);
+      setActiveDiffFile(undefined);
       setViewMode("diff");
       setActiveDiffFile(undefined);
     }
@@ -313,8 +316,22 @@ function App() {
     lfsPointer: detectLfsPointer(f.hunks),
   })), [diffText]);
   const renderableFiles = useMemo(() => files.filter((file: any) => file.hunks && file.hunks.length > 0), [files]);
+  const diffFilePaths = useMemo(() => renderableFiles.map((file: any) => file.newPath || file.oldPath).filter(Boolean), [renderableFiles]);
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(file.newPath || file.oldPath)).length;
   const isEmptyState = renderableFiles.length === 0 && !selectedCommit && !selectedBranch;
+
+  const visibleDiffFile = useVisibleDiffFile({
+    containerRef: mainContentRef,
+    filePaths: diffFilePaths,
+    enabled: viewMode === "diff",
+    suppressRef: suppressVisibleDiffFileRef,
+  });
+
+  useEffect(() => {
+    if (visibleDiffFile) {
+      setActiveDiffFile(visibleDiffFile);
+    }
+  }, [visibleDiffFile]);
 
   const { loadData } = commitSelector;
   useEffect(() => {
@@ -1006,6 +1023,11 @@ function App() {
   const scrollToDiffFile = (filePath: string) => {
     setViewMode("diff");
     setActiveDiffFile(filePath);
+    suppressVisibleDiffFileRef.current = true;
+
+    window.setTimeout(() => {
+      suppressVisibleDiffFileRef.current = false;
+    }, 600);
 
     requestAnimationFrame(() => {
       const fileEl = document.querySelector(
