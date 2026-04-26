@@ -344,8 +344,12 @@ fn parse_porcelain_status(output: &str, staged: bool) -> Vec<GitFile> {
             let index_status = line.chars().next().unwrap_or(' ');
             let worktree_status = line.chars().nth(1).unwrap_or(' ');
             let raw_path = line[3..].trim();
-            // For renames, porcelain shows "old -> new"; use the new path
-            let path = if raw_path.contains(" -> ") {
+            // For renames/copies, porcelain shows "old -> new"; use the new path.
+            // Only split on " -> " when the status flags indicate a rename or copy,
+            // so literal filenames containing " -> " are not mangled.
+            let is_rename_or_copy =
+                matches!(index_status, 'R' | 'C') || matches!(worktree_status, 'R' | 'C');
+            let path = if is_rename_or_copy && raw_path.contains(" -> ") {
                 raw_path
                     .rsplit(" -> ")
                     .next()
@@ -1427,6 +1431,17 @@ mod tests {
         assert_eq!(files.len(), 1);
         assert_eq!(files[0].path, "src/new.rs");
         assert_eq!(files[0].status, "renamed");
+    }
+
+    #[test]
+    fn test_parse_porcelain_status_arrow_in_filename_not_treated_as_rename() {
+        // A modified file whose name literally contains " -> " should not be split
+        let output = "M  a -> b.txt\n";
+        let files = parse_porcelain_status(output, false);
+
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "a -> b.txt");
+        assert_eq!(files[0].status, "modified");
     }
 
     #[test]
