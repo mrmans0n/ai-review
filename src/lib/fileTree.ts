@@ -48,7 +48,6 @@ export function normalizePath(path: string): string {
     .replace(/\\/g, "/")
     .replace(/^\.\/+/, "")
     .split("/")
-    .map((segment) => segment.trim())
     .filter(Boolean)
     .join("/");
 }

@@ -28,6 +28,12 @@ describe("normalizePath", () => {
   it("trims leading slashes and empty path segments", () => {
     expect(normalizePath("/src///lib/fileTree.ts")).toBe("src/lib/fileTree.ts");
   });
+
+  it("preserves significant whitespace in path segments", () => {
+    expect(normalizePath("src/ spaced dir /file.txt")).toBe(
+      "src/ spaced dir /file.txt"
+    );
+  });
 });
 
 describe("normalizeFileStatus", () => {

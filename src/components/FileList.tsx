@@ -75,6 +75,27 @@ function collectDefaultExpandedDirectories(
   return ids;
 }
 
+function findAncestorDirectoryIds(
+  nodes: FileTreeNode[],
+  filePath: string,
+  ancestors: string[] = []
+): string[] | null {
+  for (const node of nodes) {
+    if (node.type === "file" && node.file.path === filePath) {
+      return ancestors;
+    }
+    if (node.type === "directory") {
+      const result = findAncestorDirectoryIds(
+        node.children,
+        filePath,
+        [...ancestors, node.id]
+      );
+      if (result) return result;
+    }
+  }
+  return null;
+}
+
 export function FileList({
   files,
   selectedFile,
@@ -111,6 +132,18 @@ export function FileList({
       return changed ? next : current;
     });
   }, [files.length, tree]);
+
+  useEffect(() => {
+    if (!selectedFile) return;
+    const ancestors = findAncestorDirectoryIds(tree, selectedFile);
+    if (!ancestors || ancestors.length === 0) return;
+    setExpandedDirectoryIds((current) => {
+      if (ancestors.every((id) => current.has(id))) return current;
+      const next = new Set(current);
+      for (const id of ancestors) next.add(id);
+      return next;
+    });
+  }, [selectedFile, tree]);
 
   if (files.length === 0) {
     return (

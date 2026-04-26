@@ -152,6 +152,40 @@ describe("FileList", () => {
     expect(onSelectFile).not.toHaveBeenCalled();
   });
 
+  it("auto-expands collapsed ancestors when selectedFile changes", () => {
+    // Create a tree with >30 files so only top-level dirs are expanded by default.
+    // Place the target file under src/deep/nested/ — src is top-level (expanded),
+    // but deep/ is depth 1 (collapsed), so the file won't be visible initially.
+    const files = [
+      // 31 sibling files under src/ to make it a large tree with src/ having
+      // multiple children (preventing flattening).
+      ...Array.from({ length: 31 }, (_, i) => file(`src/file${i}.ts`)),
+      file("src/deep/nested/target.ts"),
+    ];
+    const { rerender } = render(
+      <FileList files={files} onSelectFile={vi.fn()} />
+    );
+
+    // src/ is expanded (top-level), but src/deep is collapsed (depth 1 in large tree).
+    // The flattened dir name is "deep/nested" since deep has only one child.
+    expect(
+      screen.queryByRole("button", { name: "src/deep/nested/target.ts" })
+    ).toBeNull();
+
+    // Set selectedFile to the nested file — ancestors should auto-expand.
+    rerender(
+      <FileList
+        files={files}
+        selectedFile="src/deep/nested/target.ts"
+        onSelectFile={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByRole("button", { name: "src/deep/nested/target.ts" })
+    ).toBeTruthy();
+  });
+
   it("renders status, stats, viewed state, and comment count", () => {
     render(
       <FileList
