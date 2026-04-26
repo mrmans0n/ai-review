@@ -1050,7 +1050,7 @@ function App() {
     setTimeout(() => setHoveredCommentIds(null), 3000);
 
     const isInDiff = files.some(
-      (file: any) => (file.newPath || file.oldPath) === comment.file
+      (file: any) => getDiffFilePath(file) === comment.file
     );
 
     if (isInDiff) {
