@@ -1,85 +1,177 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import type { ChangedFileRailItem } from "../types";
 import { FileList } from "./FileList";
-import type { ChangedFile } from "../types";
 
-const files: ChangedFile[] = [
-  { path: "src/App.tsx", status: "modified" },
-  { path: "README.md", status: "added" },
-];
+function file(
+  path: string,
+  overrides: Partial<ChangedFileRailItem> = {}
+): ChangedFileRailItem {
+  return {
+    path,
+    displayPath: path,
+    status: "modified",
+    additions: 0,
+    deletions: 0,
+    viewed: false,
+    commentCount: 0,
+    ...overrides,
+  };
+}
 
 describe("FileList", () => {
-  const scrollIntoView = vi.fn();
+  it("renders nested files under collapsible directories", () => {
+    render(
+      <FileList
+        files={[
+          file("src/components/FileList.tsx"),
+          file("src/hooks/useGit.ts"),
+        ]}
+        onSelectFile={vi.fn()}
+      />
+    );
 
-  beforeEach(() => {
-    Element.prototype.scrollIntoView = scrollIntoView;
+    expect(screen.getByRole("button", { name: "Toggle directory src" })).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    expect(
+      screen.getByRole("button", { name: "Toggle directory src/components" })
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "src/components/FileList.tsx" })).toBeTruthy();
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
+  it("collapses and expands directory nodes", () => {
+    render(
+      <FileList
+        files={[
+          file("src/components/FileList.tsx"),
+          file("src/hooks/useGit.ts"),
+        ]}
+        onSelectFile={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle directory src/components" }));
+    expect(screen.queryByRole("button", { name: "src/components/FileList.tsx" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle directory src/components" }));
+    expect(screen.getByRole("button", { name: "src/components/FileList.tsx" })).toBeTruthy();
   });
 
-  it("calls onSelectFile when a file row is clicked", () => {
+  it("preserves collapsed state across metadata updates", () => {
+    const { rerender } = render(
+      <FileList
+        files={[
+          file("src/components/FileList.tsx"),
+          file("src/hooks/useGit.ts"),
+        ]}
+        onSelectFile={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle directory src/components" }));
+    expect(screen.queryByRole("button", { name: "src/components/FileList.tsx" })).toBeNull();
+
+    rerender(
+      <FileList
+        files={[
+          file("src/components/FileList.tsx", { viewed: true }),
+          file("src/hooks/useGit.ts"),
+        ]}
+        onSelectFile={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: "src/components/FileList.tsx" })).toBeNull();
+  });
+
+  it("selects a file on normal click and marks the row selected", () => {
     const onSelectFile = vi.fn();
-    render(<FileList files={files} onSelectFile={onSelectFile} />);
+    render(
+      <FileList
+        files={[file("src/App.tsx")]}
+        onSelectFile={onSelectFile}
+      />
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "Go to README.md" }));
+    const row = screen.getByRole("button", { name: "src/App.tsx" });
+    fireEvent.click(row);
 
-    expect(onSelectFile).toHaveBeenCalledWith("README.md");
+    expect(onSelectFile).toHaveBeenCalledWith("src/App.tsx");
+    expect(screen.getByTestId("file-row-src/App.tsx").className).toContain("bg-ctp-surface1");
   });
 
-  it("calls onPreviewFile from the preview action without selecting the row", () => {
+  it("uses a distinct active state from the selected row state", () => {
+    render(
+      <FileList
+        files={[file("src/App.tsx")]}
+        selectedFile="src/App.tsx"
+        onSelectFile={vi.fn()}
+      />
+    );
+
+    const row = screen.getByRole("button", { name: "src/App.tsx" });
+    expect(row).toHaveAttribute("aria-current", "true");
+    expect(screen.getByTestId("file-row-src/App.tsx").className).toContain("border-accent-review");
+  });
+
+  it("uses preview for meta-click without selecting", () => {
     const onSelectFile = vi.fn();
     const onPreviewFile = vi.fn();
     render(
       <FileList
-        files={files}
+        files={[file("src/App.tsx")]}
         onSelectFile={onSelectFile}
         onPreviewFile={onPreviewFile}
       />
     );
 
-    fireEvent.click(screen.getByLabelText("Preview src/App.tsx"));
+    const row = screen.getByRole("button", { name: "src/App.tsx" });
+    fireEvent.click(row, { metaKey: true });
+
+    expect(onPreviewFile).toHaveBeenCalledWith("src/App.tsx");
+    expect(onSelectFile).not.toHaveBeenCalled();
+    expect(screen.getByTestId("file-row-src/App.tsx").className).not.toContain("bg-ctp-surface1");
+  });
+
+  it("uses the preview button without selecting the file", () => {
+    const onSelectFile = vi.fn();
+    const onPreviewFile = vi.fn();
+    render(
+      <FileList
+        files={[file("src/App.tsx")]}
+        onSelectFile={onSelectFile}
+        onPreviewFile={onPreviewFile}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview src/App.tsx" }));
 
     expect(onPreviewFile).toHaveBeenCalledWith("src/App.tsx");
     expect(onSelectFile).not.toHaveBeenCalled();
   });
 
-  it("uses meta-click as a preview shortcut", () => {
-    const onSelectFile = vi.fn();
-    const onPreviewFile = vi.fn();
+  it("renders status, stats, viewed state, and comment count", () => {
     render(
       <FileList
-        files={files}
-        onSelectFile={onSelectFile}
-        onPreviewFile={onPreviewFile}
+        files={[
+          file("src/App.tsx", {
+            status: "added",
+            additions: 12,
+            deletions: 3,
+            viewed: true,
+            commentCount: 2,
+          }),
+        ]}
+        onSelectFile={vi.fn()}
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Go to README.md" }), { metaKey: true });
-
-    expect(onPreviewFile).toHaveBeenCalledWith("README.md");
-    expect(onSelectFile).not.toHaveBeenCalled();
-  });
-
-  it("marks the active file row and scrolls it into view", () => {
-    const { rerender } = render(
-      <FileList files={files} activeFile="README.md" onSelectFile={vi.fn()} />
-    );
-
-    expect(screen.getByRole("button", { name: "Go to README.md" }).closest("[data-active-file-row]")).toHaveAttribute(
-      "data-active-file-row",
-      "true"
-    );
-    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
-
-    scrollIntoView.mockClear();
-    rerender(<FileList files={files} activeFile="src/App.tsx" onSelectFile={vi.fn()} />);
-
-    expect(screen.getByRole("button", { name: "Go to src/App.tsx" }).closest("[data-active-file-row]")).toHaveAttribute(
-      "data-active-file-row",
-      "true"
-    );
-    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+    expect(screen.getByLabelText("added status")).toHaveTextContent("+");
+    expect(screen.getByText("+12")).toBeTruthy();
+    expect(screen.getByText("-3")).toBeTruthy();
+    expect(screen.getByLabelText("viewed")).toBeTruthy();
+    expect(screen.getByLabelText("2 comments")).toHaveTextContent("2");
   });
 });

@@ -1,9 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { RightRail } from "./RightRail";
-import type { ChangedFile, Comment } from "../types";
+import type { ChangedFileRailItem, Comment } from "../types";
 
-const files: ChangedFile[] = [{ path: "src/App.tsx", status: "modified" }];
+const files: ChangedFileRailItem[] = [
+  {
+    path: "src/App.tsx",
+    displayPath: "src/App.tsx",
+    status: "modified",
+    additions: 0,
+    deletions: 0,
+    viewed: false,
+    commentCount: 0,
+  },
+];
 const comments: Comment[] = [
   {
     id: "comment-1",
@@ -47,7 +57,7 @@ describe("RightRail", () => {
     const onScrollToFile = vi.fn();
     render(<RightRail {...makeProps({ onScrollToFile })} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Go to src/App.tsx" }));
+    fireEvent.click(screen.getByRole("button", { name: "src/App.tsx" }));
 
     expect(onScrollToFile).toHaveBeenCalledWith("src/App.tsx");
   });

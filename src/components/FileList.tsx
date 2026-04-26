@@ -1,58 +1,36 @@
-import { useEffect, useMemo, useRef, type MouseEvent } from "react";
-import type { ChangedFile } from "../types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { MouseEvent, ReactElement } from "react";
+import { buildFileTree } from "../lib/fileTree";
+import type { FileTreeDirectoryNode, FileTreeNode } from "../lib/fileTree";
+import type { ChangedFileRailItem, NormalizedFileStatus } from "../types";
 import { MiddleEllipsis } from "./MiddleEllipsis";
 
 interface FileListProps {
-  files: ChangedFile[];
-  activeFile?: string;
+  files: ChangedFileRailItem[];
+  selectedFile?: string;
   onSelectFile: (file: string) => void;
   onPreviewFile?: (file: string) => void;
 }
 
-interface FileGroup {
-  directory: string;
-  files: ChangedFile[];
-}
+const LARGE_TREE_FILE_COUNT = 30;
 
-function groupFilesByDirectory(files: ChangedFile[]): FileGroup[] {
-  const groups = new Map<string, ChangedFile[]>();
-
-  for (const file of files) {
-    const lastSlash = file.path.lastIndexOf("/");
-    const dir = lastSlash >= 0 ? file.path.slice(0, lastSlash + 1) : "";
-    if (!groups.has(dir)) {
-      groups.set(dir, []);
-    }
-    groups.get(dir)!.push(file);
-  }
-
-  // Sort groups by directory path, root files first
-  return Array.from(groups.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([directory, files]) => ({ directory, files }));
-}
-
-function getFileName(path: string): string {
-  const lastSlash = path.lastIndexOf("/");
-  return lastSlash >= 0 ? path.slice(lastSlash + 1) : path;
-}
-
-function getStatusColor(status: string): string {
+function getStatusColor(status: NormalizedFileStatus): string {
   switch (status) {
     case "added":
-      return "text-ctp-green";
+      return "text-ctp-green border-ctp-green/40 bg-ctp-green/10";
     case "modified":
-      return "text-ctp-blue";
+      return "text-ctp-blue border-ctp-blue/40 bg-ctp-blue/10";
     case "deleted":
-      return "text-ctp-red";
+      return "text-ctp-red border-ctp-red/40 bg-ctp-red/10";
     case "renamed":
-      return "text-ctp-yellow";
+    case "copied":
+      return "text-ctp-yellow border-ctp-yellow/40 bg-ctp-yellow/10";
     default:
       return "text-ink-muted";
   }
 }
 
-function getStatusIcon(status: string): string {
+function getStatusIcon(status: NormalizedFileStatus): string {
   switch (status) {
     case "added":
       return "+";
@@ -61,34 +39,78 @@ function getStatusIcon(status: string): string {
     case "deleted":
       return "-";
     case "renamed":
-      return "→";
+      return ">";
+    case "copied":
+      return "=";
     default:
       return "?";
   }
 }
 
+function collectDirectoryIds(
+  nodes: FileTreeNode[],
+  ids = new Set<string>()
+): Set<string> {
+  for (const node of nodes) {
+    if (node.type !== "directory") continue;
+    ids.add(node.id);
+    collectDirectoryIds(node.children, ids);
+  }
+
+  return ids;
+}
+
+function collectDefaultExpandedDirectories(
+  nodes: FileTreeNode[],
+  expandAll: boolean,
+  depth = 0,
+  ids = new Set<string>()
+): Set<string> {
+  for (const node of nodes) {
+    if (node.type !== "directory") continue;
+    if (expandAll || depth === 0) ids.add(node.id);
+    collectDefaultExpandedDirectories(node.children, expandAll, depth + 1, ids);
+  }
+
+  return ids;
+}
+
 export function FileList({
   files,
-  activeFile,
+  selectedFile,
   onSelectFile,
   onPreviewFile,
 }: FileListProps) {
-  const groups = useMemo(() => groupFilesByDirectory(files), [files]);
-  const rowRefs = useRef(new Map<string, HTMLDivElement>());
+  const tree = useMemo(() => buildFileTree(files), [files]);
+  const [expandedDirectoryIds, setExpandedDirectoryIds] = useState<Set<string>>(() =>
+    collectDefaultExpandedDirectories(tree, files.length <= LARGE_TREE_FILE_COUNT)
+  );
+  const initializedDirectoryIdsRef = useRef<Set<string>>(collectDirectoryIds(tree));
+  const [localSelectedFile, setLocalSelectedFile] = useState<string | undefined>();
 
   useEffect(() => {
-    if (!activeFile) return;
-    rowRefs.current.get(activeFile)?.scrollIntoView({ block: "nearest" });
-  }, [activeFile]);
+    setExpandedDirectoryIds((current) => {
+      const defaults = collectDefaultExpandedDirectories(
+        tree,
+        files.length <= LARGE_TREE_FILE_COUNT
+      );
+      const directoryIds = collectDirectoryIds(tree);
+      const initializedDirectoryIds = initializedDirectoryIdsRef.current;
+      const next = new Set(current);
+      let changed = false;
 
-  const handleFileClick = (event: MouseEvent<HTMLButtonElement>, filePath: string) => {
-    if ((event.metaKey || event.ctrlKey) && onPreviewFile) {
-      onPreviewFile(filePath);
-      return;
-    }
+      for (const id of directoryIds) {
+        if (initializedDirectoryIds.has(id)) continue;
+        initializedDirectoryIds.add(id);
+        if (defaults.has(id)) {
+          next.add(id);
+          changed = true;
+        }
+      }
 
-    onSelectFile(filePath);
-  };
+      return changed ? next : current;
+    });
+  }, [files.length, tree]);
 
   if (files.length === 0) {
     return (
@@ -98,77 +120,174 @@ export function FileList({
     );
   }
 
-  return (
-    <div className="flex flex-col">
-      {groups.map((group) => (
-        <div key={group.directory}>
-          {group.directory && (
-            <div className="px-3 pt-2.5 pb-1 text-[11px] font-mono text-ink-muted">
-              <MiddleEllipsis text={group.directory} />
-            </div>
-          )}
-          {group.files.map((file) => (
-            <div
-              key={file.path}
-              ref={(element) => {
-                if (element) {
-                  rowRefs.current.set(file.path, element);
-                } else {
-                  rowRefs.current.delete(file.path);
-                }
-              }}
-              className={`flex items-center gap-1 transition-colors border-l-2 rounded-sm ${
-                group.directory ? "pl-6 pr-3" : "px-4"
-              } py-1.5 ${
-                activeFile === file.path
-                  ? "bg-surface border-accent-review"
-                  : "border-transparent hover:bg-surface-hover"
-              }`}
-              data-active-file-row={activeFile === file.path ? "true" : undefined}
+  const toggleDirectory = (directoryId: string) => {
+    setExpandedDirectoryIds((current) => {
+      const next = new Set(current);
+      if (next.has(directoryId)) {
+        next.delete(directoryId);
+      } else {
+        next.add(directoryId);
+      }
+      return next;
+    });
+  };
+
+  const handleFileClick = (
+    event: MouseEvent<HTMLButtonElement>,
+    file: ChangedFileRailItem
+  ) => {
+    if (event.metaKey || event.ctrlKey) {
+      onPreviewFile?.(file.path);
+      return;
+    }
+
+    setLocalSelectedFile(file.path);
+    onSelectFile(file.path);
+  };
+
+  const handlePreviewClick = (
+    event: MouseEvent<HTMLButtonElement>,
+    file: ChangedFileRailItem
+  ) => {
+    event.stopPropagation();
+    onPreviewFile?.(file.path);
+  };
+
+  const renderNode = (node: FileTreeNode, depth: number): ReactElement => {
+    if (node.type === "directory") {
+      return (
+        <DirectoryRow
+          key={node.id}
+          directory={node}
+          depth={depth}
+          expanded={expandedDirectoryIds.has(node.id)}
+          onToggle={toggleDirectory}
+          renderNode={renderNode}
+        />
+      );
+    }
+
+    const file = node.file;
+    const isActive = selectedFile === file.path;
+    const isSelected = localSelectedFile === file.path;
+    const hasChanges = file.additions > 0 || file.deletions > 0;
+
+    return (
+      <div
+        key={node.id}
+        data-testid={`file-row-${file.path}`}
+        className={`group flex items-stretch transition-colors border-l-2 rounded-sm ${
+          isActive
+            ? "bg-surface border-accent-review text-ink-primary"
+            : "border-transparent text-ink-secondary hover:bg-surface-hover"
+        } ${isSelected && !isActive ? "bg-ctp-surface1/60" : ""} ${
+          file.viewed ? "opacity-65" : ""
+        }`}
+      >
+        <button
+          type="button"
+          aria-label={file.displayPath}
+          aria-current={isActive ? "true" : undefined}
+          onClick={(event) => handleFileClick(event, file)}
+          className="min-w-0 flex-1 py-1.5 pr-1 text-left"
+          style={{ paddingLeft: `${Math.min(12 + depth * 14, 64)}px` }}
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span
+              aria-label={`${file.status} status`}
+              className={`inline-flex h-4 min-w-4 items-center justify-center rounded-sm border px-1 text-[10px] font-bold leading-none flex-shrink-0 ${getStatusColor(file.status)}`}
             >
-              <button
-                type="button"
-                aria-label={`Go to ${file.path}`}
-                onClick={(event) => handleFileClick(event, file.path)}
-                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+              {getStatusIcon(file.status)}
+            </span>
+            <span
+              className={`text-sm font-mono min-w-0 flex-1 ${
+                file.viewed ? "text-ink-muted" : "text-ink-secondary"
+              }`}
+            >
+              <MiddleEllipsis text={node.name} />
+            </span>
+            {file.viewed && (
+              <span aria-label="viewed" className="text-[11px] text-ctp-green flex-shrink-0">
+                ✓
+              </span>
+            )}
+            {file.commentCount > 0 && (
+              <span
+                aria-label={`${file.commentCount} comments`}
+                className="rounded-sm border border-ctp-mauve/40 bg-ctp-mauve/10 px-1.5 py-0.5 text-[10px] leading-none text-ctp-mauve flex-shrink-0"
               >
-                <span className={`font-bold flex-shrink-0 ${getStatusColor(file.status)}`}>
-                  {getStatusIcon(file.status)}
-                </span>
-                <span className="text-sm font-mono text-ink-secondary min-w-0 flex-1">
-                  <MiddleEllipsis text={getFileName(file.path)} />
-                </span>
-              </button>
-              {onPreviewFile && (
-                <button
-                  type="button"
-                  aria-label={`Preview ${file.path}`}
-                  title="Preview full file"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onPreviewFile(file.path);
-                  }}
-                  className="flex-shrink-0 rounded-sm p-1 text-ctp-overlay0 hover:bg-ctp-surface1 hover:text-ctp-text transition-colors"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-3.5 w-3.5"
-                  >
-                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          ))}
+                {file.commentCount}
+              </span>
+            )}
+            {hasChanges && (
+              <span className="hidden min-[220px]:inline-flex gap-1 text-[10px] font-mono flex-shrink-0">
+                {file.additions > 0 && (
+                  <span className="text-ctp-green">+{file.additions}</span>
+                )}
+                {file.deletions > 0 && (
+                  <span className="text-ctp-red">-{file.deletions}</span>
+                )}
+              </span>
+            )}
+          </div>
+        </button>
+        {onPreviewFile && (
+          <button
+            type="button"
+            aria-label={`Preview ${file.displayPath}`}
+            onClick={(event) => handlePreviewClick(event, file)}
+            className="my-1 mr-1 rounded-sm px-1.5 text-[10px] text-ctp-overlay0 opacity-0 transition-opacity hover:bg-ctp-surface1 hover:text-ctp-text focus:opacity-100 group-hover:opacity-100"
+          >
+            ⤢
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  return <div className="flex flex-col py-1">{tree.map((node) => renderNode(node, 0))}</div>;
+}
+
+interface DirectoryRowProps {
+  directory: FileTreeDirectoryNode;
+  depth: number;
+  expanded: boolean;
+  onToggle: (directoryId: string) => void;
+  renderNode: (node: FileTreeNode, depth: number) => ReactElement;
+}
+
+function DirectoryRow({
+  directory,
+  depth,
+  expanded,
+  onToggle,
+  renderNode,
+}: DirectoryRowProps) {
+  return (
+    <div>
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-label={`Toggle directory ${directory.path}`}
+        onClick={() => onToggle(directory.id)}
+        className="flex w-full items-center gap-1.5 rounded-sm py-1 pr-3 text-left text-[11px] font-mono text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink-secondary"
+        style={{ paddingLeft: `${Math.min(8 + depth * 14, 60)}px` }}
+      >
+        <span className="inline-flex h-4 w-4 items-center justify-center text-[10px] flex-shrink-0">
+          {expanded ? "▾" : "▸"}
+        </span>
+        <span className="min-w-0 flex-1">
+          <MiddleEllipsis text={directory.name} />
+        </span>
+        <span className="text-[10px] text-ink-muted">
+          {directory.children.length}
+        </span>
+      </button>
+      {expanded && (
+        <div>
+          {directory.children.map((child) => renderNode(child, depth + 1))}
         </div>
-      ))}
+      )}
     </div>
   );
 }
