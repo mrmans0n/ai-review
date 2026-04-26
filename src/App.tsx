@@ -326,7 +326,7 @@ function App() {
   const railFiles = useMemo<ChangedFileRailItem[]>(() => {
     const statsByPath = new Map<string, { additions: number; deletions: number }>();
     for (const file of files) {
-      const path = normalizePath(file.newPath || file.oldPath || "");
+      const path = normalizePath(getDiffFilePath(file));
       if (!path) continue;
       statsByPath.set(path, {
         additions: file.additions ?? 0,
