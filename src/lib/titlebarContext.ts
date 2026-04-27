@@ -19,7 +19,7 @@ export interface TitlebarContext {
 }
 
 export function getRepoName(path: string): string {
-  const normalized = path.replace(/\/+$/, "");
+  const normalized = path.replace(/\\/g, "/").replace(/\/+$/, "");
   const parts = normalized.split("/");
   return parts[parts.length - 1] || path;
 }

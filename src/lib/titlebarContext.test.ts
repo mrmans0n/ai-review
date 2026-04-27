@@ -4,6 +4,7 @@ import { buildTitlebarContext, getDiffScopeLabel, getRepoName } from "./titlebar
 describe("titlebarContext", () => {
   it("uses the last path segment as the repository name", () => {
     expect(getRepoName("/Users/nacho/repos/ai-review/")).toBe("ai-review");
+    expect(getRepoName("C:\\Users\\nacho\\repos\\ai-review")).toBe("ai-review");
   });
 
   it("formats working tree scope labels", () => {
