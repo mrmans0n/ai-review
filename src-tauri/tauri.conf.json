@@ -4,9 +4,9 @@
   "version": "0.3.16",
   "identifier": "com.nacholopez.ai-review",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -17,6 +17,12 @@
         "height": 900,
         "minWidth": 1000,
         "minHeight": 700,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": {
+          "x": 16,
+          "y": 11
+        },
         "backgroundColor": "#282C34"
       }
     ],
