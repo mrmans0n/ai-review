@@ -154,6 +154,24 @@ code, pre, .font-mono {
   font-family: 'Geist Mono', ui-monospace, 'Fira Code', monospace;
 }
 
+/* ─── Tauri titlebar drag regions ─── */
+.app-titlebar[data-tauri-drag-region] {
+  -webkit-app-region: drag;
+}
+
+.app-titlebar .titlebar-no-drag,
+.app-titlebar button,
+.app-titlebar input,
+.app-titlebar select,
+.app-titlebar textarea {
+  -webkit-app-region: no-drag;
+}
+
+.app-titlebar .titlebar-text {
+  -webkit-app-region: no-drag;
+  user-select: text;
+}
+
 /* ─── Middle ellipsis ─── */
 .middle-ellipsis {
   display: inline-flex;

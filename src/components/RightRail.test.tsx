@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { RightRail } from "./RightRail";
-import type { ChangedFileRailItem, Comment, RepoInfo } from "../types";
+import type { ChangedFileRailItem, Comment } from "../types";
 
 const files: ChangedFileRailItem[] = [{ path: "src/App.tsx", displayPath: "src/App.tsx", status: "modified", additions: 12, deletions: 4, viewed: false, commentCount: 1 }];
-const repos: RepoInfo[] = [{ name: "ai-review", path: "/tmp/ai-review", last_activity: 0 }];
 const comments: Comment[] = [
   {
     id: "comment-1",
@@ -26,22 +25,11 @@ function makeProps(overrides: Partial<Parameters<typeof RightRail>[0]> = {}) {
     resizing: false,
     viewedCount: 0,
     renderableFilesCount: 1,
-    currentPath: "/tmp/ai-review",
-    repos,
-    viewType: "split" as const,
-    diffMode: { mode: "unstaged" as const },
-    changeStatus: { has_unstaged: true, has_staged: true },
     jsonOutput: false,
     cliInstalled: true,
     cliJustInstalled: false,
     installMessage: null,
     onStartResize: vi.fn(),
-    onSwitchRepo: vi.fn(),
-    onAddRepo: vi.fn(),
-    onRemoveRepo: vi.fn(),
-    onViewTypeChange: vi.fn(),
-    onDiffModeChange: vi.fn(),
-    onBrowseCommits: vi.fn(),
     onPreviewPrompt: vi.fn(),
     onGeneratePrompt: vi.fn(),
     onInstallCli: vi.fn(),
@@ -58,25 +46,17 @@ describe("RightRail", () => {
     render(<RightRail {...makeProps()} />);
 
     expect(screen.getByText("Changed Files")).toBeInTheDocument();
-    expect(screen.getAllByText("View").length).toBeGreaterThan(0);
-    expect(screen.getByText("Scope")).toBeInTheDocument();
     expect(screen.getByText("Comments")).toBeInTheDocument();
     expect(screen.getByText("Rail comment")).toBeInTheDocument();
   });
 
-  it("moves view and scope actions into the rail", () => {
-    const onViewTypeChange = vi.fn();
-    const onDiffModeChange = vi.fn();
-    const onBrowseCommits = vi.fn();
-    render(<RightRail {...makeProps({ onViewTypeChange, onDiffModeChange, onBrowseCommits })} />);
+  it("keeps repository, view, and scope controls out of the rail", () => {
+    render(<RightRail {...makeProps()} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "unified" }));
-    fireEvent.click(screen.getByRole("button", { name: "Staged" }));
-    fireEvent.click(screen.getByRole("button", { name: "Browse commits" }));
-
-    expect(onViewTypeChange).toHaveBeenCalledWith("unified");
-    expect(onDiffModeChange).toHaveBeenCalledWith({ mode: "staged" });
-    expect(onBrowseCommits).toHaveBeenCalled();
+    expect(screen.queryByText("Repository")).not.toBeInTheDocument();
+    expect(screen.queryByText("View")).not.toBeInTheDocument();
+    expect(screen.queryByText("Scope")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Browse commits" })).not.toBeInTheDocument();
   });
 
   it("clicking a changed file scrolls to the diff", () => {

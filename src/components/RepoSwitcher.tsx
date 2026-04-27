@@ -7,6 +7,7 @@ interface RepoSwitcherProps {
   onSwitchRepo: (path: string) => void;
   onAddRepo: () => void;
   onRemoveRepo: (path: string) => void;
+  variant?: "default" | "titlebar";
 }
 
 export function RepoSwitcher({
@@ -15,6 +16,7 @@ export function RepoSwitcher({
   onSwitchRepo,
   onAddRepo,
   onRemoveRepo,
+  variant = "default",
 }: RepoSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -45,13 +47,21 @@ export function RepoSwitcher({
     return () => document.removeEventListener("keydown", handleKey);
   }, [isOpen]);
 
+  const isTitlebar = variant === "titlebar";
+  const buttonClass = isTitlebar
+    ? "flex h-7 max-w-48 items-center gap-2 rounded-sm border border-divider bg-surface/70 px-2.5 text-xs text-ink-primary transition-colors hover:border-accent-review"
+    : "flex items-center gap-2 bg-surface border border-divider rounded text-sm text-ink-primary px-3 py-1.5 hover:border-accent-review transition-colors";
+  const dropdownClass = isTitlebar
+    ? "absolute top-full left-0 mt-2 w-80 bg-surface border border-divider rounded-md shadow-2xl z-50 overflow-hidden"
+    : "absolute top-full left-0 mt-2 w-80 bg-surface border border-divider rounded-md shadow-2xl z-50 overflow-hidden";
+
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className={`relative ${isTitlebar ? "titlebar-no-drag" : ""}`} ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-surface border border-divider rounded text-sm text-ink-primary px-3 py-1.5 hover:border-accent-review transition-colors"
+        className={buttonClass}
       >
-        <span className="font-medium">{currentName}</span>
+        <span className="truncate font-medium">{currentName}</span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className={`h-3 w-3 transition-transform ${isOpen ? "rotate-180" : ""}`}
@@ -69,7 +79,7 @@ export function RepoSwitcher({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-80 bg-surface border border-divider rounded-md shadow-2xl z-50 overflow-hidden">
+        <div className={dropdownClass}>
           <div className="max-h-64 overflow-auto">
             {repos.map((repo) => (
               <div
