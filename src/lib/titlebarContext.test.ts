@@ -27,14 +27,12 @@ describe("titlebarContext", () => {
         },
         selectedBranch: null,
         reviewingLabel: null,
-        activeFile: "src/App.tsx",
         changedFileCount: 2,
       })
     ).toEqual({
       repoName: "ai-review",
       primary: "abc1234",
       secondary: "Tighten diff layout",
-      activeFile: "src/App.tsx",
       fileSummary: "2 files",
     });
   });
