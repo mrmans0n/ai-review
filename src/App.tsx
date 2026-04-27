@@ -2268,49 +2268,47 @@ function App() {
             </div>
           )}
         </div>
-        {(changedFiles.length > 0 || comments.length > 0) && (
-          <RightRail
-            files={railFiles}
-            comments={comments}
-            width={rightRailWidth}
-            visible={isRightRailVisible}
-            resizing={isResizingRightRail}
-            viewedCount={viewedCount}
-            renderableFilesCount={renderableFiles.length}
-            activeFile={activeDiffFile}
-            currentPath={workingDir}
-            repos={repoManager.repos}
-            viewType={viewType}
-            diffMode={diffMode}
-            changeStatus={changeStatus}
-            jsonOutput={jsonOutput}
-            cliInstalled={cliInstalled}
-            cliJustInstalled={cliJustInstalled}
-            installMessage={installMessage}
-            onStartResize={() => setIsResizingRightRail(true)}
-            onSwitchRepo={handleSwitchRepo}
-            onAddRepo={handleAddRepo}
-            onRemoveRepo={handleRemoveRepo}
-            onViewTypeChange={(nextViewType: "split" | "unified") => {
-              setViewType(nextViewType);
-              if (nextViewType === "unified") setMdPreviewFiles(new Set());
-            }}
-            onDiffModeChange={handleModeChange}
-            onBrowseCommits={commitSelector.openSelector}
-            onScrollToFile={scrollToDiffFile}
-            onPreviewFile={handleFileSelect}
-            onGoToComment={(comment) => void goToComment(comment)}
-            onOpenCommentOverview={() => setShowCommentOverview(true)}
-            onPreviewPrompt={handlePreviewPrompt}
-            onGeneratePrompt={handleGeneratePrompt}
-            onInstallCli={handleInstallCli}
-            onEditComment={updateComment}
-            onDeleteComment={deleteComment}
-            editingCommentId={editingCommentId}
-            onStartEditComment={startEditing}
-            onStopEditComment={stopEditing}
-          />
-        )}
+        <RightRail
+          files={railFiles}
+          comments={comments}
+          width={rightRailWidth}
+          visible={isRightRailVisible}
+          resizing={isResizingRightRail}
+          viewedCount={viewedCount}
+          renderableFilesCount={renderableFiles.length}
+          activeFile={activeDiffFile}
+          currentPath={workingDir}
+          repos={repoManager.repos}
+          viewType={viewType}
+          diffMode={diffMode}
+          changeStatus={changeStatus}
+          jsonOutput={jsonOutput}
+          cliInstalled={cliInstalled}
+          cliJustInstalled={cliJustInstalled}
+          installMessage={installMessage}
+          onStartResize={() => setIsResizingRightRail(true)}
+          onSwitchRepo={handleSwitchRepo}
+          onAddRepo={handleAddRepo}
+          onRemoveRepo={handleRemoveRepo}
+          onViewTypeChange={(nextViewType: "split" | "unified") => {
+            setViewType(nextViewType);
+            if (nextViewType === "unified") setMdPreviewFiles(new Set());
+          }}
+          onDiffModeChange={handleModeChange}
+          onBrowseCommits={commitSelector.openSelector}
+          onScrollToFile={scrollToDiffFile}
+          onPreviewFile={handleFileSelect}
+          onGoToComment={(comment) => void goToComment(comment)}
+          onOpenCommentOverview={() => setShowCommentOverview(true)}
+          onPreviewPrompt={handlePreviewPrompt}
+          onGeneratePrompt={handleGeneratePrompt}
+          onInstallCli={handleInstallCli}
+          onEditComment={updateComment}
+          onDeleteComment={deleteComment}
+          editingCommentId={editingCommentId}
+          onStartEditComment={startEditing}
+          onStopEditComment={stopEditing}
+        />
       </div>
 
       <FileExplorer
