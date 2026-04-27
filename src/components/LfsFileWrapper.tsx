@@ -108,7 +108,7 @@ export function LfsFileWrapper({
     <div className="mb-6" data-diff-file={fileName}>
       {/* File header */}
       <div
-        className={`sticky top-0 z-10 px-4 py-2 font-medium border-b border-ctp-surface1 flex justify-between items-center transition-colors text-sm ${
+        className={`sticky top-9 z-10 px-4 py-2 font-medium border-b border-ctp-surface1 flex justify-between items-center transition-colors text-sm ${
           isViewed ? "bg-ctp-surface0/80 text-ctp-subtext" : "bg-ctp-surface0 text-ctp-text"
         }`}
         onClick={() => {

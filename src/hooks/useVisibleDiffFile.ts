@@ -98,7 +98,7 @@ export function useVisibleDiffFile({
       },
       {
         root,
-        rootMargin: "-12px 0px -70% 0px",
+        rootMargin: "-48px 0px -70% 0px",
         threshold: [0, 0.01],
       }
     );
