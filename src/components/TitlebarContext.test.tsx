@@ -52,6 +52,13 @@ describe("TitlebarContext", () => {
     expect(dragRegions.some((text) => text.includes("ai-review"))).toBe(true);
     expect(dragRegions.some((text) => text.includes("Unstaged changes"))).toBe(true);
     expect(dragRegions).toContain("3 files");
+
+    expect(
+      container.querySelector(".middle-ellipsis-start[data-tauri-drag-region]")
+    ).not.toBeNull();
+    expect(
+      container.querySelector(".middle-ellipsis-end[data-tauri-drag-region]")
+    ).not.toBeNull();
   });
 
   it("keeps titlebar actions clickable", () => {

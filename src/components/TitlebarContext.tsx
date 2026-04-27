@@ -29,17 +29,17 @@ export function TitlebarContext({ context, scrolled, onToggleTheme, onToggleRail
         <span data-tauri-drag-region className="font-semibold text-ink-primary">Air</span>
         <span data-tauri-drag-region className="text-ink-muted">/</span>
         <span data-tauri-drag-region className="min-w-0 max-w-[180px] font-medium text-ink-primary">
-          <MiddleEllipsis text={context.repoName} />
+          <MiddleEllipsis text={context.repoName} dragRegion />
         </span>
         <span data-tauri-drag-region className="text-ink-muted">·</span>
         <span data-tauri-drag-region className="min-w-0 max-w-[260px] text-ink-secondary">
-          <MiddleEllipsis text={context.primary} />
+          <MiddleEllipsis text={context.primary} dragRegion />
         </span>
         {context.secondary && (
           <>
             <span data-tauri-drag-region className="hidden text-ink-muted md:inline">·</span>
             <span data-tauri-drag-region className="hidden min-w-0 max-w-[320px] text-ink-muted md:inline">
-              <MiddleEllipsis text={context.secondary} />
+              <MiddleEllipsis text={context.secondary} dragRegion />
             </span>
           </>
         )}
@@ -47,7 +47,7 @@ export function TitlebarContext({ context, scrolled, onToggleTheme, onToggleRail
           <>
             <span data-tauri-drag-region className="hidden text-ink-muted lg:inline">·</span>
             <span data-tauri-drag-region className="hidden min-w-0 max-w-[360px] font-mono text-xs text-ink-muted lg:inline">
-              <MiddleEllipsis text={context.activeFile} />
+              <MiddleEllipsis text={context.activeFile} dragRegion />
             </span>
           </>
         )}
