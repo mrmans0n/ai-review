@@ -200,7 +200,7 @@ export function FileViewer({
     <div className="bg-surface rounded border border-divider" data-file-viewer={fileName} data-search-query={searchQuery} data-highlighted-word={highlightedWord || ""}>
       <div
         data-comment-file-anchor={fileName}
-        className={`sticky top-0 z-10 rounded-t px-4 py-2 border-b border-divider flex items-center justify-between transition-colors ${
+        className={`sticky top-9 z-10 rounded-t px-4 py-2 border-b border-divider flex items-center justify-between transition-colors ${
           isViewed ? "bg-canvas/80 text-ink-secondary cursor-pointer" : "bg-canvas"
         }`}
         onClick={() => {

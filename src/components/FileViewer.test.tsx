@@ -72,6 +72,15 @@ describe("FileViewer", () => {
       expect(root).toBeTruthy();
     });
 
+    it("keeps the file header sticky below the app titlebar", () => {
+      const props = makeProps();
+      const { container } = render(<FileViewer {...props} />);
+      const header = container.querySelector("[data-file-viewer='src/app.ts'] > div");
+      expect(header?.className).toContain("sticky");
+      expect(header?.className).toContain("top-9");
+      expect(header?.className).toContain("z-10");
+    });
+
     it("renders data-line-number, data-line-side, and comment anchors on each line", () => {
       const props = makeProps();
       const { container } = render(<FileViewer {...props} />);
