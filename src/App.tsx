@@ -27,13 +27,12 @@ import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
 import { PromptPreview } from "./components/PromptPreview";
 import { CommentOverview } from "./components/CommentOverview";
-import { isWholeFileComment } from "./hooks/commentHelpers";
 import { RepoLandingPage } from "./components/RepoLandingPage";
-import { RepoSwitcher } from "./components/RepoSwitcher";
 import { ConfirmModal } from "./components/ConfirmModal";
 import { ScrollProgressBar } from "./components/ScrollProgressBar";
 import { RightRail } from "./components/RightRail";
-import { ViewTypeControl } from "./components/ViewTypeControl";
+import { TitlebarContext } from "./components/TitlebarContext";
+import { buildTitlebarContext } from "./lib/titlebarContext";
 import { generatePrompt } from "./lib/promptGenerator";
 import { buildJsonFeedback } from "./lib/jsonFeedback";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
@@ -63,35 +62,6 @@ function clampRightRailWidth(width: number) {
 function escapeAttributeSelector(value: string) {
   if (typeof CSS !== "undefined" && CSS.escape) return CSS.escape(value);
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/'/g, "\\'").replace(/\[/g, "\\[").replace(/\]/g, "\\]");
-}
-
-function scrollToCommentTarget(comment: Comment) {
-  const file = escapeAttributeSelector(comment.file);
-  const selectors = isWholeFileComment(comment)
-    ? [
-        `[data-comment-file-anchor="${file}"]`,
-        `[data-diff-file="${file}"]`,
-        `[data-file-viewer="${file}"]`,
-      ]
-    : [
-        `[data-comment-file="${file}"][data-comment-line="${comment.startLine}"][data-comment-side="${comment.side}"]`,
-        `[data-file-viewer="${file}"] [data-line-number="${comment.startLine}"][data-line-side="${comment.side}"]`,
-        `[data-comment-file-anchor="${file}"]`,
-        `[data-diff-file="${file}"]`,
-        `[data-file-viewer="${file}"]`,
-      ];
-
-  const target = selectors
-    .map((selector) => document.querySelector<HTMLElement>(selector))
-    .find((element): element is HTMLElement => Boolean(element));
-
-  if (!target) return;
-
-  target.scrollIntoView({ behavior: "smooth", block: "center" });
-  if (!target.hasAttribute("tabindex")) {
-    target.setAttribute("tabindex", "-1");
-  }
-  target.focus({ preventScroll: true });
 }
 
 function App() {
@@ -154,6 +124,7 @@ function App() {
   const [oldSourceMap, setOldSourceMap] = useState<Record<string, string>>({});
   const [changedFiles, setChangedFiles] = useState<ChangedFile[]>([]);
   const [isRightRailVisible, setIsRightRailVisible] = useState(true);
+  const [isMainScrolled, setIsMainScrolled] = useState(false);
   const [rightRailWidth, setRightRailWidth] = useState(DEFAULT_RIGHT_RAIL_WIDTH);
   const [isResizingRightRail, setIsResizingRightRail] = useState(false);
   const [activeDiffFile, setActiveDiffFile] = useState<string | undefined>();
@@ -400,6 +371,32 @@ function App() {
     }
   }, [visibleDiffFile]);
 
+  useEffect(() => {
+    const container = mainContentRef.current;
+    if (!container) return;
+
+    const updateScrolledState = () => {
+      setIsMainScrolled(container.scrollTop > 4);
+    };
+
+    updateScrolledState();
+    container.addEventListener("scroll", updateScrolledState, { passive: true });
+    return () => container.removeEventListener("scroll", updateScrolledState);
+  }, [viewMode, diffText, loading, error, isEmptyState]);
+
+  const titlebarContext = useMemo(
+    () => buildTitlebarContext({
+      workingDir: workingDir || "",
+      diffMode,
+      selectedCommit,
+      selectedBranch,
+      reviewingLabel,
+      activeFile: viewMode === "file" ? currentFile || undefined : activeDiffFile,
+      changedFileCount: changedFiles.length,
+    }),
+    [workingDir, diffMode, selectedCommit, selectedBranch, reviewingLabel, viewMode, currentFile, activeDiffFile, changedFiles.length]
+  );
+
   const { loadData } = commitSelector;
   useEffect(() => {
     if (isEmptyState && isGitRepo) {
@@ -432,12 +429,6 @@ function App() {
   useEffect(() => {
     getCurrentWindow().setTitle(reviewingLabel ? `Reviewing ${reviewingLabel}` : "ai-review");
   }, [reviewingLabel]);
-
-  const btnBase = "px-3 py-1.5 text-sm rounded-sm transition-colors border";
-  const btnDefault = `${btnBase} bg-transparent border-divider text-ink-secondary hover:bg-surface-hover hover:text-ink-primary hover:border-divider`;
-  const btnActive = `${btnBase} bg-surface-hover border-accent-review text-ink-primary`;
-  const btnIcon = "p-1.5 rounded-sm text-ink-secondary hover:text-ink-primary hover:bg-surface-hover transition-colors";
-  const btnIconActive = "p-1.5 rounded-sm text-ink-primary bg-surface-hover border border-accent-review transition-colors";
 
   useEffect(() => {
     window.localStorage.setItem("right-rail-width", String(rightRailWidth));
@@ -968,8 +959,8 @@ function App() {
     setOldImageSrc(null);
     setNewImageSrc(null);
 
-    const selectedChangedFile = changedFiles.find((file) => normalizePath(file.path) === normalizePath(filePath));
-    const fileStatus = normalizeFileStatus(selectedChangedFile?.status || "modified");
+    const selectedChangedFile = changedFiles.find((file) => file.path === filePath);
+    const fileStatus = selectedChangedFile?.status || "modified";
 
     if (isImageFile(filePath)) {
       const requestId = ++imageRequestIdRef.current;
@@ -1104,6 +1095,44 @@ function App() {
     });
   };
 
+  const findCommentScrollTarget = (comment: Comment): Element | null => {
+    const escapedFile = escapeAttributeSelector(comment.file);
+    const diffFileEl = document.querySelector(`[data-diff-file="${escapedFile}"]`);
+    const fileViewerEl = document.querySelector(`[data-file-viewer="${escapedFile}"]`);
+
+    if (comment.startLine === 0 && comment.endLine === 0) {
+      return diffFileEl || fileViewerEl;
+    }
+
+    if (diffFileEl) {
+      const diffFile = files.find(
+        (file: any) => getDiffFilePath(file) === comment.file
+      );
+      const fileHunks = expandedHunksMap[comment.file] || diffFile?.hunks;
+      const changeKey = fileHunks
+        ? findChangeKey(fileHunks, comment.endLine, comment.side)
+        : null;
+
+      if (changeKey) {
+        const changeEl = diffFileEl.querySelector(
+          `[data-change-key="${escapeAttributeSelector(changeKey)}"]`
+        );
+        if (changeEl) return changeEl;
+      }
+
+      return diffFileEl;
+    }
+
+    if (fileViewerEl) {
+      const lineEl = fileViewerEl.querySelector(
+        `[data-line-number="${escapeAttributeSelector(String(comment.endLine))}"][data-line-side="${escapeAttributeSelector(comment.side)}"]`
+      );
+      return lineEl || fileViewerEl;
+    }
+
+    return null;
+  };
+
   const goToComment = async (comment: Comment, options: { closeOverview?: boolean } = {}) => {
     if (options.closeOverview) {
       setShowCommentOverview(false);
@@ -1131,7 +1160,10 @@ function App() {
     }
 
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => scrollToCommentTarget(comment));
+      requestAnimationFrame(() => {
+        const target = findCommentScrollTarget(comment);
+        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
     });
   };
 
@@ -1364,6 +1396,10 @@ function App() {
     }
   };
 
+  const addFileComment = (file: string) => {
+    setAddingCommentAt({ file, startLine: 0, endLine: 0, side: "new" });
+  };
+
   const handlePreviewPrompt = () => {
     setShowPromptPreview(true);
   };
@@ -1484,7 +1520,6 @@ function App() {
     // Group comments by endLine + side
     const commentsByEndLine = new Map<string, import("./types").Comment[]>();
     for (const comment of fileComments) {
-      if (isWholeFileComment(comment)) continue;
       const key = `${comment.side}-${comment.endLine}`;
       if (!commentsByEndLine.has(key)) commentsByEndLine.set(key, []);
       commentsByEndLine.get(key)!.push(comment);
@@ -1732,14 +1767,12 @@ function App() {
       oldSource,
     });
     const fileComments = comments.filter((c) => c.file === fileName);
-    const wholeFileComments = fileComments.filter(isWholeFileComment);
-    const lineComments = fileComments.filter((comment) => !isWholeFileComment(comment));
-    const fileWidgets = buildFileWidgets(file, lineComments, fileHunks);
+    const fileWidgets = buildFileWidgets(file, fileComments, fileHunks);
 
     // Build selectedChanges for hover highlighting and drag selection
     const highlightedChangeKeys: string[] = [];
     if (hoveredCommentIds && hoveredCommentIds.length > 0) {
-      for (const comment of lineComments) {
+      for (const comment of fileComments) {
         if (hoveredCommentIds.includes(comment.id)) {
           highlightedChangeKeys.push(
             ...getChangeKeysForRange(fileHunks, comment.startLine, comment.endLine, comment.side)
@@ -1757,7 +1790,6 @@ function App() {
     return (
       <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={getDiffFilePath(file)}>
         <div
-          data-comment-file-anchor={fileName}
           className={`sticky top-0 z-10 px-4 py-2 font-medium border-b border-divider flex justify-between items-center transition-colors text-sm ${
             isViewed ? "bg-surface-hover/80 text-ink-secondary" : "bg-surface text-ink-primary"
           }`}
@@ -1786,16 +1818,6 @@ function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleFileCommentClick(fileName);
-              }}
-              className="px-2 py-0.5 text-xs rounded-sm text-ctp-subtext hover:text-ctp-text hover:bg-ctp-surface1 transition-colors"
-            >
-              Comment
-            </button>
             {detectLanguage(fileName) === "markdown" && viewType === "split" && file.newPath !== "/dev/null" && (
               <button
                 onClick={(e) => {
@@ -1811,6 +1833,16 @@ function App() {
                 {mdPreviewFiles.has(fileName) ? "Source" : "Preview"}
               </button>
             )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                addFileComment(fileName);
+              }}
+              className="px-2 py-0.5 text-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-hover rounded-sm transition-colors"
+            >
+              Comment
+            </button>
             <label
               className="flex items-center gap-2 text-xs uppercase tracking-wide text-ink-secondary cursor-pointer"
               onClick={(event) => event.stopPropagation()}
@@ -1828,43 +1860,24 @@ function App() {
             </span>
           </div>
         </div>
-        {!isViewed && (wholeFileComments.length > 0 || (addingCommentAt && addingCommentAt.file === fileName && isWholeFileComment(addingCommentAt))) && (
-          <div className="border-b border-ctp-surface1 bg-ctp-mantle px-4 py-2">
-            {wholeFileComments.length > 0 && (
-              <div
-                onMouseEnter={() => setHoveredCommentIds(wholeFileComments.map((comment) => comment.id))}
-                onMouseLeave={() => setHoveredCommentIds(null)}
-              >
-                <CommentWidget
-                  comments={wholeFileComments}
-                  onEdit={updateComment}
-                  onDelete={deleteComment}
-                  editingId={editingCommentId}
-                  onStartEdit={startEditing}
-                  onStopEdit={stopEditing}
-                />
-              </div>
-            )}
-            {addingCommentAt && addingCommentAt.file === fileName && isWholeFileComment(addingCommentAt) && (
-              <div className={wholeFileComments.length > 0 ? "mt-2" : undefined}>
-                <AddCommentForm
-                  file={addingCommentAt.file}
-                  startLine={0}
-                  endLine={0}
-                  side="new"
-                  onSubmit={handleAddComment}
-                  onCancel={() => setAddingCommentAt(null)}
-                  language={detectLanguage(fileName)}
-                />
-              </div>
-            )}
+        {addingCommentAt && addingCommentAt.file === fileName && addingCommentAt.startLine === 0 && addingCommentAt.endLine === 0 && (
+          <div className="px-4 py-2 bg-surface border-b border-divider">
+            <AddCommentForm
+              file={addingCommentAt.file}
+              startLine={0}
+              endLine={0}
+              side={addingCommentAt.side}
+              onSubmit={handleAddComment}
+              onCancel={() => setAddingCommentAt(null)}
+              language={detectLanguage(fileName)}
+            />
           </div>
         )}
         {!isViewed && mdPreviewFiles.has(fileName) && mdContentCache[fileName] !== undefined ? (
           <MarkdownPreview
             content={mdContentCache[fileName]}
             fileName={fileName}
-            comments={comments.filter((c) => c.file === fileName && !isWholeFileComment(c))}
+            comments={comments.filter((c) => c.file === fileName && c.side === "new" && !(c.startLine === 0 && c.endLine === 0))}
             onAddComment={addComment}
             onEditComment={updateComment}
             onDeleteComment={deleteComment}
@@ -1887,12 +1900,7 @@ function App() {
             // Only show button on the "new" side gutter (or matching side)
             const showButton = inHoverState && side === changeSide && lineNumber;
             return (
-              <span
-                className="relative inline-flex items-center w-full"
-                data-comment-file={fileName}
-                data-comment-line={lineNumber}
-                data-comment-side={changeSide}
-              >
+              <span className="relative inline-flex items-center w-full">
                 {showButton && (
                   <span
                     className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-accent-review hover:opacity-90 cursor-pointer text-accent-review-text opacity-80 hover:opacity-100 transition-all"
@@ -2121,240 +2129,18 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas text-ink-primary">
-      {/* Header */}
-      <div
-        className="flex items-center justify-between px-4 py-2.5 bg-surface border-b border-divider flex-shrink-0"
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col leading-none">
-            <span className="text-sm font-semibold text-ink-primary tracking-wide">
-              <span className="text-accent-review mr-1">●</span>ai-review
-            </span>
-          </div>
-          <RepoSwitcher
-            currentPath={workingDir}
-            repos={repoManager.repos}
-            onSwitchRepo={handleSwitchRepo}
-            onAddRepo={handleAddRepo}
-            onRemoveRepo={handleRemoveRepo}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-ink-muted hidden md:block">
-            Press <kbd className="px-2 py-1 bg-surface-hover rounded text-xs">Ctrl/⌘</kbd>{" "}
-            <kbd className="px-2 py-1 bg-surface-hover rounded text-xs">O</kbd> to open file
-          </span>
-
-          {/* Theme toggle button */}
-          <button
-            onClick={toggleTheme}
-            className="p-1.5 rounded text-ink-secondary hover:text-ink-primary hover:bg-surface-hover transition-colors"
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-              </svg>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {!isEmptyState && (
-      <div className="flex items-center gap-1 px-3 py-2 bg-surface border-b border-divider flex-shrink-0 flex-wrap">
-        {/* Group 1: View mode */}
-        <ViewTypeControl value={viewType} onChange={(v) => { setViewType(v); if (v === "unified") setMdPreviewFiles(new Set()); }} />
-
-        {isGitRepo && (
-          <>
-            {/* Divider between group 1 and group 2 */}
-            <div className="w-px h-5 bg-divider mx-1" />
-
-            {/* Group 2: Diff target */}
-            <div className="flex gap-1 items-center">
-              {changeStatus.has_unstaged && (
-                <button
-                  onClick={() => handleModeChange({ mode: "unstaged" })}
-                  className={diffMode.mode === "unstaged" ? btnActive : btnDefault}
-                >
-                  Unstaged
-                </button>
-              )}
-              {changeStatus.has_staged && (
-                <button
-                  onClick={() => handleModeChange({ mode: "staged" })}
-                  className={diffMode.mode === "staged" ? btnActive : btnDefault}
-                >
-                  Staged
-                </button>
-              )}
-              <button
-                onClick={commitSelector.openSelector}
-                className={btnDefault + " flex items-center gap-1.5"}
-                title="Browse commits (Ctrl+K)"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
-                Browse Commits
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* Divider between group 2 and group 3 */}
-        <div className="w-px h-5 bg-divider mx-1" />
-
-        {/* Group 3: Tools */}
-        <div className="ml-auto flex items-center gap-1">
-          {(changedFiles.length > 0 || comments.length > 0) && (
-            <button
-              onClick={() => setIsRightRailVisible((prev) => !prev)}
-              className={isRightRailVisible ? btnIconActive : btnIcon}
-              title={isRightRailVisible ? "Hide review rail" : "Show review rail"}
-              aria-label={isRightRailVisible ? "Hide review rail" : "Show review rail"}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                className="w-4 h-4"
-              >
-                <rect x="3" y="4" width="18" height="16" rx="2" />
-                <path d="M15 4v16" />
-                {!isRightRailVisible && <path d="M12 12h6" />}
-              </svg>
-            </button>
-          )}
-          {comments.length > 0 && (
-            <>
-              <button
-                onClick={() => setShowCommentOverview(true)}
-                className={btnDefault + " flex items-center gap-1"}
-              >
-                {comments.length} comment{comments.length !== 1 ? "s" : ""}
-                {comments.length > 10 ? " 🫠" : comments.length >= 3 ? " 🔥" : ""}
-              </button>
-              {jsonOutput && (
-                <button
-                  onClick={handlePreviewPrompt}
-                  className={btnActive + " flex items-center gap-1"}
-                >
-                  Preview Prompt
-                </button>
-              )}
-              <button
-                onClick={handleGeneratePrompt}
-                className={
-                  jsonOutput
-                    ? "px-4 py-2 bg-ctp-green text-on-green rounded-sm text-sm hover:opacity-90 transition-opacity font-semibold flex items-center gap-1"
-                    : btnActive + " flex items-center gap-1"
-                }
-              >
-                {jsonOutput ? "Publish comments" : "Generate Prompt"}
-              </button>
-            </>
-          )}
-          {(cliInstalled === false || cliJustInstalled) && <div className="relative">
-            <button
-              onClick={handleInstallCli}
-              disabled={cliJustInstalled}
-              className={`${cliJustInstalled ? btnActive + " cursor-not-allowed" : btnDefault} flex items-center gap-1.5`}
-              title={cliJustInstalled ? "CLI installed" : "Install CLI command"}
-            >
-              {cliJustInstalled ? (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  CLI
-                </>
-              ) : (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  CLI
-                </>
-              )}
-            </button>
-            {installMessage && (
-              <div className="absolute top-full mt-2 right-0 bg-surface border border-divider rounded-sm px-4 py-2 text-sm text-ink-primary whitespace-pre-wrap max-w-md shadow-lg z-50">
-                {installMessage}
-              </div>
-            )}
-          </div>}
-        </div>
-      </div>
-      )}
-
-      {selectedCommit && (
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-surface border-b border-divider text-xs text-ink-secondary flex-shrink-0">
-          <span className="font-mono bg-surface-hover text-ink-primary px-2 py-0.5 rounded-sm">
-            {selectedCommit.short_hash}
-          </span>
-          <span className="font-medium text-ink-primary">{selectedCommit.message}</span>
-        </div>
-      )}
-
-      {selectedBranch && (
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-surface border-b border-divider text-xs text-ink-secondary flex-shrink-0">
-          <span className="font-mono bg-surface-hover text-ink-primary px-2 py-0.5 rounded-sm">
-            {selectedBranch.short_hash}
-          </span>
-          <span className="font-medium text-ink-primary">Branch: {selectedBranch.name}</span>
-        </div>
-      )}
+    <div className="relative h-screen overflow-hidden bg-canvas text-ink-primary">
+      <TitlebarContext
+        context={titlebarContext}
+        scrolled={isMainScrolled}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        railVisible={isRightRailVisible}
+        onToggleRail={() => setIsRightRailVisible((prev) => !prev)}
+      />
 
       <ScrollProgressBar containerRef={mainContentRef} />
-      <div className="flex h-[calc(100vh-140px)]">
+      <div className="flex h-full min-h-0">
         <div ref={mainContentRef} className="flex-1 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full">
@@ -2365,7 +2151,7 @@ function App() {
               <div className="text-red-400 text-lg">Error: {error}</div>
             </div>
           ) : viewMode === "file" && currentFile ? (
-            <div className="p-6">
+            <div className="px-5 pb-6 pt-12">
               <div className="bg-surface px-4 py-2 mb-4 rounded">
                 <button
                   onClick={() => setViewMode("diff")}
@@ -2422,7 +2208,7 @@ function App() {
             </div>
           ) : isEmptyState ? (
             isGitRepo ? (
-              <div className="flex flex-col h-full bg-surface" data-inline-selector>
+              <div className="flex h-full flex-col bg-surface pt-12" data-inline-selector>
                 <CommitSelectorContent
                   commits={commitSelector.commits}
                   branches={commitSelector.branches}
@@ -2456,7 +2242,7 @@ function App() {
               </div>
             )
           ) : (
-            <div className="p-6">
+            <div className="px-5 pb-6 pt-12">
               {files.map(renderFile)}
             </div>
           )}
@@ -2471,16 +2257,37 @@ function App() {
             viewedCount={viewedCount}
             renderableFilesCount={renderableFiles.length}
             activeFile={activeDiffFile}
+            currentPath={workingDir}
+            repos={repoManager.repos}
+            viewType={viewType}
+            diffMode={diffMode}
+            changeStatus={changeStatus}
+            jsonOutput={jsonOutput}
+            cliInstalled={cliInstalled}
+            cliJustInstalled={cliJustInstalled}
+            installMessage={installMessage}
             onStartResize={() => setIsResizingRightRail(true)}
+            onSwitchRepo={handleSwitchRepo}
+            onAddRepo={handleAddRepo}
+            onRemoveRepo={handleRemoveRepo}
+            onViewTypeChange={(nextViewType: "split" | "unified") => {
+              setViewType(nextViewType);
+              if (nextViewType === "unified") setMdPreviewFiles(new Set());
+            }}
+            onDiffModeChange={handleModeChange}
+            onBrowseCommits={commitSelector.openSelector}
             onScrollToFile={scrollToDiffFile}
             onPreviewFile={handleFileSelect}
             onGoToComment={(comment) => void goToComment(comment)}
+            onOpenCommentOverview={() => setShowCommentOverview(true)}
+            onPreviewPrompt={handlePreviewPrompt}
+            onGeneratePrompt={handleGeneratePrompt}
+            onInstallCli={handleInstallCli}
             onEditComment={updateComment}
             onDeleteComment={deleteComment}
             editingCommentId={editingCommentId}
             onStartEditComment={startEditing}
             onStopEditComment={stopEditing}
-            onOpenCommentOverview={() => setShowCommentOverview(true)}
           />
         )}
       </div>

@@ -12,7 +12,7 @@ export function ScrollProgressBar({ containerRef }: ScrollProgressBarProps) {
 
   return (
     <div
-      className="w-full h-[2px] bg-surface-hover/30 pointer-events-none"
+      className="pointer-events-none absolute inset-x-0 top-9 z-40 h-px bg-surface-hover/30"
       aria-hidden="true"
     >
       <div
