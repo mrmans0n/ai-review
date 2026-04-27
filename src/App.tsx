@@ -392,10 +392,9 @@ function App() {
       selectedCommit,
       selectedBranch,
       reviewingLabel,
-      activeFile: viewMode === "file" ? currentFile || undefined : activeDiffFile,
       changedFileCount: changedFiles.length,
     }),
-    [workingDir, diffMode, selectedCommit, selectedBranch, reviewingLabel, viewMode, currentFile, activeDiffFile, changedFiles.length]
+    [workingDir, diffMode, selectedCommit, selectedBranch, reviewingLabel, changedFiles.length]
   );
 
   const { loadData } = commitSelector;

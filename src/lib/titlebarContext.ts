@@ -6,7 +6,6 @@ export interface TitlebarContextInput {
   selectedCommit: CommitInfo | null;
   selectedBranch: BranchInfo | null;
   reviewingLabel: string | null;
-  activeFile?: string;
   changedFileCount: number;
 }
 
@@ -14,7 +13,6 @@ export interface TitlebarContext {
   repoName: string;
   primary: string;
   secondary?: string;
-  activeFile?: string;
   fileSummary?: string;
 }
 
@@ -39,7 +37,6 @@ export function buildTitlebarContext({
   selectedCommit,
   selectedBranch,
   reviewingLabel,
-  activeFile,
   changedFileCount,
 }: TitlebarContextInput): TitlebarContext {
   const fileSummary =
@@ -50,7 +47,6 @@ export function buildTitlebarContext({
       repoName: getRepoName(workingDir),
       primary: selectedCommit.short_hash,
       secondary: selectedCommit.message,
-      activeFile,
       fileSummary,
     };
   }
@@ -60,7 +56,6 @@ export function buildTitlebarContext({
       repoName: getRepoName(workingDir),
       primary: selectedBranch.name,
       secondary: selectedBranch.short_hash,
-      activeFile,
       fileSummary,
     };
   }
@@ -68,7 +63,6 @@ export function buildTitlebarContext({
   return {
     repoName: getRepoName(workingDir),
     primary: reviewingLabel || getDiffScopeLabel(diffMode),
-    activeFile,
     fileSummary,
   };
 }

@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { TitlebarContext } from "./TitlebarContext";
 import type { TitlebarContext as TitlebarContextValue } from "../lib/titlebarContext";
 
-const context: TitlebarContextValue = {
+const context: TitlebarContextValue & { activeFile: string } = {
   repoName: "ai-review",
   primary: "Unstaged changes",
   secondary: "feature/titlebar-overlay",
@@ -33,6 +33,8 @@ describe("TitlebarContext", () => {
     expect(titlebar).toHaveTextContent("ai-review");
     expect(titlebar).toHaveTextContent("Unstaged changes");
     expect(titlebar).toHaveTextContent("3 files");
+
+    expect(titlebar).not.toHaveTextContent("src/components/TitlebarContext.tsx");
   });
 
   it("marks the scroll state for overlay styling", () => {
