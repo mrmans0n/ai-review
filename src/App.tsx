@@ -27,6 +27,7 @@ import { AddCommentForm } from "./components/AddCommentForm";
 import { CommentWidget } from "./components/CommentWidget";
 import { PromptPreview } from "./components/PromptPreview";
 import { CommentOverview } from "./components/CommentOverview";
+import { isWholeFileComment } from "./hooks/commentHelpers";
 import { RepoLandingPage } from "./components/RepoLandingPage";
 import { ConfirmModal } from "./components/ConfirmModal";
 import { ScrollProgressBar } from "./components/ScrollProgressBar";
@@ -960,7 +961,7 @@ function App() {
     setNewImageSrc(null);
 
     const selectedChangedFile = changedFiles.find((file) => file.path === filePath);
-    const fileStatus = selectedChangedFile?.status || "modified";
+    const fileStatus = normalizeFileStatus(selectedChangedFile?.status || "modified");
 
     if (isImageFile(filePath)) {
       const requestId = ++imageRequestIdRef.current;
@@ -1767,6 +1768,7 @@ function App() {
       oldSource,
     });
     const fileComments = comments.filter((c) => c.file === fileName);
+    const wholeFileComments = fileComments.filter(isWholeFileComment);
     const fileWidgets = buildFileWidgets(file, fileComments, fileHunks);
 
     // Build selectedChanges for hover highlighting and drag selection
@@ -1860,17 +1862,36 @@ function App() {
             </span>
           </div>
         </div>
-        {addingCommentAt && addingCommentAt.file === fileName && addingCommentAt.startLine === 0 && addingCommentAt.endLine === 0 && (
+        {(wholeFileComments.length > 0 || (addingCommentAt && addingCommentAt.file === fileName && addingCommentAt.startLine === 0 && addingCommentAt.endLine === 0)) && (
           <div className="px-4 py-2 bg-surface border-b border-divider">
-            <AddCommentForm
-              file={addingCommentAt.file}
-              startLine={0}
-              endLine={0}
-              side={addingCommentAt.side}
-              onSubmit={handleAddComment}
-              onCancel={() => setAddingCommentAt(null)}
-              language={detectLanguage(fileName)}
-            />
+            {wholeFileComments.length > 0 && (
+              <div
+                onMouseEnter={() => setHoveredCommentIds(wholeFileComments.map((comment) => comment.id))}
+                onMouseLeave={() => setHoveredCommentIds(null)}
+              >
+                <CommentWidget
+                  comments={wholeFileComments}
+                  onEdit={updateComment}
+                  onDelete={deleteComment}
+                  editingId={editingCommentId}
+                  onStartEdit={startEditing}
+                  onStopEdit={stopEditing}
+                />
+              </div>
+            )}
+            {addingCommentAt && addingCommentAt.file === fileName && addingCommentAt.startLine === 0 && addingCommentAt.endLine === 0 && (
+              <div className={wholeFileComments.length > 0 ? "mt-2" : undefined}>
+                <AddCommentForm
+                  file={addingCommentAt.file}
+                  startLine={0}
+                  endLine={0}
+                  side={addingCommentAt.side}
+                  onSubmit={handleAddComment}
+                  onCancel={() => setAddingCommentAt(null)}
+                  language={detectLanguage(fileName)}
+                />
+              </div>
+            )}
           </div>
         )}
         {!isViewed && mdPreviewFiles.has(fileName) && mdContentCache[fileName] !== undefined ? (
