@@ -41,6 +41,19 @@ describe("TitlebarContext", () => {
     expect(container.querySelector("header")).toHaveAttribute("data-scrolled", "true");
   });
 
+  it("marks visible title text as draggable", () => {
+    const { container } = render(<TitlebarContext {...makeProps()} />);
+
+    const dragRegions = Array.from(
+      container.querySelectorAll("[data-tauri-drag-region]")
+    ).map((element) => element.textContent ?? "");
+
+    expect(dragRegions).toContain("Air");
+    expect(dragRegions.some((text) => text.includes("ai-review"))).toBe(true);
+    expect(dragRegions.some((text) => text.includes("Unstaged changes"))).toBe(true);
+    expect(dragRegions).toContain("3 files");
+  });
+
   it("keeps titlebar actions clickable", () => {
     const onToggleRail = vi.fn();
     const onToggleTheme = vi.fn();

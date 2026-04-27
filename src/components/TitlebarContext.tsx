@@ -26,27 +26,27 @@ export function TitlebarContext({ context, scrolled, onToggleTheme, onToggleRail
         data-tauri-drag-region
         className="flex min-w-0 flex-1 items-center gap-2 text-[13px]"
       >
-        <span className="font-semibold text-ink-primary">Air</span>
-        <span className="text-ink-muted">/</span>
-        <span className="min-w-0 max-w-[180px] font-medium text-ink-primary">
+        <span data-tauri-drag-region className="font-semibold text-ink-primary">Air</span>
+        <span data-tauri-drag-region className="text-ink-muted">/</span>
+        <span data-tauri-drag-region className="min-w-0 max-w-[180px] font-medium text-ink-primary">
           <MiddleEllipsis text={context.repoName} />
         </span>
-        <span className="text-ink-muted">·</span>
-        <span className="min-w-0 max-w-[260px] text-ink-secondary">
+        <span data-tauri-drag-region className="text-ink-muted">·</span>
+        <span data-tauri-drag-region className="min-w-0 max-w-[260px] text-ink-secondary">
           <MiddleEllipsis text={context.primary} />
         </span>
         {context.secondary && (
           <>
-            <span className="hidden text-ink-muted md:inline">·</span>
-            <span className="hidden min-w-0 max-w-[320px] text-ink-muted md:inline">
+            <span data-tauri-drag-region className="hidden text-ink-muted md:inline">·</span>
+            <span data-tauri-drag-region className="hidden min-w-0 max-w-[320px] text-ink-muted md:inline">
               <MiddleEllipsis text={context.secondary} />
             </span>
           </>
         )}
         {context.activeFile && (
           <>
-            <span className="hidden text-ink-muted lg:inline">·</span>
-            <span className="hidden min-w-0 max-w-[360px] font-mono text-xs text-ink-muted lg:inline">
+            <span data-tauri-drag-region className="hidden text-ink-muted lg:inline">·</span>
+            <span data-tauri-drag-region className="hidden min-w-0 max-w-[360px] font-mono text-xs text-ink-muted lg:inline">
               <MiddleEllipsis text={context.activeFile} />
             </span>
           </>
@@ -54,7 +54,7 @@ export function TitlebarContext({ context, scrolled, onToggleTheme, onToggleRail
       </div>
       <div className="flex flex-shrink-0 items-center gap-2">
         {context.fileSummary && (
-          <span className="hidden text-xs text-ink-muted sm:inline">
+          <span data-tauri-drag-region className="hidden text-xs text-ink-muted sm:inline">
             {context.fileSummary}
           </span>
         )}
