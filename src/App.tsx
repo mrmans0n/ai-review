@@ -960,7 +960,10 @@ function App() {
     setOldImageSrc(null);
     setNewImageSrc(null);
 
-    const selectedChangedFile = changedFiles.find((file) => file.path === filePath);
+    const normalizedFilePath = normalizePath(filePath);
+    const selectedChangedFile = changedFiles.find(
+      (file) => normalizePath(file.path) === normalizedFilePath
+    );
     const fileStatus = normalizeFileStatus(selectedChangedFile?.status || "modified");
 
     if (isImageFile(filePath)) {
