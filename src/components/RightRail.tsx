@@ -1,8 +1,6 @@
-import type { Comment, ChangedFileRailItem, DiffModeConfig, GitChangeStatus, RepoInfo } from "../types";
+import type { Comment, ChangedFileRailItem } from "../types";
 import { FileList } from "./FileList";
 import { RailComments } from "./RailComments";
-import { RepoSwitcher } from "./RepoSwitcher";
-import { ViewTypeControl } from "./ViewTypeControl";
 
 interface RightRailProps {
   files: ChangedFileRailItem[];
@@ -13,22 +11,11 @@ interface RightRailProps {
   viewedCount: number;
   renderableFilesCount: number;
   activeFile?: string;
-  currentPath: string;
-  repos: RepoInfo[];
-  viewType: "split" | "unified";
-  diffMode: DiffModeConfig;
-  changeStatus: GitChangeStatus;
   jsonOutput: boolean;
   cliInstalled: boolean | null;
   cliJustInstalled: boolean;
   installMessage: string | null;
   onStartResize: () => void;
-  onSwitchRepo: (path: string) => void;
-  onAddRepo: () => void;
-  onRemoveRepo: (path: string) => void;
-  onViewTypeChange: (viewType: "split" | "unified") => void;
-  onDiffModeChange: (mode: DiffModeConfig) => void;
-  onBrowseCommits: () => void;
   onPreviewPrompt: () => void;
   onGeneratePrompt: () => void;
   onInstallCli: () => void;
@@ -52,22 +39,11 @@ export function RightRail({
   viewedCount,
   renderableFilesCount,
   activeFile,
-  currentPath,
-  repos,
-  viewType,
-  diffMode,
-  changeStatus,
   jsonOutput,
   cliInstalled,
   cliJustInstalled,
   installMessage,
   onStartResize,
-  onSwitchRepo,
-  onAddRepo,
-  onRemoveRepo,
-  onViewTypeChange,
-  onDiffModeChange,
-  onBrowseCommits,
   onPreviewPrompt,
   onGeneratePrompt,
   onInstallCli,
@@ -102,116 +78,59 @@ export function RightRail({
       />
 
       <section className="flex min-h-0 flex-[3] flex-col border-b border-ctp-surface1">
-        <div className="border-b border-ctp-surface1 p-3">
-          <div className="mb-3">
+        {(comments.length > 0 || cliInstalled === false || cliJustInstalled) && (
+          <div className="border-b border-ctp-surface1 p-3">
             <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-ctp-overlay0">
-              Repository
+              Review
             </div>
-            <RepoSwitcher
-              currentPath={currentPath}
-              repos={repos}
-              onSwitchRepo={onSwitchRepo}
-              onAddRepo={onAddRepo}
-              onRemoveRepo={onRemoveRepo}
-            />
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-ctp-overlay0">
-                View
-              </div>
-              <ViewTypeControl value={viewType} onChange={onViewTypeChange} />
-            </div>
-
-            <div>
-              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-ctp-overlay0">
-                Scope
-              </div>
-              <div className="grid grid-cols-2 gap-1">
-                {changeStatus.has_unstaged && (
+            <div className="space-y-1">
+              {comments.length > 0 && (
+                <>
                   <button
                     type="button"
-                    onClick={() => onDiffModeChange({ mode: "unstaged" })}
-                    className={getRailButtonClass(diffMode.mode === "unstaged")}
+                    onClick={onOpenCommentOverview}
+                    className="w-full rounded-sm border border-ctp-surface1 px-2 py-1.5 text-left text-xs text-ink-secondary transition-colors hover:bg-ctp-surface0 hover:text-ink-primary"
                   >
-                    Unstaged
+                    {comments.length} comment{comments.length !== 1 ? "s" : ""}
                   </button>
-                )}
-                {changeStatus.has_staged && (
-                  <button
-                    type="button"
-                    onClick={() => onDiffModeChange({ mode: "staged" })}
-                    className={getRailButtonClass(diffMode.mode === "staged")}
-                  >
-                    Staged
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={onBrowseCommits}
-                  className="col-span-2 rounded-sm border border-ctp-surface1 px-2 py-1.5 text-left text-xs text-ink-secondary transition-colors hover:bg-ctp-surface0 hover:text-ink-primary"
-                >
-                  Browse commits
-                </button>
-              </div>
-            </div>
-
-            {(comments.length > 0 || cliInstalled === false || cliJustInstalled) && (
-              <div>
-                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-ctp-overlay0">
-                  Review
-                </div>
-                <div className="space-y-1">
-                  {comments.length > 0 && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={onOpenCommentOverview}
-                        className="w-full rounded-sm border border-ctp-surface1 px-2 py-1.5 text-left text-xs text-ink-secondary transition-colors hover:bg-ctp-surface0 hover:text-ink-primary"
-                      >
-                        {comments.length} comment{comments.length !== 1 ? "s" : ""}
-                      </button>
-                      {jsonOutput && (
-                        <button
-                          type="button"
-                          onClick={onPreviewPrompt}
-                          className="w-full rounded-sm border border-ctp-surface1 px-2 py-1.5 text-left text-xs text-ink-secondary transition-colors hover:bg-ctp-surface0 hover:text-ink-primary"
-                        >
-                          Preview prompt
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={onGeneratePrompt}
-                        className="w-full rounded-sm border border-accent-review bg-surface-hover px-2 py-1.5 text-left text-xs font-medium text-ink-primary transition-colors hover:bg-ctp-surface0"
-                      >
-                        {jsonOutput ? "Publish comments" : "Generate prompt"}
-                      </button>
-                    </>
+                  {jsonOutput && (
+                    <button
+                      type="button"
+                      onClick={onPreviewPrompt}
+                      className="w-full rounded-sm border border-ctp-surface1 px-2 py-1.5 text-left text-xs text-ink-secondary transition-colors hover:bg-ctp-surface0 hover:text-ink-primary"
+                    >
+                      Preview prompt
+                    </button>
                   )}
-                  {(cliInstalled === false || cliJustInstalled) && (
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={onInstallCli}
-                        disabled={cliJustInstalled}
-                        className="w-full rounded-sm border border-ctp-surface1 px-2 py-1.5 text-left text-xs text-ink-secondary transition-colors hover:bg-ctp-surface0 hover:text-ink-primary disabled:cursor-not-allowed disabled:border-accent-review disabled:text-ink-primary"
-                      >
-                        {cliJustInstalled ? "CLI installed" : "Install CLI"}
-                      </button>
-                      {installMessage && (
-                        <div className="absolute right-0 top-full z-50 mt-2 max-w-md whitespace-pre-wrap rounded-sm border border-divider bg-surface px-4 py-2 text-sm text-ink-primary shadow-lg">
-                          {installMessage}
-                        </div>
-                      )}
+                  <button
+                    type="button"
+                    onClick={onGeneratePrompt}
+                    className="w-full rounded-sm border border-accent-review bg-surface-hover px-2 py-1.5 text-left text-xs font-medium text-ink-primary transition-colors hover:bg-ctp-surface0"
+                  >
+                    {jsonOutput ? "Publish comments" : "Generate prompt"}
+                  </button>
+                </>
+              )}
+              {(cliInstalled === false || cliJustInstalled) && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={onInstallCli}
+                    disabled={cliJustInstalled}
+                    className="w-full rounded-sm border border-ctp-surface1 px-2 py-1.5 text-left text-xs text-ink-secondary transition-colors hover:bg-ctp-surface0 hover:text-ink-primary disabled:cursor-not-allowed disabled:border-accent-review disabled:text-ink-primary"
+                  >
+                    {cliJustInstalled ? "CLI installed" : "Install CLI"}
+                  </button>
+                  {installMessage && (
+                    <div className="absolute right-0 top-full z-50 mt-2 max-w-md whitespace-pre-wrap rounded-sm border border-divider bg-surface px-4 py-2 text-sm text-ink-primary shadow-lg">
+                      {installMessage}
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="flex items-center gap-2 px-3 py-2 border-b border-ctp-surface1">
           <div className="w-0.5 h-3.5 bg-ctp-peach rounded-full flex-shrink-0" />
@@ -261,10 +180,4 @@ export function RightRail({
       </section>
     </aside>
   );
-}
-
-function getRailButtonClass(active: boolean): string {
-  return active
-    ? "rounded-sm border border-accent-review bg-surface-hover px-2 py-1.5 text-xs text-ink-primary"
-    : "rounded-sm border border-ctp-surface1 px-2 py-1.5 text-xs text-ink-secondary transition-colors hover:bg-ctp-surface0 hover:text-ink-primary";
 }

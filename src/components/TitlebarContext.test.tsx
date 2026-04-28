@@ -19,6 +19,18 @@ function makeProps(overrides: Partial<Parameters<typeof TitlebarContext>[0]> = {
     onToggleRail: vi.fn(),
     railVisible: true,
     theme: "dark" as const,
+    currentPath: "/tmp/ai-review",
+    repos: [{ name: "ai-review", path: "/tmp/ai-review", last_activity: 0 }],
+    viewType: "split" as const,
+    diffMode: { mode: "unstaged" as const },
+    changeStatus: { has_unstaged: true, has_staged: true },
+    showReviewSettings: true,
+    onSwitchRepo: vi.fn(),
+    onAddRepo: vi.fn(),
+    onRemoveRepo: vi.fn(),
+    onViewTypeChange: vi.fn(),
+    onDiffModeChange: vi.fn(),
+    onBrowseCommits: vi.fn(),
     ...overrides,
   };
 }
@@ -43,24 +55,20 @@ describe("TitlebarContext", () => {
     expect(container.querySelector("header")).toHaveAttribute("data-scrolled", "true");
   });
 
-  it("marks visible title text as draggable", () => {
+  it("keeps visible title text selectable while leaving empty titlebar space draggable", () => {
     const { container } = render(<TitlebarContext {...makeProps()} />);
 
     const dragRegions = Array.from(
       container.querySelectorAll("[data-tauri-drag-region]")
     ).map((element) => element.textContent ?? "");
 
-    expect(dragRegions).toContain("Air");
-    expect(dragRegions.some((text) => text.includes("ai-review"))).toBe(true);
     expect(dragRegions.some((text) => text.includes("Unstaged changes"))).toBe(true);
-    expect(dragRegions).toContain("3 files");
+    expect(container.querySelector("header")).toHaveAttribute("data-tauri-drag-region");
 
-    expect(
-      container.querySelector(".middle-ellipsis-start[data-tauri-drag-region]")
-    ).not.toBeNull();
-    expect(
-      container.querySelector(".middle-ellipsis-end[data-tauri-drag-region]")
-    ).not.toBeNull();
+    expect(container.querySelector(".titlebar-text")).not.toBeNull();
+    expect(container.querySelector(".titlebar-text[data-tauri-drag-region]")).toBeNull();
+    expect(container.querySelector(".middle-ellipsis-start[data-tauri-drag-region]")).toBeNull();
+    expect(container.querySelector(".middle-ellipsis-end[data-tauri-drag-region]")).toBeNull();
   });
 
   it("keeps titlebar actions clickable", () => {
@@ -69,9 +77,11 @@ describe("TitlebarContext", () => {
     render(<TitlebarContext {...makeProps({ onToggleRail, onToggleTheme })} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Hide review rail" }));
+    fireEvent.click(screen.getByRole("button", { name: "Review settings" }));
     fireEvent.click(screen.getByRole("button", { name: "Toggle theme" }));
 
     expect(onToggleRail).toHaveBeenCalledOnce();
     expect(onToggleTheme).toHaveBeenCalledOnce();
+    expect(screen.getByText("Scope")).toBeInTheDocument();
   });
 });

@@ -1,5 +1,8 @@
 import type { TitlebarContext as TitlebarContextValue } from "../lib/titlebarContext";
+import type { DiffModeConfig, GitChangeStatus, RepoInfo } from "../types";
 import { MiddleEllipsis } from "./MiddleEllipsis";
+import { RepoSwitcher } from "./RepoSwitcher";
+import { TitlebarSettingsMenu } from "./TitlebarSettingsMenu";
 
 interface TitlebarContextProps {
   context: TitlebarContextValue;
@@ -8,9 +11,40 @@ interface TitlebarContextProps {
   onToggleRail: () => void;
   railVisible: boolean;
   theme: "dark" | "light";
+  currentPath: string;
+  repos: RepoInfo[];
+  viewType: "split" | "unified";
+  diffMode: DiffModeConfig;
+  changeStatus: GitChangeStatus;
+  showReviewSettings: boolean;
+  onSwitchRepo: (path: string) => void;
+  onAddRepo: () => void;
+  onRemoveRepo: (path: string) => void;
+  onViewTypeChange: (viewType: "split" | "unified") => void;
+  onDiffModeChange: (mode: DiffModeConfig) => void;
+  onBrowseCommits: () => void;
 }
 
-export function TitlebarContext({ context, scrolled, onToggleTheme, onToggleRail, railVisible, theme }: TitlebarContextProps) {
+export function TitlebarContext({
+  context,
+  scrolled,
+  onToggleTheme,
+  onToggleRail,
+  railVisible,
+  theme,
+  currentPath,
+  repos,
+  viewType,
+  diffMode,
+  changeStatus,
+  showReviewSettings,
+  onSwitchRepo,
+  onAddRepo,
+  onRemoveRepo,
+  onViewTypeChange,
+  onDiffModeChange,
+  onBrowseCommits,
+}: TitlebarContextProps) {
   return (
     <header
       data-tauri-drag-region
@@ -26,27 +60,32 @@ export function TitlebarContext({ context, scrolled, onToggleTheme, onToggleRail
         data-tauri-drag-region
         className="flex min-w-0 flex-1 items-center gap-2 text-[13px]"
       >
-        <span data-tauri-drag-region className="font-semibold text-ink-primary">Air</span>
+        <span className="titlebar-text select-text font-semibold text-ink-primary">Air</span>
         <span data-tauri-drag-region className="text-ink-muted">/</span>
-        <span data-tauri-drag-region className="min-w-0 max-w-[180px] font-medium text-ink-primary">
-          <MiddleEllipsis text={context.repoName} dragRegion />
-        </span>
+        <RepoSwitcher
+          currentPath={currentPath}
+          repos={repos}
+          onSwitchRepo={onSwitchRepo}
+          onAddRepo={onAddRepo}
+          onRemoveRepo={onRemoveRepo}
+          variant="titlebar"
+        />
         <span data-tauri-drag-region className="text-ink-muted">·</span>
-        <span data-tauri-drag-region className="min-w-0 max-w-[260px] text-ink-secondary">
-          <MiddleEllipsis text={context.primary} dragRegion />
+        <span className="titlebar-text min-w-0 max-w-[260px] select-text text-ink-secondary">
+          <MiddleEllipsis text={context.primary} />
         </span>
         {context.secondary && (
           <>
             <span data-tauri-drag-region className="hidden text-ink-muted md:inline">·</span>
-            <span data-tauri-drag-region className="hidden min-w-0 max-w-[320px] text-ink-muted md:inline">
-              <MiddleEllipsis text={context.secondary} dragRegion />
+            <span className="titlebar-text hidden min-w-0 max-w-[320px] select-text text-ink-muted md:inline">
+              <MiddleEllipsis text={context.secondary} />
             </span>
           </>
         )}
       </div>
-      <div className="flex flex-shrink-0 items-center gap-2">
+      <div className="titlebar-no-drag flex flex-shrink-0 items-center gap-2">
         {context.fileSummary && (
-          <span data-tauri-drag-region className="hidden text-xs text-ink-muted sm:inline">
+          <span className="titlebar-text hidden select-text text-xs text-ink-muted sm:inline">
             {context.fileSummary}
           </span>
         )}
@@ -73,6 +112,16 @@ export function TitlebarContext({ context, scrolled, onToggleTheme, onToggleRail
             <path d="M15 4v16" />
           </svg>
         </button>
+        {showReviewSettings && (
+          <TitlebarSettingsMenu
+            viewType={viewType}
+            diffMode={diffMode}
+            changeStatus={changeStatus}
+            onViewTypeChange={onViewTypeChange}
+            onDiffModeChange={onDiffModeChange}
+            onBrowseCommits={onBrowseCommits}
+          />
+        )}
         <button
           type="button"
           onClick={onToggleTheme}
