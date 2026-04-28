@@ -101,6 +101,27 @@ describe("FileViewer", () => {
     });
   });
 
+  describe("sticky header material", () => {
+    it("uses translucent backdrop blur while preserving contrast for unviewed files", () => {
+      const props = makeProps();
+      const { container } = render(<FileViewer {...props} />);
+      const header = container.querySelector(".sticky.top-9");
+
+      expect(header?.className).toContain("bg-canvas/85");
+      expect(header?.className).toContain("backdrop-blur-lg");
+    });
+
+    it("keeps the viewed header translucent and clickable", () => {
+      const props = makeProps({ isViewed: true });
+      const { container } = render(<FileViewer {...props} />);
+      const header = container.querySelector(".sticky.top-9");
+
+      expect(header?.className).toContain("bg-canvas/75");
+      expect(header?.className).toContain("backdrop-blur-lg");
+      expect(header?.className).toContain("cursor-pointer");
+    });
+  });
+
   describe("gutter click", () => {
     it("calls onLineClick on gutter click", () => {
       const props = makeProps();

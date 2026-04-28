@@ -201,7 +201,7 @@ export function FileViewer({
       <div
         data-comment-file-anchor={fileName}
         className={`sticky top-9 z-10 rounded-t px-4 py-2 border-b border-divider flex items-center justify-between transition-colors ${
-          isViewed ? "bg-canvas/80 text-ink-secondary cursor-pointer" : "bg-canvas"
+          isViewed ? "bg-canvas/75 text-ink-secondary cursor-pointer backdrop-blur-lg" : "bg-canvas/85 backdrop-blur-lg"
         }`}
         onClick={() => {
           if (isViewed) {
