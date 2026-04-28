@@ -2165,7 +2165,7 @@ function App() {
         viewType={viewType}
         diffMode={diffMode}
         changeStatus={changeStatus}
-        showReviewSettings={!isEmptyState}
+        showReviewSettings
         onSwitchRepo={handleSwitchRepo}
         onAddRepo={handleAddRepo}
         onRemoveRepo={handleRemoveRepo}
