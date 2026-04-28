@@ -17,6 +17,7 @@ interface TitlebarContextProps {
   viewType: "split" | "unified";
   diffMode: DiffModeConfig;
   changeStatus: GitChangeStatus;
+  showReviewChrome: boolean;
   showReviewSettings: boolean;
   onSwitchRepo: (path: string) => void;
   onAddRepo: () => void;
@@ -38,6 +39,7 @@ export function TitlebarContext({
   viewType,
   diffMode,
   changeStatus,
+  showReviewChrome,
   showReviewSettings,
   onSwitchRepo,
   onAddRepo,
@@ -106,64 +108,70 @@ export function TitlebarContext({
           onRemoveRepo={onRemoveRepo}
           variant="titlebar"
         />
-        <span data-tauri-drag-region className="text-ink-muted">·</span>
-        <div className="relative min-w-0">
-          <button
-            type="button"
-            onClick={handleCopyPrimary}
-            className="titlebar-text min-w-0 cursor-pointer rounded-sm text-ink-secondary transition-colors hover:text-ink-primary"
-            aria-label={`Copy ${context.primary}`}
-            title="Copy to clipboard"
-          >
-            <MiddleEllipsis text={context.primary} />
-          </button>
-          {copied && (
-            <span
-              role="status"
-              className="pointer-events-none absolute left-1/2 top-full z-50 mt-1 -translate-x-1/2 whitespace-nowrap rounded-sm border border-divider bg-surface-raised px-2 py-1 text-xs text-ink-primary shadow-sm"
-            >
-              Copied!
-            </span>
-          )}
-        </div>
-        {context.secondary && (
+        {showReviewChrome && (
           <>
-            <span data-tauri-drag-region className="hidden text-ink-muted md:inline">·</span>
-            <span className="titlebar-text hidden min-w-0 select-text text-ink-muted md:inline">
-              <MiddleEllipsis text={context.secondary} />
-            </span>
+            <span data-tauri-drag-region className="text-ink-muted">·</span>
+            <div className="relative min-w-0">
+              <button
+                type="button"
+                onClick={handleCopyPrimary}
+                className="titlebar-text min-w-0 cursor-pointer rounded-sm text-ink-secondary transition-colors hover:text-ink-primary"
+                aria-label={`Copy ${context.primary}`}
+                title="Copy to clipboard"
+              >
+                <MiddleEllipsis text={context.primary} />
+              </button>
+              {copied && (
+                <span
+                  role="status"
+                  className="pointer-events-none absolute left-1/2 top-full z-50 mt-1 -translate-x-1/2 whitespace-nowrap rounded-sm border border-divider bg-surface-raised px-2 py-1 text-xs text-ink-primary shadow-sm"
+                >
+                  Copied!
+                </span>
+              )}
+            </div>
+            {context.secondary && (
+              <>
+                <span data-tauri-drag-region className="hidden text-ink-muted md:inline">·</span>
+                <span className="titlebar-text hidden min-w-0 select-text text-ink-muted md:inline">
+                  <MiddleEllipsis text={context.secondary} />
+                </span>
+              </>
+            )}
           </>
         )}
       </div>
       <div className="titlebar-no-drag flex flex-shrink-0 items-center gap-2">
-        {context.fileSummary && (
+        {showReviewChrome && context.fileSummary && (
           <span className="titlebar-text hidden select-text text-xs text-ink-muted sm:inline">
             {context.fileSummary}
           </span>
         )}
-        <button
-          type="button"
-          onClick={onToggleRail}
-          className={`rounded-sm p-1.5 transition-colors ${
-            railVisible
-              ? "bg-surface-hover text-ink-primary"
-              : "text-ink-secondary hover:bg-surface-hover hover:text-ink-primary"
-          }`}
-          title={railVisible ? "Hide review rail" : "Show review rail"}
-          aria-label={railVisible ? "Hide review rail" : "Show review rail"}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            className="h-4 w-4"
+        {showReviewChrome && (
+          <button
+            type="button"
+            onClick={onToggleRail}
+            className={`rounded-sm p-1.5 transition-colors ${
+              railVisible
+                ? "bg-surface-hover text-ink-primary"
+                : "text-ink-secondary hover:bg-surface-hover hover:text-ink-primary"
+            }`}
+            title={railVisible ? "Hide review rail" : "Show review rail"}
+            aria-label={railVisible ? "Hide review rail" : "Show review rail"}
           >
-            <rect x="3" y="4" width="18" height="16" rx="2" />
-            <path d="M15 4v16" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              className="h-4 w-4"
+            >
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M15 4v16" />
+            </svg>
+          </button>
+        )}
         {showReviewSettings && (
           <TitlebarSettingsMenu
             viewType={viewType}
