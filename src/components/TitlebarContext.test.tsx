@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { TitlebarContext } from "./TitlebarContext";
 import type { TitlebarContext as TitlebarContextValue } from "../lib/titlebarContext";
 
@@ -36,6 +36,23 @@ function makeProps(overrides: Partial<Parameters<typeof TitlebarContext>[0]> = {
 }
 
 describe("TitlebarContext", () => {
+  const writeText = vi.fn();
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    writeText.mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
   it("renders compact review context", () => {
     render(<TitlebarContext {...makeProps()} />);
 
@@ -53,22 +70,6 @@ describe("TitlebarContext", () => {
     const { container } = render(<TitlebarContext {...makeProps({ scrolled: true })} />);
 
     expect(container.querySelector("header")).toHaveAttribute("data-scrolled", "true");
-  });
-
-  it("keeps visible title text selectable while leaving empty titlebar space draggable", () => {
-    const { container } = render(<TitlebarContext {...makeProps()} />);
-
-    const dragRegions = Array.from(
-      container.querySelectorAll("[data-tauri-drag-region]")
-    ).map((element) => element.textContent ?? "");
-
-    expect(dragRegions.some((text) => text.includes("Unstaged changes"))).toBe(true);
-    expect(container.querySelector("header")).toHaveAttribute("data-tauri-drag-region");
-
-    expect(container.querySelector(".titlebar-text")).not.toBeNull();
-    expect(container.querySelector(".titlebar-text[data-tauri-drag-region]")).toBeNull();
-    expect(container.querySelector(".middle-ellipsis-start[data-tauri-drag-region]")).toBeNull();
-    expect(container.querySelector(".middle-ellipsis-end[data-tauri-drag-region]")).toBeNull();
   });
 
   it("keeps the native traffic-light control lane aligned with the overlay titlebar", () => {
@@ -93,5 +94,48 @@ describe("TitlebarContext", () => {
     expect(onToggleRail).toHaveBeenCalledOnce();
     expect(onToggleTheme).toHaveBeenCalledOnce();
     expect(screen.getByText("Scope")).toBeInTheDocument();
+  });
+
+  it("copies the primary context when clicked", () => {
+    render(<TitlebarContext {...makeProps()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy Unstaged changes" }));
+
+    expect(writeText).toHaveBeenCalledWith("Unstaged changes");
+  });
+
+  it("copies the full primary value for long ranges", () => {
+    const range = "feature/really-long-branch-name..main-with-another-long-name";
+    const customContext = { ...context, primary: range };
+    render(<TitlebarContext {...makeProps({ context: customContext })} />);
+
+    fireEvent.click(screen.getByRole("button", { name: `Copy ${range}` }));
+
+    expect(writeText).toHaveBeenCalledWith(range);
+  });
+
+  it("shows and hides the copied popover after a successful copy", async () => {
+    render(<TitlebarContext {...makeProps()} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copy Unstaged changes" }));
+      await Promise.resolve();
+    });
+
+    expect(screen.getByRole("status")).toHaveTextContent("Copied!");
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("does not mark the copy button as a drag region", () => {
+    render(<TitlebarContext {...makeProps()} />);
+
+    expect(screen.getByRole("button", { name: "Copy Unstaged changes" })).not.toHaveAttribute(
+      "data-tauri-drag-region"
+    );
   });
 });
