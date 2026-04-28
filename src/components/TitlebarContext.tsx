@@ -98,8 +98,6 @@ export function TitlebarContext({
         data-tauri-drag-region
         className="flex min-w-0 flex-1 items-center gap-2 text-[13px]"
       >
-        <span className="titlebar-text select-text font-semibold text-ink-primary">Air</span>
-        <span data-tauri-drag-region className="text-ink-muted">/</span>
         <RepoSwitcher
           currentPath={currentPath}
           repos={repos}
