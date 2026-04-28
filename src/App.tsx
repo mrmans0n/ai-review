@@ -2280,7 +2280,7 @@ function App() {
               </div>
             )
           ) : (
-            <div className="px-5 pb-6 pt-12">
+            <div className="pb-6 pt-12" data-testid="diff-content">
               {files.map(renderFile)}
             </div>
           )}
