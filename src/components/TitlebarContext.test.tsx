@@ -53,12 +53,12 @@ describe("TitlebarContext", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders compact review context", () => {
+  it("renders compact review context without product prefix", () => {
     render(<TitlebarContext {...makeProps()} />);
 
-    const titlebar = screen.getByText("Air").closest("header");
+    const titlebar = screen.getByRole("banner");
 
-    expect(titlebar).toHaveTextContent("Air");
+    expect(titlebar).not.toHaveTextContent("Air");
     expect(titlebar).toHaveTextContent("ai-review");
     expect(titlebar).toHaveTextContent("Unstaged changes");
     expect(titlebar).toHaveTextContent("3 files");
