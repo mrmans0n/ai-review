@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { TitlebarContext as TitlebarContextValue } from "../lib/titlebarContext";
 import type { DiffModeConfig, GitChangeStatus, RepoInfo } from "../types";
 import { MiddleEllipsis } from "./MiddleEllipsis";
@@ -45,6 +46,43 @@ export function TitlebarContext({
   onDiffModeChange,
   onBrowseCommits,
 }: TitlebarContextProps) {
+  const [copied, setCopied] = useState(false);
+  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimeoutRef.current) {
+        clearTimeout(copiedTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    setCopied(false);
+    if (copiedTimeoutRef.current) {
+      clearTimeout(copiedTimeoutRef.current);
+      copiedTimeoutRef.current = null;
+    }
+  }, [context.primary]);
+
+  const handleCopyPrimary = async () => {
+    try {
+      await navigator.clipboard.writeText(context.primary);
+      setCopied(true);
+
+      if (copiedTimeoutRef.current) {
+        clearTimeout(copiedTimeoutRef.current);
+      }
+
+      copiedTimeoutRef.current = setTimeout(() => {
+        setCopied(false);
+        copiedTimeoutRef.current = null;
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy titlebar context:", err);
+    }
+  };
+
   return (
     <header
       data-tauri-drag-region
@@ -71,9 +109,25 @@ export function TitlebarContext({
           variant="titlebar"
         />
         <span data-tauri-drag-region className="text-ink-muted">·</span>
-        <span className="titlebar-text min-w-0 max-w-[260px] select-text text-ink-secondary">
-          <MiddleEllipsis text={context.primary} />
-        </span>
+        <div className="relative min-w-0">
+          <button
+            type="button"
+            onClick={handleCopyPrimary}
+            className="titlebar-text min-w-0 max-w-[260px] cursor-pointer rounded-sm text-ink-secondary transition-colors hover:text-ink-primary"
+            aria-label={`Copy ${context.primary}`}
+            title="Copy to clipboard"
+          >
+            <MiddleEllipsis text={context.primary} />
+          </button>
+          {copied && (
+            <span
+              role="status"
+              className="pointer-events-none absolute left-1/2 top-full z-50 mt-1 -translate-x-1/2 whitespace-nowrap rounded-sm border border-divider bg-surface-raised px-2 py-1 text-xs text-ink-primary shadow-sm"
+            >
+              Copied!
+            </span>
+          )}
+        </div>
         {context.secondary && (
           <>
             <span data-tauri-drag-region className="hidden text-ink-muted md:inline">·</span>
