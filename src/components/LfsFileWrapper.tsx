@@ -109,7 +109,7 @@ export function LfsFileWrapper({
       {/* File header */}
       <div
         className={`sticky top-9 z-10 px-4 py-2 font-medium border-b border-ctp-surface1 flex justify-between items-center transition-colors text-sm ${
-          isViewed ? "bg-ctp-surface0/80 text-ctp-subtext" : "bg-ctp-surface0 text-ctp-text"
+          isViewed ? "bg-ctp-surface0/70 text-ctp-subtext backdrop-blur-xl" : "bg-ctp-surface0/85 text-ctp-text backdrop-blur-xl"
         }`}
         onClick={() => {
           if (isViewed) onToggleViewed();
