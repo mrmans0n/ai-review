@@ -358,6 +358,7 @@ function App() {
     });
   }, [changedFiles, comments, files, viewedFiles]);
   const isEmptyState = renderableFiles.length === 0 && !selectedCommit && !selectedBranch;
+  const showReviewChrome = !isEmptyState;
 
   const visibleDiffFile = useVisibleDiffFile({
     containerRef: mainContentRef,
@@ -2165,7 +2166,8 @@ function App() {
         viewType={viewType}
         diffMode={diffMode}
         changeStatus={changeStatus}
-        showReviewSettings
+        showReviewChrome={showReviewChrome}
+        showReviewSettings={showReviewChrome}
         onSwitchRepo={handleSwitchRepo}
         onAddRepo={handleAddRepo}
         onRemoveRepo={handleRemoveRepo}
@@ -2285,7 +2287,7 @@ function App() {
             </div>
           )}
         </div>
-        <RightRail
+        {showReviewChrome && <RightRail
           files={railFiles}
           comments={comments}
           width={rightRailWidth}
@@ -2311,7 +2313,7 @@ function App() {
           editingCommentId={editingCommentId}
           onStartEditComment={startEditing}
           onStopEditComment={stopEditing}
-        />
+        />}
       </div>
 
       <FileExplorer

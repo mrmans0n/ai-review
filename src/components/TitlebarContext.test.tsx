@@ -24,6 +24,7 @@ function makeProps(overrides: Partial<Parameters<typeof TitlebarContext>[0]> = {
     viewType: "split" as const,
     diffMode: { mode: "unstaged" as const },
     changeStatus: { has_unstaged: true, has_staged: true },
+    showReviewChrome: true,
     showReviewSettings: true,
     onSwitchRepo: vi.fn(),
     onAddRepo: vi.fn(),
@@ -137,5 +138,24 @@ describe("TitlebarContext", () => {
     expect(screen.getByRole("button", { name: "Copy Unstaged changes" })).not.toHaveAttribute(
       "data-tauri-drag-region"
     );
+  });
+
+  it("hides review chrome when showReviewChrome is false", () => {
+    render(<TitlebarContext {...makeProps({ showReviewChrome: false })} />);
+
+    expect(screen.queryByRole("button", { name: "Copy Unstaged changes" })).not.toBeInTheDocument();
+    expect(screen.queryByText("3 files")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Hide review rail" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show review rail" })).not.toBeInTheDocument();
+
+    expect(screen.getByRole("button", { name: "Toggle theme" })).toBeInTheDocument();
+  });
+
+  it("shows review chrome when showReviewChrome is true", () => {
+    render(<TitlebarContext {...makeProps({ showReviewChrome: true })} />);
+
+    expect(screen.getByRole("button", { name: "Copy Unstaged changes" })).toBeInTheDocument();
+    expect(screen.getByText("3 files")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hide review rail" })).toBeInTheDocument();
   });
 });
