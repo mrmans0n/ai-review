@@ -71,6 +71,16 @@ describe("TitlebarContext", () => {
     expect(container.querySelector(".middle-ellipsis-end[data-tauri-drag-region]")).toBeNull();
   });
 
+  it("keeps the native traffic-light control lane aligned with the overlay titlebar", () => {
+    const { container } = render(<TitlebarContext {...makeProps()} />);
+
+    const titlebar = container.querySelector("header");
+    const nativeControlsLane = titlebar?.querySelector("[data-tauri-drag-region]");
+
+    expect(titlebar).toHaveClass("h-9");
+    expect(nativeControlsLane).toHaveClass("w-[82px]");
+  });
+
   it("keeps titlebar actions clickable", () => {
     const onToggleRail = vi.fn();
     const onToggleTheme = vi.fn();
