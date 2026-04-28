@@ -108,7 +108,7 @@ describe("FileViewer", () => {
       const header = container.querySelector(".sticky.top-9");
 
       expect(header?.className).toContain("bg-canvas/85");
-      expect(header?.className).toContain("backdrop-blur-lg");
+      expect(header?.className).toContain("backdrop-blur-xl");
     });
 
     it("keeps the viewed header translucent and clickable", () => {
@@ -116,8 +116,8 @@ describe("FileViewer", () => {
       const { container } = render(<FileViewer {...props} />);
       const header = container.querySelector(".sticky.top-9");
 
-      expect(header?.className).toContain("bg-canvas/75");
-      expect(header?.className).toContain("backdrop-blur-lg");
+      expect(header?.className).toContain("bg-canvas/70");
+      expect(header?.className).toContain("backdrop-blur-xl");
       expect(header?.className).toContain("cursor-pointer");
     });
   });

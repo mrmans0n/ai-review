@@ -1795,7 +1795,7 @@ function App() {
       <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={getDiffFilePath(file)}>
         <div
           className={`sticky top-9 z-10 px-4 py-2 font-medium border-b border-divider flex justify-between items-center transition-colors text-sm ${
-            isViewed ? "bg-surface-hover/75 text-ink-secondary backdrop-blur-lg" : "bg-surface/85 text-ink-primary backdrop-blur-lg"
+            isViewed ? "bg-surface-hover/70 text-ink-secondary backdrop-blur-xl" : "bg-surface/85 text-ink-primary backdrop-blur-xl"
           }`}
           onClick={() => {
             if (isViewed) {
