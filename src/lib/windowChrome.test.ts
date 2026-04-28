@@ -11,7 +11,7 @@ describe("window chrome", () => {
     expect(windowConfig.hiddenTitle).toBe(true);
     expect(windowConfig.trafficLightPosition).toEqual({
       x: 16,
-      y: 12,
+      y: 20,
     });
   });
 });
