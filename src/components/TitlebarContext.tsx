@@ -113,7 +113,7 @@ export function TitlebarContext({
           <button
             type="button"
             onClick={handleCopyPrimary}
-            className="titlebar-text min-w-0 max-w-[260px] cursor-pointer rounded-sm text-ink-secondary transition-colors hover:text-ink-primary"
+            className="titlebar-text min-w-0 cursor-pointer rounded-sm text-ink-secondary transition-colors hover:text-ink-primary"
             aria-label={`Copy ${context.primary}`}
             title="Copy to clipboard"
           >
@@ -131,7 +131,7 @@ export function TitlebarContext({
         {context.secondary && (
           <>
             <span data-tauri-drag-region className="hidden text-ink-muted md:inline">·</span>
-            <span className="titlebar-text hidden min-w-0 max-w-[320px] select-text text-ink-muted md:inline">
+            <span className="titlebar-text hidden min-w-0 select-text text-ink-muted md:inline">
               <MiddleEllipsis text={context.secondary} />
             </span>
           </>
