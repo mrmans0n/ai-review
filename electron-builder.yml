@@ -1,0 +1,27 @@
+appId: com.nacholopez.ai-review
+productName: AI Review
+directories:
+  output: release
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+extraResources:
+  - from: core/target/release/core-sidecar
+    to: bin/core-sidecar
+  - from: core/target/release/core-launcher
+    to: bin/core-launcher
+mac:
+  target:
+    - target: dir
+  identity: null
+  category: public.app-category.developer-tools
+  icon: src-tauri/icons/icon.icns
+linux:
+  target:
+    - dir
+  icon: src-tauri/icons/128x128.png
+win:
+  target:
+    - dir
+  icon: src-tauri/icons/icon.ico

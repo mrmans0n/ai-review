@@ -7,6 +7,7 @@
   "bin": {
     "air": "./cli/air"
   },
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -15,7 +16,10 @@
     "tauri:build:install": "bash ./cli/build-install-macos.sh",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "electron:tsc": "tsc -p electron/tsconfig.json",
+    "electron:dev": "concurrently -k \"vite\" \"wait-on http://localhost:1420 && pnpm electron:tsc && cd core && cargo build -p core-sidecar -p core-launcher && cd .. && electron dist-electron/main.js\"",
+    "electron:build": "tsc && vite build && pnpm electron:tsc && cd core && cargo build --release -p core-sidecar -p core-launcher && cd .. && electron-builder"
   },
   "dependencies": {
     "@catppuccin/highlightjs": "^1.0.1",
@@ -47,12 +51,17 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/mdast": "^4.0.4",
+    "@types/node": "^22.19.17",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/unist": "^3.0.3",
     "@types/uuid": "^11.0.0",
     "@vitejs/plugin-react": "^6.0.1",
     "@vitest/ui": "^4.1.5",
+    "concurrently": "^9.2.1",
+    "cross-env": "^7.0.3",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "hast-util-to-html": "^9.0.5",
     "jsdom": "^29.1.1",
     "postcss": "^8.5.13",
@@ -61,6 +70,7 @@
     "typescript": "~6.0.3",
     "vfile": "^6.0.3",
     "vite": "^8.0.10",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.5",
+    "wait-on": "^8.0.5"
   }
 }
