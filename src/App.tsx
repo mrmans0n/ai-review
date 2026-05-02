@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { parseDiff, getChangeKey, expandFromRawCode } from "react-diff-view";
 import { invoke, getCurrentWindow, listen } from "./lib/bridge";
 import "react-diff-view/style/index.css";
@@ -119,6 +119,17 @@ function App() {
   const suppressVisibleDiffFileRef = useRef(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const [expandedHunksMap, setExpandedHunksMap] = useState<Record<string, any[]>>({});
+  const [forceMountedPaths, setForceMountedPaths] = useState<Set<string>>(() => new Set());
+
+  const forceMountPath = useCallback((path: string) => {
+    setForceMountedPaths((current) => {
+      if (current.has(path)) return current;
+      const next = new Set(current);
+      next.add(path);
+      return next;
+    });
+  }, []);
+
   const sourceCache = useRef<Record<string, string[]>>({});
   const imageRequestIdRef = useRef(0);
   const [oldSourceMap, setOldSourceMap] = useState<Record<string, string>>({});
@@ -714,6 +725,7 @@ function App() {
       setSelectedBranch(null);
       setReviewingLabel(null);
       setExpandedHunksMap({});
+      setForceMountedPaths(new Set());
       sourceCache.current = {};
       setOldSourceMap({});
       setViewMode("diff");
@@ -766,6 +778,7 @@ function App() {
   // Clear expansion state when diff changes
   useEffect(() => {
     setExpandedHunksMap({});
+    setForceMountedPaths(new Set());
     sourceCache.current = {};
     setOldSourceMap({});
     setMdPreviewFiles(new Set());
@@ -1090,11 +1103,15 @@ function App() {
       suppressVisibleDiffFileRef.current = false;
     }, 600);
 
+    forceMountPath(filePath);
+
     requestAnimationFrame(() => {
-      const fileEl = document.querySelector(
-        `[data-diff-file="${escapeAttributeSelector(filePath)}"]`
-      );
-      fileEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+      requestAnimationFrame(() => {
+        const fileEl = document.querySelector(
+          `[data-diff-file="${escapeAttributeSelector(filePath)}"]`
+        );
+        fileEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     });
   };
 
@@ -1901,7 +1918,10 @@ function App() {
             onStopEditComment={stopEditing}
           />
         ) : !isViewed ? (
-          <LazyDiffFile estimatedHeight={estimateFileHeight({ hunks: fileHunks })}>
+          <LazyDiffFile
+            estimatedHeight={estimateFileHeight({ hunks: fileHunks })}
+            forceMount={forceMountedPaths.has(fileName)}
+          >
             <DiffFileBody
               file={file}
               fileName={fileName}
