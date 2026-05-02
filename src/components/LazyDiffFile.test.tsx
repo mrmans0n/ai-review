@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LazyDiffFile } from "./LazyDiffFile";
 
@@ -46,7 +46,9 @@ describe("LazyDiffFile", () => {
       </LazyDiffFile>
     );
     const observer = MockIntersectionObserver.instances[0];
-    observer.trigger([{ isIntersecting: true, target: document.createElement("div") }]);
+    act(() => {
+      observer.trigger([{ isIntersecting: true, target: document.createElement("div") }]);
+    });
     expect(screen.queryByTestId("child")).not.toBeNull();
   });
 
@@ -82,9 +84,13 @@ describe("LazyDiffFile", () => {
       </LazyDiffFile>
     );
     const observer = MockIntersectionObserver.instances[0];
-    observer.trigger([{ isIntersecting: true, target: document.createElement("div") }]);
+    act(() => {
+      observer.trigger([{ isIntersecting: true, target: document.createElement("div") }]);
+    });
     expect(screen.queryByTestId("child")).not.toBeNull();
-    observer.trigger([{ isIntersecting: false, target: document.createElement("div") }]);
+    act(() => {
+      observer.trigger([{ isIntersecting: false, target: document.createElement("div") }]);
+    });
     expect(screen.queryByTestId("child")).not.toBeNull();
   });
 

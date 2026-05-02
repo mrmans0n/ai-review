@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { flushSync } from "react-dom";
 import type { CSSProperties, ReactNode } from "react";
 
 type LazyDiffFileProps = {
@@ -31,7 +30,7 @@ export function LazyDiffFile({
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
-          flushSync(() => setObserved(true));
+          setObserved(true);
           observer.disconnect();
         }
       },
