@@ -7,6 +7,6 @@ describe("window chrome", () => {
     const mainSource = readFileSync(resolve(__dirname, "../../electron/main.ts"), "utf8");
 
     expect(mainSource).toMatch(/titleBarStyle:\s*"hiddenInset"/);
-    expect(mainSource).toMatch(/trafficLightPosition:\s*\{\s*x:\s*16,\s*y:\s*12\s*\}/);
+    expect(mainSource).toMatch(/trafficLightPosition:\s*\{\s*x:\s*16,\s*y:\s*10\s*\}/);
   });
 });
