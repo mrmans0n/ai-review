@@ -20,8 +20,8 @@ export function LazyDiffFile({
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (forceMount && !mounted) setMounted(true);
-  }, [forceMount, mounted]);
+    if (forceMount) setMounted(true);
+  }, [forceMount]);
 
   useEffect(() => {
     if (mounted) return;
