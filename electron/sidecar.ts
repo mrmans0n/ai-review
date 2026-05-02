@@ -44,46 +44,20 @@ export class Sidecar {
       console.error(`[sidecar] ${data.toString().trimEnd()}`);
     });
 
-    // Without this handler, a spawn failure (ENOENT/EACCES — missing binary
-    // or wrong permissions) emits an unhandled `error` event and crashes the
-    // Electron main process. Treat it like an exit so respawn/backoff still
-    // applies.
+    // Spawn failures (ENOENT/EACCES — missing binary or wrong perms) emit
+    // `error` and may never emit `exit`. Without a handler the unhandled
+    // event crashes the Electron main process; without cleanup `this.child`
+    // stays non-null and pending RPCs hang. handleChildGone is idempotent
+    // (early-returns if already cleared by exit) so it's safe when both
+    // events fire.
     child.on("error", (err) => {
       console.error(`[sidecar] spawn error: ${err.message}`);
+      this.handleChildGone(child);
     });
 
     child.on("exit", (code) => {
       console.error(`[sidecar] exited with code ${code}`);
-      this.failPending(new Error("sidecar exited"));
-      this.child = null;
-
-      if (this.intentionalShutdown || this.respawnDisabled) {
-        return;
-      }
-
-      const now = Date.now();
-      if (this.restartCount === 0 || now - this.firstRestartAt > RESTART_WINDOW_MS) {
-        this.firstRestartAt = now;
-        this.restartCount = 1;
-      } else {
-        this.restartCount += 1;
-      }
-
-      if (this.restartCount > RESTART_LIMIT) {
-        console.error(
-          `[sidecar] crashed ${this.restartCount} times within ${RESTART_WINDOW_MS}ms; ` +
-            `disabling respawn to avoid a tight loop`,
-        );
-        this.respawnDisabled = true;
-        return;
-      }
-
-      this.restartTimer = setTimeout(() => {
-        this.restartTimer = null;
-        if (!this.intentionalShutdown && !this.respawnDisabled) {
-          this.start();
-        }
-      }, RESTART_BACKOFF_MS);
+      this.handleChildGone(child);
     });
 
     this.child = child;
@@ -151,5 +125,43 @@ export class Sidecar {
   private failPending(err: Error): void {
     for (const p of this.pending.values()) p.reject(err);
     this.pending.clear();
+  }
+
+  // Shared cleanup for the two ways a child goes away: `exit` (process ran
+  // and terminated) and `error` (spawn never succeeded). Either may fire
+  // without the other, but both can fire — gate on `this.child === died`
+  // for idempotency.
+  private handleChildGone(died: ChildProcessWithoutNullStreams): void {
+    if (this.child !== died) return;
+    this.failPending(new Error("sidecar exited"));
+    this.child = null;
+
+    if (this.intentionalShutdown || this.respawnDisabled) {
+      return;
+    }
+
+    const now = Date.now();
+    if (this.restartCount === 0 || now - this.firstRestartAt > RESTART_WINDOW_MS) {
+      this.firstRestartAt = now;
+      this.restartCount = 1;
+    } else {
+      this.restartCount += 1;
+    }
+
+    if (this.restartCount > RESTART_LIMIT) {
+      console.error(
+        `[sidecar] crashed ${this.restartCount} times within ${RESTART_WINDOW_MS}ms; ` +
+          `disabling respawn to avoid a tight loop`,
+      );
+      this.respawnDisabled = true;
+      return;
+    }
+
+    this.restartTimer = setTimeout(() => {
+      this.restartTimer = null;
+      if (!this.intentionalShutdown && !this.respawnDisabled) {
+        this.start();
+      }
+    }, RESTART_BACKOFF_MS);
   }
 }
