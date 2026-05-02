@@ -8,12 +8,30 @@ interface PendingCall {
   reject: (err: Error) => void;
 }
 
+// Backoff/thrash-guard tuning. If we see RESTART_LIMIT restarts within
+// RESTART_WINDOW_MS, we give up and stop respawning to avoid burning CPU on a
+// tight crash loop. The user will see RPC failures, which is preferable.
+const RESTART_BACKOFF_MS = 500;
+const RESTART_LIMIT = 3;
+const RESTART_WINDOW_MS = 10_000;
+
 export class Sidecar {
   private child: ChildProcessWithoutNullStreams | null = null;
   private nextId = 1;
   private pending = new Map<number, PendingCall>();
+  private intentionalShutdown = false;
+  private restartTimer: NodeJS.Timeout | null = null;
+  private restartCount = 0;
+  private firstRestartAt = 0;
+  private respawnDisabled = false;
 
   start(): void {
+    this.intentionalShutdown = false;
+    if (this.restartTimer) {
+      clearTimeout(this.restartTimer);
+      this.restartTimer = null;
+    }
+
     const binPath = this.resolveBinary();
     const child = spawn(binPath, [], {
       stdio: ["pipe", "pipe", "pipe"],
@@ -30,6 +48,34 @@ export class Sidecar {
       console.error(`[sidecar] exited with code ${code}`);
       this.failPending(new Error("sidecar exited"));
       this.child = null;
+
+      if (this.intentionalShutdown || this.respawnDisabled) {
+        return;
+      }
+
+      const now = Date.now();
+      if (this.restartCount === 0 || now - this.firstRestartAt > RESTART_WINDOW_MS) {
+        this.firstRestartAt = now;
+        this.restartCount = 1;
+      } else {
+        this.restartCount += 1;
+      }
+
+      if (this.restartCount > RESTART_LIMIT) {
+        console.error(
+          `[sidecar] crashed ${this.restartCount} times within ${RESTART_WINDOW_MS}ms; ` +
+            `disabling respawn to avoid a tight loop`,
+        );
+        this.respawnDisabled = true;
+        return;
+      }
+
+      this.restartTimer = setTimeout(() => {
+        this.restartTimer = null;
+        if (!this.intentionalShutdown && !this.respawnDisabled) {
+          this.start();
+        }
+      }, RESTART_BACKOFF_MS);
     });
 
     this.child = child;
@@ -51,6 +97,11 @@ export class Sidecar {
   }
 
   shutdown(): void {
+    this.intentionalShutdown = true;
+    if (this.restartTimer) {
+      clearTimeout(this.restartTimer);
+      this.restartTimer = null;
+    }
     if (this.child) {
       this.child.stdin.end();
       this.child.kill();
@@ -78,6 +129,10 @@ export class Sidecar {
     const pending = this.pending.get(msg.id);
     if (!pending) return;
     this.pending.delete(msg.id);
+    // A successful response is evidence the sidecar is healthy; reset the
+    // thrash counter so a future crash gets a fresh budget.
+    this.restartCount = 0;
+    this.firstRestartAt = 0;
     if (msg.error) {
       pending.reject(new Error(msg.error.message));
     } else {

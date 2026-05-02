@@ -18,11 +18,11 @@ jobs:
         include:
           - name: macos-arm
             os: macos-latest
-            artifact_name: tauri-macos-arm
+            artifact_name: electron-macos-arm
             rust_target: aarch64-apple-darwin
           - name: linux
             os: ubuntu-22.04
-            artifact_name: tauri-linux
+            artifact_name: electron-linux
             rust_target: x86_64-unknown-linux-gnu
 
     steps:
@@ -76,35 +76,30 @@ jobs:
       - name: Cache cargo build
         uses: actions/cache@v5
         with:
-          path: src-tauri/target
+          path: core/target
           key: ${{ runner.os }}-${{ matrix.name }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Install Linux dependencies
-        if: matrix.os == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev \
-            build-essential \
-            curl \
-            wget \
-            file \
-            libssl-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build app
-        run: pnpm tauri build --target ${{ matrix.rust_target }}
+        run: pnpm electron:build
 
+      # TODO: electron-builder is configured with `target: dir` for mac/linux,
+      # so its outputs are directories (the unpacked .app / linux-unpacked tree),
+      # not single-file installers. We bundle them via `cp -R` so they survive as
+      # artifacts. Switch to dmg/AppImage/deb targets in electron-builder.yml if
+      # you'd prefer single-file installers here.
       - name: Collect artifacts
         shell: bash
         run: |
           mkdir -p artifacts
-          find src-tauri/target -name '*.dmg' -exec cp {} artifacts/ \;
-          find src-tauri/target -name '*.AppImage' -exec cp {} artifacts/ \;
-          find src-tauri/target -name '*.deb' -exec cp {} artifacts/ \;
+          if [ -d release/mac-arm64 ]; then
+            cp -R release/mac-arm64 artifacts/
+          fi
+          if [ -d release/linux-unpacked ]; then
+            cp -R release/linux-unpacked artifacts/
+          fi
           ls -la artifacts/
 
       - name: Upload build artifacts
@@ -139,10 +134,16 @@ jobs:
           files: |
             release-artifacts/*
 
+  # TODO: Homebrew cask update is disabled until electron-builder is reconfigured
+  # to produce a DMG (currently `mac.target: dir` only emits an unpacked .app).
+  # Re-enable by switching mac.target to `dmg` in electron-builder.yml, then
+  # update the curl URL below to match electron-builder's DMG naming
+  # (e.g. `AI Review-${VERSION}-arm64.dmg`).
   update-homebrew:
     name: Update Homebrew Cask
     runs-on: ubuntu-latest
     needs: release
+    if: false
 
     steps:
       - name: Get version from tag

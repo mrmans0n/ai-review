@@ -148,28 +148,40 @@ interface InstallCliResult {
 
 async function installCli(): Promise<InstallCliResult> {
   if (process.platform === "win32") {
-    throw new Error("CLI installation is only supported on macOS and Linux");
+    return {
+      success: false,
+      message: "CLI installation is only supported on macOS and Linux",
+      path_warning: false,
+    };
   }
-  const home = os.homedir();
-  const localBin = path.join(home, ".local", "bin");
-  const cliPath = path.join(localBin, "air");
-  const launcher = launcherBinaryPath();
-
-  await fs.promises.mkdir(localBin, { recursive: true });
   try {
-    await fs.promises.unlink(cliPath);
-  } catch {
-    // not present, fine
+    const home = os.homedir();
+    const localBin = path.join(home, ".local", "bin");
+    const cliPath = path.join(localBin, "air");
+    const launcher = launcherBinaryPath();
+
+    await fs.promises.mkdir(localBin, { recursive: true });
+    try {
+      await fs.promises.unlink(cliPath);
+    } catch {
+      // not present, fine
+    }
+    await fs.promises.symlink(launcher, cliPath);
+
+    const pathEnv = process.env.PATH ?? "";
+    const inPath = pathEnv.split(path.delimiter).includes(localBin);
+    const message = inPath
+      ? "CLI installed successfully! You can now use 'air' from your terminal."
+      : `CLI installed to ${localBin}. Add this directory to your PATH to use 'air' from anywhere.`;
+
+    return { success: true, message, path_warning: !inPath };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : String(e),
+      path_warning: false,
+    };
   }
-  await fs.promises.symlink(launcher, cliPath);
-
-  const pathEnv = process.env.PATH ?? "";
-  const inPath = pathEnv.split(path.delimiter).includes(localBin);
-  const message = inPath
-    ? "CLI installed successfully! You can now use 'air' from your terminal."
-    : `CLI installed to ${localBin}. Add this directory to your PATH to use 'air' from anywhere.`;
-
-  return { success: true, message, path_warning: !inPath };
 }
 
 function launcherBinaryPath(): string {
