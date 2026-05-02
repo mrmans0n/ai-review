@@ -39,6 +39,8 @@ import { detectLfsPointer, isTextPreviewable } from "./lib/lfsDetection";
 import { normalizeFileStatus, normalizePath } from "./lib/fileTree";
 import { LfsFileWrapper } from "./components/LfsFileWrapper";
 import { DiffFileBody } from "./components/DiffFileBody";
+import { LazyDiffFile } from "./components/LazyDiffFile";
+import { estimateFileHeight } from "./lib/diffMetrics";
 import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile, ChangedFileRailItem, Comment } from "./types";
 
 type InitialDiffMode = {
@@ -1899,28 +1901,30 @@ function App() {
             onStopEditComment={stopEditing}
           />
         ) : !isViewed ? (
-          <DiffFileBody
-            file={file}
-            fileName={fileName}
-            fileHunks={fileHunks}
-            language={detectLanguage(fileName)}
-            oldSource={oldSource}
-            viewType={viewType}
-            fileWidgets={fileWidgets}
-            highlightedChangeKeys={highlightedChangeKeys}
-            estimatedTotalLines={estimatedTotalLines}
-            onExpandRange={handleExpandRange}
-            onLineClick={handleLineClick}
-            onShiftClickRange={(file, startLine, endLine, side) =>
-              setAddingCommentAt({ file, startLine, endLine, side })
-            }
-            onSelectingRangeChange={setSelectingRange}
-            onSelectedRangeChange={setSelectedRange}
-            onHoverLineChange={setHoveredLine}
-            selectingRange={selectingRange}
-            lastFocusedLine={lastFocusedLine}
-            suppressNextClickRef={suppressNextClickRef}
-          />
+          <LazyDiffFile estimatedHeight={estimateFileHeight({ hunks: fileHunks })}>
+            <DiffFileBody
+              file={file}
+              fileName={fileName}
+              fileHunks={fileHunks}
+              language={detectLanguage(fileName)}
+              oldSource={oldSource}
+              viewType={viewType}
+              fileWidgets={fileWidgets}
+              highlightedChangeKeys={highlightedChangeKeys}
+              estimatedTotalLines={estimatedTotalLines}
+              onExpandRange={handleExpandRange}
+              onLineClick={handleLineClick}
+              onShiftClickRange={(file, startLine, endLine, side) =>
+                setAddingCommentAt({ file, startLine, endLine, side })
+              }
+              onSelectingRangeChange={setSelectingRange}
+              onSelectedRangeChange={setSelectedRange}
+              onHoverLineChange={setHoveredLine}
+              selectingRange={selectingRange}
+              lastFocusedLine={lastFocusedLine}
+              suppressNextClickRef={suppressNextClickRef}
+            />
+          </LazyDiffFile>
         ) : null}
       </div>
     );
