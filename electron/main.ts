@@ -191,11 +191,25 @@ function launcherBinaryPath(): string {
   return path.join(__dirname, "..", "core", "target", "debug", "core-launcher");
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   launchArgs = parseInitialArgs();
   sidecar.start();
   registerIpc();
   Menu.setApplicationMenu(buildMenu(() => mainWindow));
+
+  // Parity with pre-Tauri setup(): auto-add the launch dir to the recent
+  // repos config so first-launch users see it without having to switch.
+  try {
+    const isRepo = await sidecar.invoke<boolean>("is_git_repo", {
+      path: launchArgs.workingDir,
+    });
+    if (isRepo) {
+      await sidecar.invoke("add_repo", { path: launchArgs.workingDir });
+    }
+  } catch {
+    // best-effort; ignore failures so window still opens
+  }
+
   createWindow();
 });
 
