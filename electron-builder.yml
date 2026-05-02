@@ -2,7 +2,7 @@ appId: com.nacholopez.ai-review
 productName: AI Review
 directories:
   output: release
-afterPack: build/after-pack.js
+afterPack: build/after-pack.cjs
 files:
   - dist/**
   - dist-electron/**
