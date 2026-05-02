@@ -2,6 +2,7 @@ appId: com.nacholopez.ai-review
 productName: AI Review
 directories:
   output: release
+afterPack: build/after-pack.js
 files:
   - dist/**
   - dist-electron/**
@@ -13,10 +14,14 @@ extraResources:
     to: bin/core-launcher
 mac:
   target:
-    - target: dir
+    - target: dmg
+      arch:
+        - arm64
+        - x64
   identity: null
   category: public.app-category.developer-tools
   icon: icons/icon.icns
+  artifactName: "${productName}-${version}-${arch}.${ext}"
 linux:
   target:
     - dir
