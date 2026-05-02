@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "core-lib",
     "core-sidecar",
+    "core-launcher",
 ]
 
 [workspace.package]
