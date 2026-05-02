@@ -13,21 +13,30 @@ fn parses_wait_and_json_flags() {
 fn parses_commit_flag_into_diff_args() {
     let args = vec!["air".into(), "--commit".into(), "HEAD~3".into()];
     let parsed = parse_args(&args, "/home/me");
-    assert_eq!(parsed.diff_args, vec!["--diff-commit".to_string(), "HEAD~3".to_string()]);
+    assert_eq!(
+        parsed.diff_args,
+        vec!["--diff-commit".to_string(), "HEAD~3".to_string()]
+    );
 }
 
 #[test]
 fn parses_branch_flag() {
     let args = vec!["air".into(), "--branch".into(), "main".into()];
     let parsed = parse_args(&args, "/home/me");
-    assert_eq!(parsed.diff_args, vec!["--diff-branch".to_string(), "main".to_string()]);
+    assert_eq!(
+        parsed.diff_args,
+        vec!["--diff-branch".to_string(), "main".to_string()]
+    );
 }
 
 #[test]
 fn parses_commits_range() {
     let args = vec!["air".into(), "--commits".into(), "abc..def".into()];
     let parsed = parse_args(&args, "/home/me");
-    assert_eq!(parsed.diff_args, vec!["--diff-range".to_string(), "abc..def".to_string()]);
+    assert_eq!(
+        parsed.diff_args,
+        vec!["--diff-range".to_string(), "abc..def".to_string()]
+    );
 }
 
 #[test]

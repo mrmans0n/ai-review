@@ -33,14 +33,24 @@ fn locate_app() -> Option<PathBuf> {
         PathBuf::from("/opt/AI Review/ai-review"),
     ];
     if let Ok(home) = std::env::var("HOME") {
-        candidates.push(PathBuf::from(&home).join(".local").join("bin").join("ai-review"));
+        candidates.push(
+            PathBuf::from(&home)
+                .join(".local")
+                .join("bin")
+                .join("ai-review"),
+        );
         candidates.push(PathBuf::from(&home).join("Applications").join("ai-review"));
     }
 
     // 3. Dev fallback: relative to the launcher binary itself
     if let Ok(self_exe) = std::env::current_exe() {
         if let Some(workspace) = self_exe.ancestors().find(|p| p.join("release").exists()) {
-            candidates.push(workspace.join("release").join("linux-unpacked").join("ai-review"));
+            candidates.push(
+                workspace
+                    .join("release")
+                    .join("linux-unpacked")
+                    .join("ai-review"),
+            );
         }
     }
 
@@ -67,7 +77,11 @@ fn missing_app_message() -> &'static str {
     }
 }
 
-fn build_app_args(parsed: &ParsedArgs, working_dir: &str, feedback_path: Option<&Path>) -> Vec<String> {
+fn build_app_args(
+    parsed: &ParsedArgs,
+    working_dir: &str,
+    feedback_path: Option<&Path>,
+) -> Vec<String> {
     let mut app_args: Vec<String> = vec![working_dir.to_string()];
     app_args.extend(parsed.diff_args.iter().cloned());
     if parsed.json_output {
@@ -84,19 +98,36 @@ fn build_app_args(parsed: &ParsedArgs, working_dir: &str, feedback_path: Option<
 }
 
 #[cfg(target_os = "macos")]
-fn launch(app_path: &Path, app_args: &[String], wait: bool) -> std::io::Result<std::process::ExitStatus> {
+fn launch(
+    app_path: &Path,
+    app_args: &[String],
+    wait: bool,
+) -> std::io::Result<std::process::ExitStatus> {
     if wait {
-        Command::new("open").arg("-W").arg("-a").arg(app_path)
-            .arg("--args").args(app_args).status()
+        Command::new("open")
+            .arg("-W")
+            .arg("-a")
+            .arg(app_path)
+            .arg("--args")
+            .args(app_args)
+            .status()
     } else {
-        Command::new("open").arg("-a").arg(app_path)
-            .arg("--args").args(app_args).spawn()
+        Command::new("open")
+            .arg("-a")
+            .arg(app_path)
+            .arg("--args")
+            .args(app_args)
+            .spawn()
             .map(|_| std::process::ExitStatus::default())
     }
 }
 
 #[cfg(not(target_os = "macos"))]
-fn launch(app_path: &Path, app_args: &[String], wait: bool) -> std::io::Result<std::process::ExitStatus> {
+fn launch(
+    app_path: &Path,
+    app_args: &[String],
+    wait: bool,
+) -> std::io::Result<std::process::ExitStatus> {
     let mut cmd = Command::new(app_path);
     cmd.args(app_args);
     if wait {

@@ -169,8 +169,7 @@ fn dispatch(method: &str, params: &Value) -> Result<Value, String> {
         "get_gg_stack_entries" => {
             let path = PathBuf::from(param_str(params, "path")?);
             let stack_name = param_str(params, "stackName")?;
-            git::get_gg_stack_entries(&path, &stack_name)
-                .map(|v| serde_json::to_value(v).unwrap())
+            git::get_gg_stack_entries(&path, &stack_name).map(|v| serde_json::to_value(v).unwrap())
         }
         "get_merge_base_refs" => {
             let path = PathBuf::from(param_str(params, "path")?);
@@ -259,9 +258,7 @@ fn main() {
         let parsed: Result<Request, _> = serde_json::from_str(&line);
         let response = match parsed {
             Err(e) => err(Value::Null, -32700, &format!("parse error: {}", e)),
-            Ok(req) if req.jsonrpc != "2.0" => {
-                err(req.id, -32600, "jsonrpc version must be 2.0")
-            }
+            Ok(req) if req.jsonrpc != "2.0" => err(req.id, -32600, "jsonrpc version must be 2.0"),
             Ok(req) => match dispatch(&req.method, &req.params) {
                 Ok(result) => ok(req.id, result),
                 Err(e) if e.starts_with("__UNKNOWN_METHOD__:") => {
