@@ -18,6 +18,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "core-sidecar"
+version = "0.4.0"
+dependencies = [
+ "core-lib",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
