@@ -1175,6 +1175,7 @@ function App() {
       });
       setViewMode("diff");
       setActiveDiffFile(comment.file);
+      forceMountPath(comment.file);
     } else {
       await handleFileSelect(comment.file);
     }
