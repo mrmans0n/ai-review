@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { invoke, listen } from "../lib/bridge";
 import type { GitDiffResult, DiffModeConfig, GitChangeStatus } from "../types";
 
 export function useGit(workingDir: string | null, skipAutoLoad = false) {
@@ -48,6 +47,7 @@ export function useGit(workingDir: string | null, skipAutoLoad = false) {
   useEffect(() => {
     if (!workingDir || !isGitRepo) return;
 
+    // TODO(electron-migration): rename to "app:focus" when Electron shell is wired
     const unlistenPromise = listen("tauri://focus", () => {
       refreshChangeStatus();
     });

@@ -2,12 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useFileExplorer } from "./useFileExplorer";
 
-// Mock Tauri invoke
-vi.mock("@tauri-apps/api/core", () => ({
+// Mock the bridge facade
+vi.mock("../lib/bridge", () => ({
   invoke: vi.fn(),
+  listen: vi.fn(async () => () => {}),
+  openDirectoryDialog: vi.fn(),
 }));
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../lib/bridge";
 
 describe("useFileExplorer", () => {
   beforeEach(() => {

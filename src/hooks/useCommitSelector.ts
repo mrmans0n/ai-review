@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../lib/bridge";
 import type { CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo } from "../types";
 
 export function useCommitSelector(workingDir: string | null) {

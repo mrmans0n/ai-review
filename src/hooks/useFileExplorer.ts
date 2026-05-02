@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../lib/bridge";
 
 export function useFileExplorer(workingDir: string | null, gitRef?: string | null) {
   const [isOpen, setIsOpen] = useState(false);

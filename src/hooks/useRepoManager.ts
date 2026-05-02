@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
+import { invoke, openDirectoryDialog } from "../lib/bridge";
 import type { RepoInfo } from "../types";
 
 export function useRepoManager() {
@@ -23,11 +22,7 @@ export function useRepoManager() {
   }, [refreshRepos]);
 
   const addRepoViaDialog = useCallback(async (): Promise<RepoInfo | null> => {
-    const selected = await open({
-      directory: true,
-      multiple: false,
-      title: "Select a Git repository",
-    });
+    const selected = await openDirectoryDialog();
     if (!selected) return null;
 
     const repo = await invoke<RepoInfo>("add_repo", { path: selected });

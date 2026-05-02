@@ -2,12 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useHunkExpansion } from "./useHunkExpansion";
 
-// Mock Tauri invoke
-vi.mock("@tauri-apps/api/core", () => ({
+// Mock the bridge facade
+vi.mock("../lib/bridge", () => ({
   invoke: vi.fn(),
+  listen: vi.fn(async () => () => {}),
+  openDirectoryDialog: vi.fn(),
 }));
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../lib/bridge";
 
 // Minimal hunk structure matching react-diff-view's HunkData
 const makeHunk = (oldStart: number, oldLines: number, newStart: number, newLines: number) => ({

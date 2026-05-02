@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { parsePromptLines } from "../lib/promptParser";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../lib/bridge";
 
 interface PromptPreviewProps {
   prompt: string;
