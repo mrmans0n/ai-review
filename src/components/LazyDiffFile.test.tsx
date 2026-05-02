@@ -98,4 +98,20 @@ describe("LazyDiffFile", () => {
     );
     expect(screen.queryByTestId("child")).not.toBeNull();
   });
+
+  it("stays mounted when forceMount transitions back to false (sticky mount)", () => {
+    const { rerender } = render(
+      <LazyDiffFile estimatedHeight={1234} forceMount>
+        <div data-testid="child">child</div>
+      </LazyDiffFile>
+    );
+    expect(screen.queryByTestId("child")).not.toBeNull();
+
+    rerender(
+      <LazyDiffFile estimatedHeight={1234} forceMount={false}>
+        <div data-testid="child">child</div>
+      </LazyDiffFile>
+    );
+    expect(screen.queryByTestId("child")).not.toBeNull();
+  });
 });

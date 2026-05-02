@@ -21,6 +21,10 @@ export function LazyDiffFile({
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (forceMount) setObserved(true);
+  }, [forceMount]);
+
+  useEffect(() => {
     if (mounted) return;
     const node = ref.current;
     if (!node) return;
