@@ -1,41 +1,49 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn(async (name: string, args: unknown) => ({ name, args, result: "ok" })),
-}));
-vi.mock("@tauri-apps/api/event", () => ({
-  listen: vi.fn(async () => () => {}),
-}));
-vi.mock("@tauri-apps/api/window", () => ({
-  getCurrentWindow: vi.fn(() => ({ setTitle: vi.fn() })),
-}));
-vi.mock("@tauri-apps/plugin-dialog", () => ({
-  open: vi.fn(async () => "/some/path"),
-}));
+const invokeMock = vi.fn(async () => "ok");
+const onMock = vi.fn(() => () => {});
+const setTitleMock = vi.fn(async () => {});
+const openDirMock = vi.fn(async () => "/some/path");
 
-import { invoke, listen, getCurrentWindow, openDirectoryDialog } from "./bridge";
+beforeEach(() => {
+  invokeMock.mockClear();
+  onMock.mockClear();
+  setTitleMock.mockClear();
+  openDirMock.mockClear();
+  (globalThis as unknown as { window: Window }).window =
+    (globalThis as unknown as { window: Window }).window ?? ({} as Window);
+  window.electronAPI = {
+    invoke: invokeMock as unknown as Window["electronAPI"]["invoke"],
+    on: onMock,
+    setTitle: setTitleMock,
+    openDirectoryDialog: openDirMock,
+  };
+});
 
 describe("bridge", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it("forwards invoke to the underlying transport", async () => {
-    const out = await invoke<{ result: string }>("foo", { a: 1 });
-    expect(out.result).toBe("ok");
+  it("forwards invoke to electronAPI", async () => {
+    const { invoke } = await import("./bridge");
+    await invoke("foo", { a: 1 });
+    expect(invokeMock).toHaveBeenCalledWith("foo", { a: 1 });
   });
 
-  it("forwards listen and returns an unlisten function", async () => {
-    const unlisten = await listen("evt", () => {});
-    expect(typeof unlisten).toBe("function");
+  it("returns an unlisten function from listen", async () => {
+    const { listen } = await import("./bridge");
+    const off = await listen("evt", () => {});
+    expect(typeof off).toBe("function");
+    expect(onMock).toHaveBeenCalledWith("evt", expect.any(Function));
   });
 
-  it("exposes a window with setTitle", () => {
-    const w = getCurrentWindow();
-    w.setTitle("hi");
-    expect(w.setTitle).toHaveBeenCalledWith("hi");
+  it("getCurrentWindow.setTitle calls electronAPI.setTitle", async () => {
+    const { getCurrentWindow } = await import("./bridge");
+    getCurrentWindow().setTitle("hi");
+    expect(setTitleMock).toHaveBeenCalledWith("hi");
   });
 
-  it("exposes a directory open dialog", async () => {
-    const path = await openDirectoryDialog();
-    expect(path).toBe("/some/path");
+  it("openDirectoryDialog forwards to electronAPI", async () => {
+    const { openDirectoryDialog } = await import("./bridge");
+    const result = await openDirectoryDialog();
+    expect(result).toBe("/some/path");
+    expect(openDirMock).toHaveBeenCalled();
   });
 });

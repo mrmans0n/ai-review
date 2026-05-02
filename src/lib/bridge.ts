@@ -1,17 +1,16 @@
-import { invoke as tauriInvoke } from "@tauri-apps/api/core";
-import { listen as tauriListen, type EventCallback } from "@tauri-apps/api/event";
-import { getCurrentWindow as tauriGetCurrentWindow } from "@tauri-apps/api/window";
-import { open as tauriOpenDialog } from "@tauri-apps/plugin-dialog";
-
 export async function invoke<T>(method: string, args?: Record<string, unknown>): Promise<T> {
-  return tauriInvoke<T>(method, args);
+  return window.electronAPI.invoke<T>(method, args);
+}
+
+interface BridgeEvent<T> {
+  payload: T;
 }
 
 export async function listen<T = unknown>(
   event: string,
-  cb: EventCallback<T>,
+  cb: (e: BridgeEvent<T>) => void,
 ): Promise<() => void> {
-  return tauriListen<T>(event, cb);
+  return window.electronAPI.on(event, (payload) => cb({ payload: payload as T }));
 }
 
 export interface BridgeWindow {
@@ -19,14 +18,13 @@ export interface BridgeWindow {
 }
 
 export function getCurrentWindow(): BridgeWindow {
-  const w = tauriGetCurrentWindow();
   return {
-    setTitle: w.setTitle as unknown as (title: string) => void,
+    setTitle: (title: string) => {
+      void window.electronAPI.setTitle(title);
+    },
   };
 }
 
 export async function openDirectoryDialog(): Promise<string | null> {
-  const result = await tauriOpenDialog({ directory: true, multiple: false });
-  if (typeof result === "string") return result;
-  return null;
+  return window.electronAPI.openDirectoryDialog();
 }

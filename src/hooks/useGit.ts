@@ -47,8 +47,7 @@ export function useGit(workingDir: string | null, skipAutoLoad = false) {
   useEffect(() => {
     if (!workingDir || !isGitRepo) return;
 
-    // TODO(electron-migration): rename to "app:focus" when Electron shell is wired
-    const unlistenPromise = listen("tauri://focus", () => {
+    const unlistenPromise = listen("app:focus", () => {
       refreshChangeStatus();
     });
 
