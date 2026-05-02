@@ -7,9 +7,9 @@ import {
 } from "./diffMetrics";
 
 describe("estimateFileHeight", () => {
-  it("returns just header height for a file with no hunks", () => {
+  it("returns 0 for a file with no hunks", () => {
     const file = { hunks: [] };
-    expect(estimateFileHeight(file)).toBe(DIFF_FILE_HEADER_HEIGHT);
+    expect(estimateFileHeight(file)).toBe(0);
   });
 
   it("sums change-line height across all hunks", () => {
@@ -20,7 +20,7 @@ describe("estimateFileHeight", () => {
       ],
     };
     expect(estimateFileHeight(file)).toBe(
-      DIFF_FILE_HEADER_HEIGHT + 15 * DIFF_LINE_HEIGHT + DIFF_HUNK_SEPARATOR_HEIGHT
+      15 * DIFF_LINE_HEIGHT + DIFF_HUNK_SEPARATOR_HEIGHT
     );
   });
 
@@ -33,12 +33,12 @@ describe("estimateFileHeight", () => {
       ],
     };
     expect(estimateFileHeight(file)).toBe(
-      DIFF_FILE_HEADER_HEIGHT + 6 * DIFF_LINE_HEIGHT + 2 * DIFF_HUNK_SEPARATOR_HEIGHT
+      6 * DIFF_LINE_HEIGHT + 2 * DIFF_HUNK_SEPARATOR_HEIGHT
     );
   });
 
-  it("falls back to header height when hunks is missing", () => {
-    expect(estimateFileHeight({})).toBe(DIFF_FILE_HEADER_HEIGHT);
-    expect(estimateFileHeight(null)).toBe(DIFF_FILE_HEADER_HEIGHT);
+  it("falls back to 0 when hunks is missing", () => {
+    expect(estimateFileHeight({})).toBe(0);
+    expect(estimateFileHeight(null)).toBe(0);
   });
 });
