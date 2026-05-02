@@ -335,6 +335,10 @@ function App() {
     () => renderableFiles.map((file: any) => getDiffFilePath(file)).filter(Boolean),
     [renderableFiles]
   );
+  const effectiveForceMounted = useMemo(() => {
+    if (!search.isOpen) return forceMountedPaths;
+    return new Set(diffFilePaths);
+  }, [search.isOpen, forceMountedPaths, diffFilePaths]);
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(getDiffFilePath(file))).length;
   const railFiles = useMemo<ChangedFileRailItem[]>(() => {
     const statsByPath = new Map<string, { additions: number; deletions: number }>();
@@ -1921,7 +1925,7 @@ function App() {
         ) : !isViewed ? (
           <LazyDiffFile
             estimatedHeight={estimateFileHeight({ hunks: fileHunks })}
-            forceMount={forceMountedPaths.has(fileName)}
+            forceMount={effectiveForceMounted.has(fileName)}
           >
             <DiffFileBody
               file={file}
