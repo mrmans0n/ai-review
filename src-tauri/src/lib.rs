@@ -3,9 +3,7 @@ use std::sync::Mutex;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::{Emitter, Manager};
 
-mod config;
-mod files;
-mod git;
+use core_lib::{config, files, git};
 
 #[derive(Clone, serde::Serialize)]
 #[serde(tag = "type", content = "value")]
