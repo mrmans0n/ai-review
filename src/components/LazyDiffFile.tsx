@@ -16,25 +16,18 @@ export function LazyDiffFile({
   children,
 }: LazyDiffFileProps) {
   const supportsIO = typeof IntersectionObserver !== "undefined";
-  const [mounted, setMounted] = useState(forceMount || !supportsIO);
+  const [observed, setObserved] = useState(false);
+  const mounted = observed || forceMount || !supportsIO;
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (forceMount) setMounted(true);
-  }, [forceMount]);
-
-  useEffect(() => {
     if (mounted) return;
-    if (typeof IntersectionObserver === "undefined") {
-      setMounted(true);
-      return;
-    }
     const node = ref.current;
     if (!node) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
-          flushSync(() => setMounted(true));
+          flushSync(() => setObserved(true));
           observer.disconnect();
         }
       },
