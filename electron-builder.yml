@@ -16,12 +16,12 @@ mac:
     - target: dir
   identity: null
   category: public.app-category.developer-tools
-  icon: src-tauri/icons/icon.icns
+  icon: icons/icon.icns
 linux:
   target:
     - dir
-  icon: src-tauri/icons/128x128.png
+  icon: icons/128x128.png
 win:
   target:
     - dir
-  icon: src-tauri/icons/icon.ico
+  icon: icons/icon.ico
