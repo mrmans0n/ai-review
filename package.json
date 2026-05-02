@@ -16,7 +16,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "electron:tsc": "tsc -p electron/tsconfig.json",
+    "electron:tsc": "tsc -p electron/tsconfig.json && cp electron/dist-package.json dist-electron/package.json",
     "electron:dev": "concurrently -k \"vite\" \"wait-on http://localhost:1420 && pnpm electron:tsc && cd core && cargo build -p core-sidecar -p core-launcher && cd .. && electron dist-electron/main.js\"",
     "electron:build": "tsc && vite build && pnpm electron:tsc && cd core && cargo build --release -p core-sidecar -p core-launcher && cd .. && electron-builder"
   },
