@@ -189,8 +189,13 @@ fn run() -> ExitCode {
             }
         }
     } else {
-        let _ = launch(&app_path, &app_args, false);
-        ExitCode::from(0)
+        match launch(&app_path, &app_args, false) {
+            Ok(_) => ExitCode::from(0),
+            Err(e) => {
+                eprintln!("Error launching app: {}", e);
+                ExitCode::from(1)
+            }
+        }
     }
 }
 

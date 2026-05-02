@@ -44,6 +44,14 @@ export class Sidecar {
       console.error(`[sidecar] ${data.toString().trimEnd()}`);
     });
 
+    // Without this handler, a spawn failure (ENOENT/EACCES — missing binary
+    // or wrong permissions) emits an unhandled `error` event and crashes the
+    // Electron main process. Treat it like an exit so respawn/backoff still
+    // applies.
+    child.on("error", (err) => {
+      console.error(`[sidecar] spawn error: ${err.message}`);
+    });
+
     child.on("exit", (code) => {
       console.error(`[sidecar] exited with code ${code}`);
       this.failPending(new Error("sidecar exited"));
