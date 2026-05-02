@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from "react";
-import { parseDiff, Diff, Hunk, Decoration, getChangeKey, getCollapsedLinesCountBetween, expandFromRawCode } from "react-diff-view";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { parseDiff, getChangeKey, expandFromRawCode } from "react-diff-view";
 import { invoke, getCurrentWindow, listen } from "./lib/bridge";
 import "react-diff-view/style/index.css";
 import "./diff.css";
 import { getDiffFilePath } from "./utils/getDiffFilePath";
-import { highlight } from "./highlight";
 import { useGit } from "./hooks/useGit";
 import { useFileExplorer } from "./hooks/useFileExplorer";
 import { useCommitSelector } from "./hooks/useCommitSelector";
@@ -38,8 +37,10 @@ import { resolveLineFromNode } from "./lib/resolveLineFromNode";
 import { extractLinesFromHunks } from "./lib/extractLinesFromHunks";
 import { detectLfsPointer, isTextPreviewable } from "./lib/lfsDetection";
 import { normalizeFileStatus, normalizePath } from "./lib/fileTree";
-import { HunkExpandControl } from "./components/HunkExpandControl";
 import { LfsFileWrapper } from "./components/LfsFileWrapper";
+import { DiffFileBody } from "./components/DiffFileBody";
+import { LazyDiffFile } from "./components/LazyDiffFile";
+import { estimateFileHeight } from "./lib/diffMetrics";
 import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile, ChangedFileRailItem, Comment } from "./types";
 
 type InitialDiffMode = {
@@ -118,6 +119,17 @@ function App() {
   const suppressVisibleDiffFileRef = useRef(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const [expandedHunksMap, setExpandedHunksMap] = useState<Record<string, any[]>>({});
+  const [forceMountedPaths, setForceMountedPaths] = useState<Set<string>>(() => new Set());
+
+  const forceMountPath = useCallback((path: string) => {
+    setForceMountedPaths((current) => {
+      if (current.has(path)) return current;
+      const next = new Set(current);
+      next.add(path);
+      return next;
+    });
+  }, []);
+
   const sourceCache = useRef<Record<string, string[]>>({});
   const imageRequestIdRef = useRef(0);
   const [oldSourceMap, setOldSourceMap] = useState<Record<string, string>>({});
@@ -323,6 +335,10 @@ function App() {
     () => renderableFiles.map((file: any) => getDiffFilePath(file)).filter(Boolean),
     [renderableFiles]
   );
+  const effectiveForceMounted = useMemo(() => {
+    if (!search.isOpen) return forceMountedPaths;
+    return new Set(diffFilePaths);
+  }, [search.isOpen, forceMountedPaths, diffFilePaths]);
   const viewedCount = renderableFiles.filter((file: any) => viewedFiles.has(getDiffFilePath(file))).length;
   const railFiles = useMemo<ChangedFileRailItem[]>(() => {
     const statsByPath = new Map<string, { additions: number; deletions: number }>();
@@ -713,6 +729,7 @@ function App() {
       setSelectedBranch(null);
       setReviewingLabel(null);
       setExpandedHunksMap({});
+      setForceMountedPaths(new Set());
       sourceCache.current = {};
       setOldSourceMap({});
       setViewMode("diff");
@@ -765,6 +782,7 @@ function App() {
   // Clear expansion state when diff changes
   useEffect(() => {
     setExpandedHunksMap({});
+    setForceMountedPaths(new Set());
     sourceCache.current = {};
     setOldSourceMap({});
     setMdPreviewFiles(new Set());
@@ -1089,11 +1107,15 @@ function App() {
       suppressVisibleDiffFileRef.current = false;
     }, 600);
 
+    forceMountPath(filePath);
+
     requestAnimationFrame(() => {
-      const fileEl = document.querySelector(
-        `[data-diff-file="${escapeAttributeSelector(filePath)}"]`
-      );
-      fileEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+      requestAnimationFrame(() => {
+        const fileEl = document.querySelector(
+          `[data-diff-file="${escapeAttributeSelector(filePath)}"]`
+        );
+        fileEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     });
   };
 
@@ -1157,6 +1179,7 @@ function App() {
       });
       setViewMode("diff");
       setActiveDiffFile(comment.file);
+      forceMountPath(comment.file);
     } else {
       await handleFileSelect(comment.file);
     }
@@ -1449,19 +1472,6 @@ function App() {
       setInstallMessage(`Failed to install CLI: ${err}`);
       setTimeout(() => setInstallMessage(null), 5000);
     }
-  };
-
-  // Extract side and line number from a change object
-  const getChangeSide = (change: any): "old" | "new" => {
-    if (change.isNormal) return "new";
-    return change.type === "insert" ? "new" : "old";
-  };
-
-  const getChangeLineNumber = (change: any, side: "old" | "new"): number | undefined => {
-    if (change.isNormal) {
-      return side === "new" ? change.newLineNumber : change.oldLineNumber;
-    }
-    return change.lineNumber;
   };
 
   // Find the change key for a given line number and side in the hunks
@@ -1764,10 +1774,6 @@ function App() {
     const oldSource = (file.oldPath && file.oldPath !== "/dev/null")
       ? oldSourceMap[file.oldPath]
       : oldSourceMap[file.newPath];
-    const tokens = highlight(fileHunks, {
-      language: detectLanguage(fileName),
-      oldSource,
-    });
     const fileComments = comments.filter((c) => c.file === fileName);
     const wholeFileComments = fileComments.filter(isWholeFileComment);
     const fileWidgets = buildFileWidgets(file, fileComments, fileHunks);
@@ -1789,6 +1795,15 @@ function App() {
         ...getChangeKeysForRange(fileHunks, selectedRange.startLine, selectedRange.endLine, selectedRange.side)
       );
     }
+
+    const cachedSource = sourceCache.current[fileName];
+    const lastHunk = fileHunks[fileHunks.length - 1];
+    const estimatedTotalLines = cachedSource?.length
+      ?? (lastHunk
+        ? (lastHunk.oldLines === 0 && lastHunk.oldStart === 0)
+          ? lastHunk.newStart + lastHunk.newLines - 1
+          : lastHunk.oldStart + lastHunk.oldLines + 20
+        : 0);
 
     return (
       <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={getDiffFilePath(file)}>
@@ -1908,207 +1923,33 @@ function App() {
             onStopEditComment={stopEditing}
           />
         ) : !isViewed ? (
-        <Diff
-          viewType={viewType}
-          diffType={file.type}
-          hunks={fileHunks}
-          tokens={tokens}
-          widgets={fileWidgets}
-          selectedChanges={highlightedChangeKeys}
-          renderGutter={({ change, side, inHoverState, renderDefault }: any) => {
-            if (!change) return renderDefault();
-            const changeSide = getChangeSide(change);
-            const lineNumber = getChangeLineNumber(change, changeSide);
-            // Only show button on the "new" side gutter (or matching side)
-            const showButton = inHoverState && side === changeSide && lineNumber;
-            return (
-              <span className="relative inline-flex items-center w-full">
-                {showButton && (
-                  <span
-                    className="absolute -left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-accent-review hover:opacity-90 cursor-pointer text-accent-review-text opacity-80 hover:opacity-100 transition-all"
-                    title="Add comment"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      if (lineNumber) {
-                        setSelectingRange({
-                          file: fileName,
-                          startLine: lineNumber,
-                          side: changeSide,
-                        });
-                        setSelectedRange({
-                          file: fileName,
-                          startLine: lineNumber,
-                          endLine: lineNumber,
-                          side: changeSide,
-                        });
-                      }
-                    }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
-                      <path fillRule="evenodd" d="M10 2c-4.418 0-8 2.91-8 6.5S5.582 15 10 15c.382 0 .757-.022 1.124-.063l3.33 2.152a.5.5 0 00.771-.42v-2.97C17.09 12.266 18 10.48 18 8.5 18 4.91 14.418 2 10 2z" clipRule="evenodd" />
-                    </svg>
-                  </span>
-                )}
-                <span className="flex-1 text-right">{renderDefault()}</span>
-              </span>
-            );
-          }}
-          gutterEvents={{
-            onClick: (event: any) => {
-              if (suppressNextClickRef.current) {
-                suppressNextClickRef.current = false;
-                return;
+          <LazyDiffFile
+            estimatedHeight={estimateFileHeight({ hunks: fileHunks })}
+            forceMount={effectiveForceMounted.has(fileName)}
+          >
+            <DiffFileBody
+              file={file}
+              fileName={fileName}
+              fileHunks={fileHunks}
+              language={detectLanguage(fileName)}
+              oldSource={oldSource}
+              viewType={viewType}
+              fileWidgets={fileWidgets}
+              highlightedChangeKeys={highlightedChangeKeys}
+              estimatedTotalLines={estimatedTotalLines}
+              onExpandRange={handleExpandRange}
+              onLineClick={handleLineClick}
+              onShiftClickRange={(file, startLine, endLine, side) =>
+                setAddingCommentAt({ file, startLine, endLine, side })
               }
-
-              const { change } = event;
-              if (change) {
-                const fileName = getDiffFilePath(file);
-                const side = change.isNormal
-                  ? "new"
-                  : change.type === "insert"
-                    ? "new"
-                    : "old";
-                const lineNumber = side === "new" ? change.newLineNumber : change.oldLineNumber;
-                if (lineNumber) {
-                  // Handle shift+click for range selection
-                  if (event.nativeEvent.shiftKey && lastFocusedLine && lastFocusedLine.file === fileName && lastFocusedLine.side === side) {
-                    const startLine = Math.min(lastFocusedLine.line, lineNumber);
-                    const endLine = Math.max(lastFocusedLine.line, lineNumber);
-                    setAddingCommentAt({
-                      file: fileName,
-                      startLine,
-                      endLine,
-                      side,
-                    });
-                    setSelectedRange(null);
-                  } else {
-                    handleLineClick(fileName, lineNumber, side);
-                  }
-                }
-              }
-            },
-            onMouseDown: (event: any) => {
-              const { change } = event;
-              if (change) {
-                const fileName = getDiffFilePath(file);
-                const side = change.isNormal
-                  ? "new"
-                  : change.type === "insert"
-                    ? "new"
-                    : "old";
-                const lineNumber = side === "new" ? change.newLineNumber : change.oldLineNumber;
-                if (lineNumber) {
-                  setSelectingRange({
-                    file: fileName,
-                    startLine: lineNumber,
-                    side,
-                  });
-                  setSelectedRange({
-                    file: fileName,
-                    startLine: lineNumber,
-                    endLine: lineNumber,
-                    side,
-                  });
-                }
-              }
-            },
-            onMouseEnter: (event: any) => {
-              const { change } = event;
-              if (change) {
-                const fileName = getDiffFilePath(file);
-                const side = change.isNormal
-                  ? "new"
-                  : change.type === "insert"
-                    ? "new"
-                    : "old";
-                const lineNumber = side === "new" ? change.newLineNumber : change.oldLineNumber;
-                if (lineNumber) {
-                  // Update hovered line for "C" key shortcut
-                  setHoveredLine({ file: fileName, line: lineNumber, side });
-                  
-                  // Extend selection range if dragging
-                  if (selectingRange && selectingRange.file === fileName && selectingRange.side === side) {
-                    const startLine = Math.min(selectingRange.startLine, lineNumber);
-                    const endLine = Math.max(selectingRange.startLine, lineNumber);
-                    setSelectedRange({
-                      file: fileName,
-                      startLine,
-                      endLine,
-                      side,
-                    });
-                  }
-                }
-              }
-            },
-          }}
-        >
-          {(hunks: any[]) => {
-            const elements: React.ReactElement[] = [];
-            const cachedSource = sourceCache.current[fileName];
-            const lastHunk = hunks[hunks.length - 1];
-            const estimatedTotalLines = cachedSource?.length
-              ?? (lastHunk
-                ? (lastHunk.oldLines === 0 && lastHunk.oldStart === 0)
-                  ? lastHunk.newStart + lastHunk.newLines - 1
-                  : lastHunk.oldStart + lastHunk.oldLines + 20
-                : 0);
-
-            // Top-of-file expand control
-            if (hunks.length > 0 && (hunks[0].oldStart > 1 || (hunks[0].oldStart === 0 && hunks[0].newStart > 1))) {
-              elements.push(
-                <Decoration key="expand-top">
-                  <HunkExpandControl
-                    previousHunk={null}
-                    nextHunk={hunks[0]}
-                    totalLines={estimatedTotalLines}
-                    onExpand={(start, end) => handleExpandRange(fileName, file.hunks, start, end)}
-                  />
-                </Decoration>
-              );
-            }
-
-            hunks.forEach((hunk, i) => {
-              // Between-hunk expand control
-              if (i > 0) {
-                const collapsed = getCollapsedLinesCountBetween(hunks[i - 1], hunk);
-                if (collapsed > 0) {
-                  elements.push(
-                    <Decoration key={`expand-${i}`}>
-                      <HunkExpandControl
-                        previousHunk={hunks[i - 1]}
-                        nextHunk={hunk}
-                        totalLines={estimatedTotalLines}
-                        onExpand={(start, end) => handleExpandRange(fileName, file.hunks, start, end)}
-                      />
-                    </Decoration>
-                  );
-                }
-              }
-              elements.push(<Hunk key={hunk.content} hunk={hunk} />);
-            });
-
-            // Bottom-of-file expand control
-            if (hunks.length > 0 && estimatedTotalLines > 0) {
-              const lastHunkEnd = (lastHunk.oldLines === 0 && lastHunk.oldStart === 0)
-                ? lastHunk.newStart + lastHunk.newLines - 1
-                : lastHunk.oldStart + lastHunk.oldLines - 1;
-              if (lastHunkEnd < estimatedTotalLines) {
-                elements.push(
-                  <Decoration key="expand-bottom">
-                    <HunkExpandControl
-                      previousHunk={lastHunk}
-                      nextHunk={null}
-                      totalLines={estimatedTotalLines}
-                      onExpand={(start, end) => handleExpandRange(fileName, file.hunks, start, end)}
-                    />
-                  </Decoration>
-                );
-              }
-            }
-
-            return elements;
-          }}
-        </Diff>
+              onSelectingRangeChange={setSelectingRange}
+              onSelectedRangeChange={setSelectedRange}
+              onHoverLineChange={setHoveredLine}
+              selectingRange={selectingRange}
+              lastFocusedLine={lastFocusedLine}
+              suppressNextClickRef={suppressNextClickRef}
+            />
+          </LazyDiffFile>
         ) : null}
       </div>
     );
