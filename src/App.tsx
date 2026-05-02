@@ -1772,6 +1772,15 @@ function App() {
       );
     }
 
+    const cachedSource = sourceCache.current[fileName];
+    const lastHunk = fileHunks[fileHunks.length - 1];
+    const estimatedTotalLines = cachedSource?.length
+      ?? (lastHunk
+        ? (lastHunk.oldLines === 0 && lastHunk.oldStart === 0)
+          ? lastHunk.newStart + lastHunk.newLines - 1
+          : lastHunk.oldStart + lastHunk.oldLines + 20
+        : 0);
+
     return (
       <div key={file.oldPath + file.newPath} className="mb-6" data-diff-file={getDiffFilePath(file)}>
         <div
@@ -1889,40 +1898,30 @@ function App() {
             onStartEditComment={startEditing}
             onStopEditComment={stopEditing}
           />
-        ) : !isViewed ? (() => {
-          const cachedSource = sourceCache.current[fileName];
-          const lastHunk = fileHunks[fileHunks.length - 1];
-          const estimatedTotalLines = cachedSource?.length
-            ?? (lastHunk
-              ? (lastHunk.oldLines === 0 && lastHunk.oldStart === 0)
-                ? lastHunk.newStart + lastHunk.newLines - 1
-                : lastHunk.oldStart + lastHunk.oldLines + 20
-              : 0);
-          return (
-            <DiffFileBody
-              file={file}
-              fileName={fileName}
-              fileHunks={fileHunks}
-              language={detectLanguage(fileName)}
-              oldSource={oldSource}
-              viewType={viewType}
-              fileWidgets={fileWidgets}
-              highlightedChangeKeys={highlightedChangeKeys}
-              estimatedTotalLines={estimatedTotalLines}
-              onExpandRange={handleExpandRange}
-              onLineClick={handleLineClick}
-              onShiftClickRange={(file, startLine, endLine, side) =>
-                setAddingCommentAt({ file, startLine, endLine, side })
-              }
-              onSelectingRangeChange={setSelectingRange}
-              onSelectedRangeChange={setSelectedRange}
-              onHoverLineChange={setHoveredLine}
-              selectingRange={selectingRange}
-              lastFocusedLine={lastFocusedLine}
-              suppressNextClickRef={suppressNextClickRef}
-            />
-          );
-        })() : null}
+        ) : !isViewed ? (
+          <DiffFileBody
+            file={file}
+            fileName={fileName}
+            fileHunks={fileHunks}
+            language={detectLanguage(fileName)}
+            oldSource={oldSource}
+            viewType={viewType}
+            fileWidgets={fileWidgets}
+            highlightedChangeKeys={highlightedChangeKeys}
+            estimatedTotalLines={estimatedTotalLines}
+            onExpandRange={handleExpandRange}
+            onLineClick={handleLineClick}
+            onShiftClickRange={(file, startLine, endLine, side) =>
+              setAddingCommentAt({ file, startLine, endLine, side })
+            }
+            onSelectingRangeChange={setSelectingRange}
+            onSelectedRangeChange={setSelectedRange}
+            onHoverLineChange={setHoveredLine}
+            selectingRange={selectingRange}
+            lastFocusedLine={lastFocusedLine}
+            suppressNextClickRef={suppressNextClickRef}
+          />
+        ) : null}
       </div>
     );
   };
