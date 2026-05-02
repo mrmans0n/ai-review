@@ -3,17 +3,14 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { useGit } from "./useGit";
 import type { GitDiffResult } from "../types";
 
-// Mock Tauri invoke
-vi.mock("@tauri-apps/api/core", () => ({
+// Mock the bridge facade
+vi.mock("../lib/bridge", () => ({
   invoke: vi.fn(),
+  listen: vi.fn(async () => () => {}),
+  openDirectoryDialog: vi.fn(),
 }));
 
-// Mock Tauri event listener
-vi.mock("@tauri-apps/api/event", () => ({
-  listen: vi.fn(() => Promise.resolve(() => {})),
-}));
-
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../lib/bridge";
 
 describe("useGit", () => {
   beforeEach(() => {

@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { parseDiff, Diff, Hunk, Decoration, getChangeKey, getCollapsedLinesCountBetween, expandFromRawCode } from "react-diff-view";
-import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { listen } from "@tauri-apps/api/event";
+import { invoke, getCurrentWindow, listen } from "./lib/bridge";
 import "react-diff-view/style/index.css";
 import "./diff.css";
 import { getDiffFilePath } from "./utils/getDiffFilePath";

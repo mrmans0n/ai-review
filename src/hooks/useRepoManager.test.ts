@@ -1,20 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
-vi.mock("@tauri-apps/api/core", () => ({
+vi.mock("../lib/bridge", () => ({
   invoke: vi.fn(),
+  listen: vi.fn(async () => () => {}),
+  openDirectoryDialog: vi.fn(),
 }));
 
-vi.mock("@tauri-apps/plugin-dialog", () => ({
-  open: vi.fn(),
-}));
-
-import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
+import { invoke, openDirectoryDialog } from "../lib/bridge";
 import { useRepoManager } from "./useRepoManager";
 
 const mockInvoke = invoke as ReturnType<typeof vi.fn>;
-const mockOpen = open as ReturnType<typeof vi.fn>;
+const mockOpen = openDirectoryDialog as ReturnType<typeof vi.fn>;
 
 describe("useRepoManager", () => {
   beforeEach(() => {
@@ -53,7 +50,7 @@ describe("useRepoManager", () => {
       addResult = await result.current.addRepoViaDialog();
     });
 
-    expect(mockOpen).toHaveBeenCalledWith({ directory: true, multiple: false, title: "Select a Git repository" });
+    expect(mockOpen).toHaveBeenCalled();
     expect(addResult).toEqual({ name: "new-repo", path: "/home/user/new-repo" });
   });
 

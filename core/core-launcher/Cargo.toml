@@ -1,0 +1,13 @@
+[package]
+name = "core-launcher"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[lib]
+name = "core_launcher"
+path = "src/lib.rs"
+
+[[bin]]
+name = "core-launcher"
+path = "src/main.rs"

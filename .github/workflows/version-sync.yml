@@ -4,8 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'src-tauri/Cargo.toml'
-      - 'src-tauri/tauri.conf.json'
+      - 'core/**/Cargo.toml'
       - 'package.json'
 
 permissions:
@@ -20,48 +19,66 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Read version from Cargo.toml
+      - name: Read version from package.json
+        id: pkg
+        run: |
+          VERSION=$(jq -r '.version' package.json)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Source of truth version (package.json): $VERSION"
+
+      - name: Read version from core/Cargo.toml
         id: cargo
         run: |
-          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -1)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Source of truth version: $VERSION"
-
-      - name: Read other versions
-        id: others
-        run: |
-          TAURI_VERSION=$(jq -r '.version' src-tauri/tauri.conf.json)
-          PKG_VERSION=$(jq -r '.version' package.json)
-          echo "tauri=$TAURI_VERSION" >> "$GITHUB_OUTPUT"
-          echo "pkg=$PKG_VERSION" >> "$GITHUB_OUTPUT"
-          echo "tauri.conf.json: $TAURI_VERSION"
-          echo "package.json: $PKG_VERSION"
+          # Workspace package version lives under [workspace.package].
+          CARGO_VERSION=$(awk '
+            /^\[workspace\.package\]/ { in_section = 1; next }
+            /^\[/ && in_section { in_section = 0 }
+            in_section && /^version = / {
+              gsub(/version = "|"/, "")
+              print
+              exit
+            }
+          ' core/Cargo.toml)
+          echo "version=$CARGO_VERSION" >> "$GITHUB_OUTPUT"
+          echo "core/Cargo.toml: $CARGO_VERSION"
 
       - name: Check if sync is needed
         id: check
         run: |
-          VERSION="${{ steps.cargo.outputs.version }}"
-          TAURI="${{ steps.others.outputs.tauri }}"
-          PKG="${{ steps.others.outputs.pkg }}"
-          if [ "$VERSION" = "$TAURI" ] && [ "$VERSION" = "$PKG" ]; then
-            echo "All versions match ($VERSION). Nothing to do."
+          PKG="${{ steps.pkg.outputs.version }}"
+          CARGO="${{ steps.cargo.outputs.version }}"
+          if [ "$PKG" = "$CARGO" ]; then
+            echo "Versions match ($PKG). Nothing to do."
             echo "needed=false" >> "$GITHUB_OUTPUT"
           else
-            echo "Version mismatch detected. Cargo.toml=$VERSION, tauri.conf.json=$TAURI, package.json=$PKG"
+            echo "Version mismatch detected. package.json=$PKG, core/Cargo.toml=$CARGO"
             echo "needed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Update tauri.conf.json
+      - name: Update core/Cargo.toml
         if: steps.check.outputs.needed == 'true'
         run: |
-          VERSION="${{ steps.cargo.outputs.version }}"
-          jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
-
-      - name: Update package.json
-        if: steps.check.outputs.needed == 'true'
-        run: |
-          VERSION="${{ steps.cargo.outputs.version }}"
-          jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+          VERSION="${{ steps.pkg.outputs.version }}"
+          # Replace the version line inside [workspace.package].
+          python3 - <<'PY'
+          import os, re
+          version = os.environ["VERSION"]
+          path = "core/Cargo.toml"
+          with open(path, "r", encoding="utf-8") as f:
+              text = f.read()
+          # Match the [workspace.package] section's version line.
+          pattern = re.compile(
+              r'(\[workspace\.package\][^\[]*?\nversion\s*=\s*")[^"]*(")',
+              re.DOTALL,
+          )
+          new_text, n = pattern.subn(rf'\g<1>{version}\g<2>', text, count=1)
+          if n != 1:
+              raise SystemExit("Could not find [workspace.package].version in core/Cargo.toml")
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(new_text)
+          PY
+        env:
+          VERSION: ${{ steps.pkg.outputs.version }}
 
       - name: Setup Rust toolchain
         if: steps.check.outputs.needed == 'true'
@@ -69,15 +86,15 @@ jobs:
 
       - name: Update Cargo.lock
         if: steps.check.outputs.needed == 'true'
-        working-directory: src-tauri
+        working-directory: core
         run: cargo generate-lockfile
 
       - name: Commit and push
         if: steps.check.outputs.needed == 'true'
         run: |
-          VERSION="${{ steps.cargo.outputs.version }}"
+          VERSION="${{ steps.pkg.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src-tauri/tauri.conf.json package.json src-tauri/Cargo.lock
+          git add package.json core/Cargo.toml core/Cargo.lock
           git commit -m "chore: sync versions to $VERSION [skip ci]"
           git push

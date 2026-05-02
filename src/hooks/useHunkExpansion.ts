@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { expandFromRawCode } from "react-diff-view";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../lib/bridge";
 import type { DiffMode } from "../types";
 
 type HunkData = any;

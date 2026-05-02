@@ -1,0 +1,32 @@
+appId: com.nacholopez.ai-review
+productName: AI Review
+directories:
+  output: release
+afterPack: build/after-pack.cjs
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+extraResources:
+  - from: core/target/release/core-sidecar
+    to: bin/core-sidecar
+  - from: core/target/release/core-launcher
+    to: bin/core-launcher
+mac:
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+  identity: null
+  category: public.app-category.developer-tools
+  icon: icons/icon.icns
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+linux:
+  target:
+    - dir
+  icon: icons/128x128.png
+win:
+  target:
+    - dir
+  icon: icons/icon.ico

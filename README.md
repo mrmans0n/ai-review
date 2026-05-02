@@ -54,7 +54,7 @@ npx skills add mrmans0n/ai-review
 
 ## Tech Stack
 
-- **Desktop shell:** Tauri v2 (Rust backend)
+- **Desktop shell:** Electron (Rust sidecar backend)
 - **Frontend:** React + TypeScript + Vite
 - **Styling:** Tailwind CSS
 
@@ -93,7 +93,7 @@ Download the latest release from [GitHub Releases](https://github.com/mrmans0n/a
 
 ```bash
 pnpm install
-pnpm tauri build
+pnpm electron:build
 cd cli && ./install.sh
 # then: air (from any git repo)
 ```
@@ -101,7 +101,7 @@ cd cli && ./install.sh
 ## Development
 
 - `pnpm dev` — run the web app only
-- `pnpm tauri dev` — run the desktop app with hot reload
+- `pnpm electron:dev` — run the desktop app with hot reload
 
 ## Keyboard Shortcuts
 
@@ -118,8 +118,8 @@ cd cli && ./install.sh
 │   ├── components/   # UI components (diffs, sidebar, comments, modals)
 │   ├── hooks/        # React hooks for UI and state behavior
 │   └── lib/          # Core client logic (git, prompt building, utilities)
-├── src-tauri/
-│   └── src/          # Rust backend commands and app integration
+├── electron/         # Electron main + preload (TypeScript)
+├── core/             # Rust workspace (core-lib, core-sidecar, core-launcher)
 └── cli/              # air launcher installer and CLI wiring
 ```
 

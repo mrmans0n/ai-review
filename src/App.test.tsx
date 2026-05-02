@@ -18,7 +18,7 @@ const mockParsedFile = {
   ],
 };
 
-vi.mock("@tauri-apps/api/core", () => ({
+vi.mock("./lib/bridge", () => ({
   invoke: vi.fn((command: string) => {
     if (command === "get_working_directory") return Promise.resolve("/repo");
     if (command === "is_wait_mode") return Promise.resolve(false);
@@ -37,14 +37,9 @@ vi.mock("@tauri-apps/api/core", () => ({
     }
     return Promise.resolve([]);
   }),
-}));
-
-vi.mock("@tauri-apps/api/event", () => ({
-  listen: vi.fn(() => Promise.resolve(() => {})),
-}));
-
-vi.mock("@tauri-apps/api/window", () => ({
+  listen: vi.fn(async () => () => {}),
   getCurrentWindow: vi.fn(() => ({ setTitle: vi.fn() })),
+  openDirectoryDialog: vi.fn(),
 }));
 
 vi.mock("react-diff-view", () => ({

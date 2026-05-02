@@ -79,29 +79,89 @@ jobs:
       - name: Cache cargo build
         uses: actions/cache@v5
         with:
-          path: src-tauri/target
+          path: core/target
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install dependencies (Ubuntu)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev \
-            build-essential \
-            curl \
-            wget \
-            file \
-            libssl-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev
-
       - name: Check formatting
-        run: cd src-tauri && cargo fmt -- --check
+        run: cd core && cargo fmt -- --check
 
       - name: Cargo check
-        run: cd src-tauri && cargo check
+        run: cd core && cargo check
 
       - name: Run tests
-        run: cd src-tauri && cargo test
+        run: cd core && cargo test
 
       - name: Run clippy
-        run: cd src-tauri && cargo clippy -- -D warnings
+        run: cd core && cargo clippy -- -D warnings
+
+  electron-build:
+    name: Electron Build (macOS)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.15.0"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v5
+        with:
+          path: ~/.cargo/registry/index
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo registry cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cargo/registry/cache
+          key: ${{ runner.os }}-cargo-registry-cache-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo git
+        uses: actions/cache@v5
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v5
+        with:
+          path: core/target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Electron app (unpacked)
+        run: pnpm electron:build:dir
+
+      - name: Verify bundled binaries
+        run: |
+          APP_RESOURCES="release/mac-arm64/AI Review.app/Contents/Resources/bin"
+          if [ ! -d "$APP_RESOURCES" ]; then
+            APP_RESOURCES="release/mac/AI Review.app/Contents/Resources/bin"
+          fi
+          test -x "$APP_RESOURCES/core-sidecar" || (echo "core-sidecar missing or not executable in $APP_RESOURCES"; exit 1)
+          test -x "$APP_RESOURCES/core-launcher" || (echo "core-launcher missing or not executable in $APP_RESOURCES"; exit 1)
+          echo "Bundle OK at $APP_RESOURCES"
