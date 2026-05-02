@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 
 ## What This Is
 
-ai-review is a desktop code review tool built with Tauri v2 (Rust backend + React/TypeScript frontend). It displays Git diffs with inline commenting, syntax highlighting, and prompt generation for AI-assisted reviews.
+ai-review is a desktop code review tool built with Electron (Rust backend sidecar + React/TypeScript frontend). It displays Git diffs with inline commenting, syntax highlighting, and prompt generation for AI-assisted reviews.
 
 ## Commands
 
@@ -15,12 +15,12 @@ This project uses **pnpm** as its package manager. Do not use npm or yarn.
 pnpm install
 # Development
 pnpm dev              # Vite dev server at http://localhost:1420 (frontend only)
-pnpm tauri dev        # Full desktop app with hot reload
+pnpm electron:dev     # Full desktop app with hot reload
 
 # Build
 pnpm build            # TypeScript check + Vite bundle (frontend only)
-pnpm tauri build      # Production desktop app
-pnpm tauri build --debug  # Debug build (faster)
+pnpm electron:build   # Production desktop app
+pnpm electron:build:install  # Build and copy to /Applications (macOS)
 
 # Tests
 pnpm test             # Vitest watch mode
@@ -32,11 +32,11 @@ pnpm test:run src/hooks/useComments.test.ts  # Single file
 
 **Frontend (src/):** React 19 + TypeScript. All app state lives in `App.tsx` via useState hooks. Custom hooks in `src/hooks/` encapsulate domain logic (git operations, comments, file search, commit selection). Components in `src/components/` are presentational. Diff rendering uses `react-diff-view` with `highlight.js` for syntax coloring.
 
-**Backend (src-tauri/src/):** Rust. `lib.rs` defines Tauri commands exposed to the frontend via `invoke()`. `git.rs` shells out to `git` CLI for all git operations. `files.rs` handles file listing (git-aware via `git ls-files` with recursive walk fallback).
+**Backend (`core/`):** Rust workspace with `core-lib` (git/files/config), `core-sidecar` (JSON-RPC over stdio, dispatched to from Electron main), and `core-launcher` (the `air` CLI). All git operations shell out to `git`.
 
-**IPC:** Frontend calls Rust functions via `invoke<T>("command_name", { args })` from `@tauri-apps/api/core`. All commands return `Result<T, String>`.
+**IPC:** Frontend calls a thin `src/lib/bridge.ts` (`invoke`, `listen`, `openDirectoryDialog`, `getCurrentWindow`). The bridge calls `window.electronAPI` exposed from `electron/preload.ts`. Electron main forwards calls to `core-sidecar` over JSON-RPC 2.0 on stdio.
 
-**CLI launcher (cli/):** `air` bash script that spawns the app as a detached background process, passing the working directory as an argument.
+**CLI launcher:** `core-launcher` Rust binary, installed as `~/.local/bin/air` via the `Install CLI…` menu. Locates the installed `AI Review.app` and spawns it via `open -a`. With `--wait`, blocks via `open -W` and reads feedback from a temp-file path passed to the app.
 
 ## Key Patterns
 
