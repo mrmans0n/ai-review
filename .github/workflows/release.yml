@@ -86,7 +86,14 @@ jobs:
         run: pnpm test:run
 
       - name: Build app
-        run: pnpm electron:build
+        run: |
+          pnpm exec tsc
+          pnpm exec vite build
+          pnpm electron:tsc
+          cd core
+          cargo build --release -p core-sidecar -p core-launcher
+          cd ..
+          pnpm exec electron-builder --publish never
 
       - name: Collect artifacts (macOS)
         if: matrix.os == 'macos-latest'
