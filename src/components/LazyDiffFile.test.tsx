@@ -40,25 +40,30 @@ describe("LazyDiffFile", () => {
   });
 
   it("mounts children when intersection fires", () => {
+    const onMount = vi.fn();
     render(
-      <LazyDiffFile estimatedHeight={1234}>
+      <LazyDiffFile estimatedHeight={1234} onMount={onMount}>
         <div data-testid="child">child</div>
       </LazyDiffFile>
     );
+    expect(onMount).not.toHaveBeenCalled();
     const observer = MockIntersectionObserver.instances[0];
     act(() => {
       observer.trigger([{ isIntersecting: true, target: document.createElement("div") }]);
     });
     expect(screen.queryByTestId("child")).not.toBeNull();
+    expect(onMount).toHaveBeenCalledTimes(1);
   });
 
   it("mounts children immediately when forceMount is true", () => {
+    const onMount = vi.fn();
     render(
-      <LazyDiffFile estimatedHeight={1234} forceMount>
+      <LazyDiffFile estimatedHeight={1234} forceMount onMount={onMount}>
         <div data-testid="child">child</div>
       </LazyDiffFile>
     );
     expect(screen.queryByTestId("child")).not.toBeNull();
+    expect(onMount).toHaveBeenCalledTimes(1);
   });
 
   it("transitions from pending to mounted when forceMount becomes true", () => {

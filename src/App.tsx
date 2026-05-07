@@ -152,6 +152,8 @@ function App() {
   }>>({});
   const lfsFetchingRef = useRef<Set<string>>(new Set());
   const lfsRequestIdRef = useRef(0);
+  const oldSourceRequestIdRef = useRef(0);
+  const [oldSourceVersion, setOldSourceVersion] = useState(0);
   const [lfsVersion, setLfsVersion] = useState(0);
   const [initError, setInitError] = useState<string | null>(null);
 
@@ -324,12 +326,24 @@ function App() {
     applyInitialMode();
   }, [workingDir, isGitRepo, initialDiffMode]);
 
-  const files = useMemo(() => (diffText ? parseDiff(diffText) : []).map((f: any) => ({
-    ...f,
-    additions: f.hunks.flatMap((h: any) => h.changes).filter((c: any) => c.isInsert).length,
-    deletions: f.hunks.flatMap((h: any) => h.changes).filter((c: any) => c.isDelete).length,
-    lfsPointer: detectLfsPointer(f.hunks),
-  })), [diffText]);
+  const files = useMemo(() => (diffText ? parseDiff(diffText) : []).map((f: any) => {
+    let additions = 0;
+    let deletions = 0;
+
+    for (const hunk of f.hunks) {
+      for (const change of hunk.changes) {
+        if (change.isInsert) additions += 1;
+        if (change.isDelete) deletions += 1;
+      }
+    }
+
+    return {
+      ...f,
+      additions,
+      deletions,
+      lfsPointer: detectLfsPointer(f.hunks),
+    };
+  }), [diffText]);
   const renderableFiles = useMemo(() => files.filter((file: any) => file.hunks && file.hunks.length > 0), [files]);
   const diffFilePaths = useMemo(
     () => renderableFiles.map((file: any) => getDiffFilePath(file)).filter(Boolean),
@@ -790,8 +804,95 @@ function App() {
     setLfsContentCache({});
     lfsFetchingRef.current.clear();
     lfsRequestIdRef.current++;
+    oldSourceRequestIdRef.current++;
+    setOldSourceVersion((v) => v + 1);
     setLfsVersion((v) => v + 1);
-  }, [diffMode, selectedCommit, selectedBranch]);
+  }, [diffText, diffMode, selectedCommit, selectedBranch]);
+
+  const resolveOldSourceRef = useCallback(async (): Promise<string | null> => {
+    if (!workingDir) return null;
+
+    // Determine oldRef based on actual state, not just diffMode.
+    // handleCommitSelect/handleBranchSelect set selectedCommit/selectedBranch
+    // but don't update diffMode, so we derive the ref from actual state.
+    if (selectedCommit) return `${selectedCommit.hash}~1`;
+
+    if (selectedBranch) {
+      try {
+        return await invoke<string>("get_branch_base", {
+          path: workingDir,
+          branch: selectedBranch.name,
+        });
+      } catch {
+        return null;
+      }
+    }
+
+    if (diffMode.mode === "unstaged") {
+      return ":0"; // index - unstaged compares index vs working tree
+    }
+
+    if (diffMode.mode === "staged") {
+      return "HEAD";
+    }
+
+    if (diffMode.mode === "commit" && diffMode.commitRef) {
+      // Handles handleRefSelect (sets diffMode but not selectedCommit)
+      // and handleStackEntrySelect (also sets diffMode.commitRef)
+      return `${diffMode.commitRef}~1`;
+    }
+
+    if (diffMode.mode === "range" && diffMode.range) {
+      if (diffMode.range.includes("...")) {
+        const parts = diffMode.range.split("...");
+        try {
+          return await invoke<string>("get_merge_base_refs", {
+            path: workingDir,
+            ref1: parts[0],
+            ref2: parts[1],
+          });
+        } catch {
+          return parts[0];
+        }
+      }
+
+      return diffMode.range.split("..")[0];
+    }
+
+    return "HEAD";
+  }, [workingDir, selectedCommit, selectedBranch, diffMode]);
+
+  const fetchOldSourceForFile = useCallback(async (file: any) => {
+    if (!workingDir) return;
+
+    const oldPath = file.oldPath;
+    const newPath = file.newPath;
+
+    if (!oldPath || oldPath === "/dev/null") {
+      if (newPath && oldSourceMap[newPath] === undefined) {
+        setOldSourceMap((current) => current[newPath] === undefined ? { ...current, [newPath]: "" } : current);
+      }
+      return;
+    }
+
+    if (oldSourceMap[oldPath] !== undefined) return;
+
+    const requestId = oldSourceRequestIdRef.current;
+    const oldRef = await resolveOldSourceRef();
+    if (!oldRef || requestId !== oldSourceRequestIdRef.current) return;
+
+    try {
+      const content = await invoke<string>("get_file_at_ref", {
+        path: workingDir,
+        gitRef: oldRef,
+        filePath: oldPath,
+      });
+      if (requestId !== oldSourceRequestIdRef.current) return;
+      setOldSourceMap((current) => current[oldPath] === undefined ? { ...current, [oldPath]: content } : current);
+    } catch {
+      // File may not exist in old ref (e.g., root commit) - skip
+    }
+  }, [workingDir, oldSourceMap, resolveOldSourceRef]);
 
   const fetchFileSource = async (filePath: string): Promise<string[]> => {
     if (sourceCache.current[filePath]) {
@@ -865,97 +966,6 @@ function App() {
     sourceCache.current[filePath] = lines;
     return lines;
   };
-
-  // Fetch old-side source for all changed files to enable full-file syntax highlighting.
-  // Without this, multi-line constructs (block comments, template literals) break
-  // because highlight.js processes each line independently.
-  useEffect(() => {
-    if (!workingDir || !diffText) return;
-
-    const files = parseDiff(diffText);
-    let cancelled = false;
-
-    const fetchOldSources = async () => {
-      const results: Record<string, string> = {};
-
-      // Determine oldRef based on actual state, not just diffMode.
-      // handleCommitSelect/handleBranchSelect set selectedCommit/selectedBranch
-      // but don't update diffMode, so we derive the ref from actual state.
-      let oldRef: string;
-
-      if (selectedCommit) {
-        oldRef = `${selectedCommit.hash}~1`;
-      } else if (selectedBranch) {
-        try {
-          oldRef = await invoke<string>("get_branch_base", {
-            path: workingDir,
-            branch: selectedBranch.name,
-          });
-        } catch {
-          return; // can't determine merge-base
-        }
-      } else if (diffMode.mode === "unstaged") {
-        oldRef = ":0"; // index — unstaged compares index vs working tree
-      } else if (diffMode.mode === "staged") {
-        oldRef = "HEAD";
-      } else if (diffMode.mode === "commit" && diffMode.commitRef) {
-        // Handles handleRefSelect (sets diffMode but not selectedCommit)
-        // and handleStackEntrySelect (also sets diffMode.commitRef)
-        oldRef = `${diffMode.commitRef}~1`;
-      } else if (diffMode.mode === "range" && diffMode.range) {
-        if (diffMode.range.includes("...")) {
-          // Three-dot range: git diff A...B uses the merge-base as old side
-          const parts = diffMode.range.split("...");
-          try {
-            oldRef = await invoke<string>("get_merge_base_refs", {
-              path: workingDir,
-              ref1: parts[0],
-              ref2: parts[1],
-            });
-          } catch {
-            oldRef = parts[0];
-          }
-        } else {
-          // Two-dot range: A..B — old side is A
-          const parts = diffMode.range.split("..");
-          oldRef = parts[0];
-        }
-      } else {
-        oldRef = "HEAD";
-      }
-
-      await Promise.all(
-        files.map(async (file: any) => {
-          const oldPath = file.oldPath;
-          // For new/untracked files, old side is empty — still need oldSource
-          // so react-diff-view uses full-file highlighting path
-          if (!oldPath || oldPath === "/dev/null") {
-            const newPath = file.newPath;
-            if (newPath) results[newPath] = "";
-            return;
-          }
-
-          try {
-            const content = await invoke<string>("get_file_at_ref", {
-              path: workingDir,
-              gitRef: oldRef,
-              filePath: oldPath,
-            });
-            results[oldPath] = content;
-          } catch {
-            // File may not exist in old ref (e.g., root commit) — skip
-          }
-        })
-      );
-
-      if (!cancelled) {
-        setOldSourceMap(results);
-      }
-    };
-
-    fetchOldSources();
-    return () => { cancelled = true; };
-  }, [workingDir, diffText, diffMode, selectedCommit, selectedBranch]);
 
   const handleExpandRange = async (filePath: string, originalHunks: any[], start: number, end: number) => {
     try {
@@ -1926,6 +1936,8 @@ function App() {
           <LazyDiffFile
             estimatedHeight={estimateFileHeight({ hunks: fileHunks })}
             forceMount={effectiveForceMounted.has(fileName)}
+            mountKey={oldSourceVersion}
+            onMount={() => fetchOldSourceForFile(file)}
           >
             <DiffFileBody
               file={file}
