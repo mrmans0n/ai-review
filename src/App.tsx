@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { parseDiff, getChangeKey, expandFromRawCode } from "react-diff-view";
+import { getChangeKey, expandFromRawCode } from "react-diff-view";
 import { invoke, getCurrentWindow, listen } from "./lib/bridge";
 import "react-diff-view/style/index.css";
 import "./diff.css";
@@ -41,6 +41,7 @@ import { LfsFileWrapper } from "./components/LfsFileWrapper";
 import { DiffFileBody } from "./components/DiffFileBody";
 import { LazyDiffFile } from "./components/LazyDiffFile";
 import { estimateFileHeight } from "./lib/diffMetrics";
+import { parseDiffSafely } from "./lib/parseDiffSafely";
 import type { DiffModeConfig, CommitInfo, BranchInfo, GgStackInfo, GgStackEntry, WorktreeInfo, GitDiffResult, ChangedFile, ChangedFileRailItem, Comment } from "./types";
 
 type InitialDiffMode = {
@@ -326,7 +327,7 @@ function App() {
     applyInitialMode();
   }, [workingDir, isGitRepo, initialDiffMode]);
 
-  const files = useMemo(() => (diffText ? parseDiff(diffText) : []).map((f: any) => {
+  const files = useMemo(() => (diffText ? parseDiffSafely(diffText) : []).map((f: any) => {
     let additions = 0;
     let deletions = 0;
 
@@ -385,7 +386,7 @@ function App() {
       };
     });
   }, [changedFiles, comments, files, viewedFiles]);
-  const isEmptyState = renderableFiles.length === 0 && !selectedCommit && !selectedBranch;
+  const isEmptyState = changedFiles.length === 0 && !selectedCommit && !selectedBranch;
   const showReviewChrome = !isEmptyState;
 
   const visibleDiffFile = useVisibleDiffFile({
@@ -1296,7 +1297,7 @@ function App() {
       });
       const diffContent = result || "No changes in this entry";
       setDiffText(diffContent);
-      setChangedFiles(parseDiff(diffContent).map((f: any) => ({
+      setChangedFiles(parseDiffSafely(diffContent).map((f: any) => ({
         path: getDiffFilePath(f),
         status: f.type === "add" ? "A" : f.type === "delete" ? "D" : "M",
       })));
@@ -1328,7 +1329,7 @@ function App() {
       ]);
       const diffContent = result || "No changes in this stack";
       setDiffText(diffContent);
-      setChangedFiles(parseDiff(diffContent).map((f: any) => ({
+      setChangedFiles(parseDiffSafely(diffContent).map((f: any) => ({
         path: getDiffFilePath(f),
         status: f.type === "add" ? "A" : f.type === "delete" ? "D" : "M",
       })));
