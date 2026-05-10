@@ -25,6 +25,13 @@ Open specific commits or a commit range in ai-review so the human can review exi
       air --wait --json --branch <base-branch>
       ```
 
+   d. **The current gg stack** — when on a branch matching the `user/name` pattern (no `--` in name) and `.git/gg/config.json` exists:
+      Read the gg base branch from config (parse `defaults.base`, fall back to `main`). Run:
+      ```
+      air --wait --json --commits <gg-base>..HEAD
+      ```
+      This shows the full stack diff, matching what ai-review displays when opening a gg stack.
+
    The `air --wait --json` command opens the ai-review desktop app and blocks until the human submits. The output is structured JSON.
 
 2. **Handle the response.**

@@ -7,22 +7,31 @@ You have completed a task and want to show the human what you did. Open ai-revie
 
 ## Steps
 
-1. **Determine what to show.** Check the state of changes to pick the right `air` invocation:
+1. **Determine what to show.** Check these in priority order to pick the right `air` invocation:
 
    a. **Uncommitted changes exist** (staged or unstaged, check via `git status --porcelain`):
       Run `air --wait --json` with no branch/commit flags. This shows the working directory diff.
 
-   b. **All changes are committed, on a feature branch** (not main/master):
+   b. **All changes committed, on a gg stack branch** — the current branch matches the `user/name` pattern (no `--` in the name part) and `.git/gg/config.json` exists:
+      Read the gg base branch from config (parse `defaults.base`, fall back to `main`). Run:
+      ```
+      air --wait --json --commits <gg-base>..HEAD
+      ```
+      This shows the full stack diff, matching what ai-review displays when opening a gg stack.
+
+   c. **All changes committed, on a feature branch** (not main/master):
       Determine the base branch (`main` or `master`, whichever exists). Run:
       ```
       air --wait --json --branch <base-branch>
       ```
 
-   c. **All changes are committed, on main/master itself:**
+   d. **All changes committed, on main/master itself:**
       Identify the first commit you made during this session. If you can determine the exact commit, use that hash directly. Otherwise, fall back to the first unpushed commit: run `git log origin/main..HEAD --oneline --reverse` (or `origin/master`) and take the first commit hash. Run:
       ```
       air --wait --json --commit <first-relevant-commit-hash>
       ```
+
+   e. **None of the above:** Run `air --wait --json` with no flags (empty diff — the app handles it).
 
    The `air --wait --json` command opens the ai-review desktop app and blocks until the human submits. They may add comments or submit with no comments. The output is structured JSON.
 
