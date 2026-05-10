@@ -21,6 +21,11 @@
     "electron:build": "tsc && vite build && pnpm electron:tsc && cd core && cargo build --release -p core-sidecar -p core-launcher && cd .. && electron-builder",
     "electron:build:dir": "tsc && vite build && pnpm electron:tsc && cd core && cargo build --release -p core-sidecar -p core-launcher && cd .. && electron-builder --dir"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron-winstaller"
+    ]
+  },
   "dependencies": {
     "@catppuccin/highlightjs": "^1.0.1",
     "@fontsource/geist": "^5.2.8",
