@@ -58,7 +58,7 @@
     "@types/unist": "^3.0.3",
     "@types/uuid": "^11.0.0",
     "@vitejs/plugin-react": "^6.0.1",
-    "@vitest/ui": "^4.1.5",
+    "@vitest/ui": "^4.1.6",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "electron": "^42.0.1",
@@ -71,7 +71,7 @@
     "typescript": "~6.0.3",
     "vfile": "^6.0.3",
     "vite": "^8.0.12",
-    "vitest": "^4.1.5",
+    "vitest": "^4.1.6",
     "wait-on": "^9.0.10"
   }
 }
