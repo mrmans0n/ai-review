@@ -102,12 +102,37 @@ jobs:
           cd ..
           pnpm exec electron-builder --publish never
 
+      - name: Verify signed macOS artifacts
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APP_PATH="$(find release -maxdepth 2 -name 'AI Review.app' -type d | head -n 1)"
+          if [ -z "$APP_PATH" ]; then
+            echo "AI Review.app not found under release/"
+            find release -maxdepth 3 -print
+            exit 1
+          fi
+
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          spctl --assess --type execute --verbose "$APP_PATH"
+
+          DMG_PATH="$(find release -maxdepth 1 -name '*.dmg' -type f | head -n 1)"
+          if [ -z "$DMG_PATH" ]; then
+            echo "DMG not found under release/"
+            find release -maxdepth 2 -print
+            exit 1
+          fi
+
+          xcrun stapler validate "$DMG_PATH"
+
       - name: Collect artifacts (macOS)
         if: matrix.os == 'macos-latest'
         shell: bash
         run: |
           mkdir -p artifacts
-          cp release/*.dmg artifacts/ || true
+          cp release/*.dmg artifacts/
           ls -la artifacts/
 
       - name: Collect artifacts (Linux)
