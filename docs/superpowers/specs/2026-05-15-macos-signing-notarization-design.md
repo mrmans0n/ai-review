@@ -36,10 +36,6 @@ The release workflow expects these secrets to exist:
 - `APPLE_APP_SPECIFIC_PASSWORD`: App-specific password generated for that Apple ID.
 - `APPLE_TEAM_ID`: 10-character Apple Developer Team ID.
 
-Optional:
-
-- `CSC_NAME`: Exact signing identity, such as `Developer ID Application: Name (TEAMID)`, if the runner imports multiple usable identities.
-
 The certificate must be a Developer ID Application certificate. A Mac App Distribution, Apple Distribution, or development certificate is not correct for standalone DMG distribution. A Developer ID Installer certificate is only needed if the project later adds a `.pkg` target.
 
 ## Packaging Design
@@ -55,9 +51,8 @@ The release workflow should expose Apple notarization credentials only to the ma
 - `APPLE_ID`
 - `APPLE_APP_SPECIFIC_PASSWORD`
 - `APPLE_TEAM_ID`
-- optional `CSC_NAME`
 
-With those variables present, `electron-builder` should sign and notarize during the existing `pnpm exec electron-builder --publish never` release step.
+With those variables present, `electron-builder` should sign and notarize the app bundle during the existing `pnpm exec electron-builder --publish never` release step. After DMG creation, the workflow should submit each generated DMG to Apple with `xcrun notarytool`, wait for acceptance, and staple the ticket to the DMG.
 
 ## Verification Design
 
@@ -66,7 +61,7 @@ After packaging, the macOS release job should verify the app bundle before artif
 - Locate `release/mac-arm64/AI Review.app` or the generated macOS app path.
 - Run `codesign --verify --deep --strict --verbose=2` on the app bundle.
 - Run `spctl --assess --type execute --verbose` on the app bundle.
-- Inspect notarization/stapling state for the generated DMG with `xcrun stapler validate` when a DMG exists.
+- Inspect notarization/stapling state for every generated DMG with `xcrun stapler validate` when DMGs exist.
 
 If any verification fails, the release job should fail before creating the GitHub Release.
 
@@ -77,10 +72,11 @@ If any verification fails, the release job should fail before creating the GitHu
 3. `electron-builder` packages the macOS app.
 4. Electron Builder imports or uses the Developer ID Application certificate from `CSC_LINK`.
 5. Electron Builder signs the app bundle and nested executables.
-6. Electron Builder submits the signed artifact to Apple notarization using `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`.
-7. Electron Builder staples the notarization ticket when supported.
-8. The workflow verifies signature, Gatekeeper assessment, and stapling.
-9. Verified DMGs are uploaded as release artifacts.
+6. Electron Builder submits the signed app bundle to Apple notarization using `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`.
+7. The workflow submits each generated DMG to Apple notarization using the same Apple ID credentials.
+8. The workflow staples the accepted notarization ticket to each DMG.
+9. The workflow verifies app signatures, Gatekeeper assessment, and DMG stapling.
+10. Verified DMGs are uploaded as release artifacts.
 
 ## Error Handling
 
