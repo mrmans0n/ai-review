@@ -108,24 +108,36 @@ jobs:
         run: |
           set -euo pipefail
 
-          APP_PATH="$(find release -maxdepth 2 -name 'AI Review.app' -type d | head -n 1)"
-          if [ -z "$APP_PATH" ]; then
+          APP_PATHS=()
+          while IFS= read -r -d '' app_path; do
+            APP_PATHS+=("$app_path")
+          done < <(find release -maxdepth 2 -name 'AI Review.app' -type d -print0)
+
+          if [ "${#APP_PATHS[@]}" -eq 0 ]; then
             echo "AI Review.app not found under release/"
             find release -maxdepth 3 -print
             exit 1
           fi
 
-          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-          spctl --assess --type execute --verbose "$APP_PATH"
+          for app_path in "${APP_PATHS[@]}"; do
+            codesign --verify --deep --strict --verbose=2 "$app_path"
+            spctl --assess --type execute --verbose "$app_path"
+          done
 
-          DMG_PATH="$(find release -maxdepth 1 -name '*.dmg' -type f | head -n 1)"
-          if [ -z "$DMG_PATH" ]; then
+          DMG_PATHS=()
+          while IFS= read -r -d '' dmg_path; do
+            DMG_PATHS+=("$dmg_path")
+          done < <(find release -maxdepth 1 -name '*.dmg' -type f -print0)
+
+          if [ "${#DMG_PATHS[@]}" -eq 0 ]; then
             echo "DMG not found under release/"
             find release -maxdepth 2 -print
             exit 1
           fi
 
-          xcrun stapler validate "$DMG_PATH"
+          for dmg_path in "${DMG_PATHS[@]}"; do
+            xcrun stapler validate "$dmg_path"
+          done
 
       - name: Collect artifacts (macOS)
         if: matrix.os == 'macos-latest'
