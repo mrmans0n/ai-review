@@ -12,11 +12,11 @@ importers:
         specifier: ^1.0.1
         version: 1.0.1
       '@fontsource/geist':
+        specifier: ^5.2.9
+        version: 5.2.9
+      '@fontsource/geist-mono':
         specifier: ^5.2.8
         version: 5.2.8
-      '@fontsource/geist-mono':
-        specifier: ^5.2.7
-        version: 5.2.7
       '@types/hast':
         specifier: ^3.0.4
         version: 3.0.4
@@ -289,11 +289,11 @@ packages:
       '@noble/hashes':
         optional: true
 
-  '@fontsource/geist-mono@5.2.7':
-    resolution: {integrity: sha512-xVPVFISJg/K0VVd+aQN0Y7X/sw9hUcJPyDWFJ5GpyU3bHELhoRsJkPSRSHXW32mOi0xZCUQDOaPj1sqIFJ1FGg==}
+  '@fontsource/geist-mono@5.2.8':
+    resolution: {integrity: sha512-YqZUb3X42GjRaHkibUNyE8K4Rk9A6I9Ez81YpJYiuJN4ggmTW2ixoQpa9EWCPfXZtIsCQJTyrDoV9OJOZO/UcA==}
 
-  '@fontsource/geist@5.2.8':
-    resolution: {integrity: sha512-pI54klK6vz8fVpAVyV+iODGLEzw73cs1XJqV9PIXgW8MYMmBcwK6lKKaWqJrNHwEx8ppz9cuhussb6arXQ/PVQ==}
+  '@fontsource/geist@5.2.9':
+    resolution: {integrity: sha512-6QMur8g+3/9Uvfv/5chLJGBc9bYVzWijFrWEl0uZnitxp6wEPqKCJd9/GBlOk4dg/QSe96a3TUKEgmscFpE+4g==}
 
   '@hapi/address@5.1.1':
     resolution: {integrity: sha512-A+po2d/dVoY7cYajycYI43ZbYMXukuopIsqCjh5QzsBCipDtdofHntljDlpccMjIfTy6UOkg+5KPriwYch2bXA==}
@@ -2656,9 +2656,9 @@ snapshots:
 
   '@exodus/bytes@1.15.0': {}
 
-  '@fontsource/geist-mono@5.2.7': {}
+  '@fontsource/geist-mono@5.2.8': {}
 
-  '@fontsource/geist@5.2.8': {}
+  '@fontsource/geist@5.2.9': {}
 
   '@hapi/address@5.1.1':
     dependencies:
