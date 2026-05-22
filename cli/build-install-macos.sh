@@ -36,6 +36,7 @@ fi
 
 install_cli_link() {
   local cli_path="$1"
+  local mode="${2:-force}"
   local cli_dir
   cli_dir="$(dirname "$cli_path")"
 
@@ -44,6 +45,18 @@ install_cli_link() {
     if [ ! -L "$cli_path" ]; then
       echo "Skipping CLI install at $cli_path: existing file is not a symlink" >&2
       return
+    fi
+    if [ "$mode" = "repair-owned" ]; then
+      local current_target
+      current_target="$(readlink "$cli_path")"
+      case "$current_target" in
+        *"/AI Review.app/Contents/MacOS/AI Review"|*"/AI Review.app/Contents/Resources/bin/core-launcher")
+          ;;
+        *)
+          echo "Skipping CLI repair at $cli_path: symlink does not look like an AI Review install" >&2
+          return
+          ;;
+      esac
     fi
     rm -f "$cli_path"
   fi
@@ -56,7 +69,7 @@ install_cli_link "$HOME/.local/bin/air"
 EXISTING_AIR="$(command -v air || true)"
 if [ -n "$EXISTING_AIR" ] && [ "$EXISTING_AIR" != "$HOME/.local/bin/air" ]; then
   if [ -w "$(dirname "$EXISTING_AIR")" ]; then
-    install_cli_link "$EXISTING_AIR"
+    install_cli_link "$EXISTING_AIR" repair-owned
   else
     echo "Skipping CLI repair at $EXISTING_AIR: directory is not writable" >&2
   fi
