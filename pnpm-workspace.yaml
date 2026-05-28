@@ -11,5 +11,6 @@ minimumReleaseAgeExclude:
   - '@vitest/utils@4.1.7'
   - vitest@4.1.7
   - vite@8.0.14
+  - electron@42.3.0
 onlyBuiltDependencies:
   - electron-winstaller
