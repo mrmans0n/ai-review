@@ -94,6 +94,57 @@ describe("resolveLineFromNode", () => {
         side: "new",
       });
     });
+
+    it("resolves old and new cells separately in split normal rows", () => {
+      const wrapper = makeElement("div", { "data-diff-file": "src/app.ts" });
+      const table = makeElement("table", { class: "diff-split" });
+      const tr = makeElement("tr", { class: "diff-line air-diff-old-line-10 air-diff-new-line-12" });
+      const oldGutter = makeElement("td", { "data-change-key": "N10", class: "diff-gutter" });
+      const oldCode = makeElement("td", { "data-change-key": "N10", class: "diff-code" });
+      const newGutter = makeElement("td", { "data-change-key": "N10", class: "diff-gutter" });
+      const newCode = makeElement("td", { "data-change-key": "N10", class: "diff-code" });
+      tr.append(oldGutter, oldCode, newGutter, newCode);
+      table.appendChild(tr);
+      wrapper.appendChild(table);
+
+      expect(resolveLineFromNode(oldCode)).toEqual({
+        file: "src/app.ts",
+        line: 10,
+        side: "old",
+      });
+      expect(resolveLineFromNode(newCode)).toEqual({
+        file: "src/app.ts",
+        line: 12,
+        side: "new",
+      });
+    });
+
+    it("resolves inline split widgets to the previous line on their side", () => {
+      const wrapper = makeElement("div", { "data-diff-file": "src/app.ts" });
+      const table = makeElement("table", { class: "diff-split" });
+      const line = makeElement("tr", { class: "diff-line air-diff-old-line-20 air-diff-new-line-24" });
+      line.append(
+        makeElement("td", { "data-change-key": "N20", class: "diff-gutter" }),
+        makeElement("td", { "data-change-key": "N20", class: "diff-code" }),
+        makeElement("td", { "data-change-key": "N20", class: "diff-gutter" }),
+        makeElement("td", { "data-change-key": "N20", class: "diff-code" }),
+      );
+      const widgetRow = makeElement("tr", { class: "diff-widget" });
+      const widgetCell = makeElement("td", { class: "diff-widget-content", colspan: "4" });
+      const widget = makeElement("div", { class: "split-widget-old" });
+      const text = document.createTextNode("comment");
+      widget.appendChild(text);
+      widgetCell.appendChild(widget);
+      widgetRow.appendChild(widgetCell);
+      table.append(line, widgetRow);
+      wrapper.appendChild(table);
+
+      expect(resolveLineFromNode(text)).toEqual({
+        file: "src/app.ts",
+        line: 20,
+        side: "old",
+      });
+    });
   });
 
   describe("FileViewer path", () => {

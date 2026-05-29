@@ -34,6 +34,10 @@ import { buildTitlebarContext } from "./lib/titlebarContext";
 import { generatePrompt } from "./lib/promptGenerator";
 import { buildJsonFeedback } from "./lib/jsonFeedback";
 import { resolveLineFromNode } from "./lib/resolveLineFromNode";
+import {
+  escapeAttributeSelector,
+  getSelectionCommentTarget,
+} from "./lib/selectionTarget";
 import { extractLinesFromHunks } from "./lib/extractLinesFromHunks";
 import { detectLfsPointer, isTextPreviewable } from "./lib/lfsDetection";
 import { normalizeFileStatus, normalizePath } from "./lib/fileTree";
@@ -60,10 +64,6 @@ function clampRightRailWidth(width: number) {
   return Math.min(getMaxRightRailWidth(), Math.max(MIN_RIGHT_RAIL_WIDTH, width));
 }
 
-function escapeAttributeSelector(value: string) {
-  if (typeof CSS !== "undefined" && CSS.escape) return CSS.escape(value);
-  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/'/g, "\\'").replace(/\[/g, "\\[").replace(/\]/g, "\\]");
-}
 
 function App() {
   const [workingDir, setWorkingDir] = useState<string | null>(null);
@@ -508,27 +508,14 @@ function App() {
 
         // Check if there's a text selection inside a diff area
         const selection = window.getSelection();
-        if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          const startContainer = range.startContainer;
-          const endContainer = range.endContainer;
-
-          const startInfo = resolveLineFromNode(startContainer);
-          const endInfo = resolveLineFromNode(endContainer);
-
-          if (startInfo && endInfo && startInfo.file === endInfo.file) {
-            const minLine = Math.min(startInfo.line, endInfo.line);
-            const maxLine = Math.max(startInfo.line, endInfo.line);
-            setLastFocusedLine({ file: startInfo.file, line: minLine, side: startInfo.side });
-            if (minLine !== maxLine) {
-              setAddingCommentAt({
-                file: startInfo.file,
-                startLine: minLine,
-                endLine: maxLine,
-                side: startInfo.side,
-              });
+        if (selection) {
+          const target = getSelectionCommentTarget(selection);
+          if (target) {
+            setLastFocusedLine({ file: target.file, line: target.startLine, side: target.side });
+            if (target.startLine !== target.endLine) {
+              setAddingCommentAt(target);
             } else {
-              handleLineClick(startInfo.file, minLine, startInfo.side);
+              handleLineClick(target.file, target.startLine, target.side);
             }
             selection.removeAllRanges();
             return;
@@ -623,8 +610,16 @@ function App() {
   useEffect(() => {
     if (viewType !== "split") return;
 
+    const clearSelectingSide = () => {
+      document
+        .querySelectorAll("table.diff-split[data-selecting]")
+        .forEach((table) => table.removeAttribute("data-selecting"));
+    };
+
     const handleMouseDown = (e: MouseEvent) => {
       if (e.button !== 0) return;
+      clearSelectingSide();
+
       let el = e.target as HTMLElement | null;
       while (el && !el.classList.contains("diff-code")) {
         if (el.classList.contains("diff")) break;
@@ -644,8 +639,13 @@ function App() {
     };
 
     document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("mouseup", clearSelectingSide);
+    window.addEventListener("blur", clearSelectingSide);
     return () => {
       document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("mouseup", clearSelectingSide);
+      window.removeEventListener("blur", clearSelectingSide);
+      clearSelectingSide();
     };
   }, [viewType]);
 
@@ -1952,9 +1952,10 @@ function App() {
               estimatedTotalLines={estimatedTotalLines}
               onExpandRange={handleExpandRange}
               onLineClick={handleLineClick}
-              onShiftClickRange={(file, startLine, endLine, side) =>
-                setAddingCommentAt({ file, startLine, endLine, side })
-              }
+              onShiftClickRange={(file, startLine, endLine, side) => {
+                setLastFocusedLine({ file, line: endLine, side });
+                setAddingCommentAt({ file, startLine, endLine, side });
+              }}
               onSelectingRangeChange={setSelectingRange}
               onSelectedRangeChange={setSelectedRange}
               onHoverLineChange={setHoveredLine}
