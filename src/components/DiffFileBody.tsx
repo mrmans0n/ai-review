@@ -25,16 +25,35 @@ type DiffFileBodyProps = {
   suppressNextClickRef: MutableRefObject<boolean>;
 };
 
-function getChangeSide(change: any): "old" | "new" {
-  if (change.isNormal) return "new";
-  return change.type === "insert" ? "new" : "old";
-}
-
 function getChangeLineNumber(change: any, side: "old" | "new"): number | undefined {
   if (change.isNormal) {
     return side === "new" ? change.newLineNumber : change.oldLineNumber;
   }
-  return change.lineNumber;
+  if (change.type === "insert") return side === "new" ? change.lineNumber : undefined;
+  if (change.type === "delete") return side === "old" ? change.lineNumber : undefined;
+  return undefined;
+}
+
+function getLineClassName(changes: any[], defaultGenerate: () => string): string {
+  const classes = [defaultGenerate()];
+  let oldLine: number | undefined;
+  let newLine: number | undefined;
+
+  for (const change of changes) {
+    if (!change) continue;
+    if (change.isNormal) {
+      oldLine = change.oldLineNumber;
+      newLine = change.newLineNumber;
+    } else if (change.type === "delete") {
+      oldLine = change.lineNumber;
+    } else if (change.type === "insert") {
+      newLine = change.lineNumber;
+    }
+  }
+
+  if (oldLine !== undefined) classes.push(`air-diff-old-line-${oldLine}`);
+  if (newLine !== undefined) classes.push(`air-diff-new-line-${newLine}`);
+  return classes.filter(Boolean).join(" ");
 }
 
 export function DiffFileBody({
@@ -70,12 +89,15 @@ export function DiffFileBody({
       tokens={tokens}
       widgets={fileWidgets}
       selectedChanges={highlightedChangeKeys}
+      optimizeSelection={viewType === "split"}
+      generateLineClassName={({ changes, defaultGenerate }: any) =>
+        getLineClassName(changes, defaultGenerate)
+      }
       renderGutter={({ change, side, inHoverState, renderDefault }: any) => {
         if (!change) return renderDefault();
-        const changeSide = getChangeSide(change);
-        const lineNumber = getChangeLineNumber(change, changeSide);
-        // Only show button on the "new" side gutter (or matching side)
-        const showButton = inHoverState && side === changeSide && lineNumber;
+        const gutterSide = side as "old" | "new";
+        const lineNumber = getChangeLineNumber(change, gutterSide);
+        const showButton = inHoverState && lineNumber;
         return (
           <span className="relative inline-flex items-center w-full">
             {showButton && (
@@ -88,13 +110,13 @@ export function DiffFileBody({
                     onSelectingRangeChange({
                       file: fileName,
                       startLine: lineNumber,
-                      side: changeSide,
+                      side: gutterSide,
                     });
                     onSelectedRangeChange({
                       file: fileName,
                       startLine: lineNumber,
                       endLine: lineNumber,
-                      side: changeSide,
+                      side: gutterSide,
                     });
                   }
                 }}
@@ -109,7 +131,7 @@ export function DiffFileBody({
         );
       }}
       gutterEvents={{
-        onClick: (event: any) => {
+        onClick: (event: any, nativeEvent: any) => {
           if (suppressNextClickRef.current) {
             suppressNextClickRef.current = false;
             return;
@@ -117,15 +139,11 @@ export function DiffFileBody({
 
           const { change } = event;
           if (change) {
-            const side = change.isNormal
-              ? "new"
-              : change.type === "insert"
-                ? "new"
-                : "old";
-            const lineNumber = side === "new" ? change.newLineNumber : change.oldLineNumber;
+            const side = event.side as "old" | "new";
+            const lineNumber = getChangeLineNumber(change, side);
             if (lineNumber) {
               // Handle shift+click for range selection
-              if (event.nativeEvent.shiftKey && lastFocusedLine && lastFocusedLine.file === fileName && lastFocusedLine.side === side) {
+              if (nativeEvent?.shiftKey && lastFocusedLine && lastFocusedLine.file === fileName && lastFocusedLine.side === side) {
                 const startLine = Math.min(lastFocusedLine.line, lineNumber);
                 const endLine = Math.max(lastFocusedLine.line, lineNumber);
                 onShiftClickRange(fileName, startLine, endLine, side);
@@ -139,12 +157,8 @@ export function DiffFileBody({
         onMouseDown: (event: any) => {
           const { change } = event;
           if (change) {
-            const side = change.isNormal
-              ? "new"
-              : change.type === "insert"
-                ? "new"
-                : "old";
-            const lineNumber = side === "new" ? change.newLineNumber : change.oldLineNumber;
+            const side = event.side as "old" | "new";
+            const lineNumber = getChangeLineNumber(change, side);
             if (lineNumber) {
               onSelectingRangeChange({
                 file: fileName,
@@ -163,12 +177,8 @@ export function DiffFileBody({
         onMouseEnter: (event: any) => {
           const { change } = event;
           if (change) {
-            const side = change.isNormal
-              ? "new"
-              : change.type === "insert"
-                ? "new"
-                : "old";
-            const lineNumber = side === "new" ? change.newLineNumber : change.oldLineNumber;
+            const side = event.side as "old" | "new";
+            const lineNumber = getChangeLineNumber(change, side);
             if (lineNumber) {
               // Update hovered line for "C" key shortcut
               onHoverLineChange({ file: fileName, line: lineNumber, side });
