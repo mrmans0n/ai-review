@@ -25,6 +25,11 @@ type DiffFileBodyProps = {
   suppressNextClickRef: MutableRefObject<boolean>;
 };
 
+function getChangeSide(change: any): "old" | "new" {
+  if (change.isNormal) return "new";
+  return change.type === "insert" ? "new" : "old";
+}
+
 function getChangeLineNumber(change: any, side: "old" | "new"): number | undefined {
   if (change.isNormal) {
     return side === "new" ? change.newLineNumber : change.oldLineNumber;
@@ -95,7 +100,7 @@ export function DiffFileBody({
       }
       renderGutter={({ change, side, inHoverState, renderDefault }: any) => {
         if (!change) return renderDefault();
-        const gutterSide = side as "old" | "new";
+        const gutterSide = (side as "old" | "new" | undefined) ?? getChangeSide(change);
         const lineNumber = getChangeLineNumber(change, gutterSide);
         const showButton = inHoverState && lineNumber;
         return (
@@ -139,7 +144,7 @@ export function DiffFileBody({
 
           const { change } = event;
           if (change) {
-            const side = event.side as "old" | "new";
+            const side = (event.side as "old" | "new" | undefined) ?? getChangeSide(change);
             const lineNumber = getChangeLineNumber(change, side);
             if (lineNumber) {
               // Handle shift+click for range selection
@@ -157,7 +162,7 @@ export function DiffFileBody({
         onMouseDown: (event: any) => {
           const { change } = event;
           if (change) {
-            const side = event.side as "old" | "new";
+            const side = (event.side as "old" | "new" | undefined) ?? getChangeSide(change);
             const lineNumber = getChangeLineNumber(change, side);
             if (lineNumber) {
               onSelectingRangeChange({
@@ -177,7 +182,7 @@ export function DiffFileBody({
         onMouseEnter: (event: any) => {
           const { change } = event;
           if (change) {
-            const side = event.side as "old" | "new";
+            const side = (event.side as "old" | "new" | undefined) ?? getChangeSide(change);
             const lineNumber = getChangeLineNumber(change, side);
             if (lineNumber) {
               // Update hovered line for "C" key shortcut
