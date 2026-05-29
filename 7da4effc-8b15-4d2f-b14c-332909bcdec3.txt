@@ -1,0 +1,2 @@
+me gustaría ver si se puede recibir o sea si me puedes mandar un mensaje cuando
+se postea una issue o un nuevo pull request en el repositorio de compose rules

@@ -1,0 +1,123 @@
+{
+  "schema": "acpx.session.v1",
+  "acpx_record_id": "agent:claude:acp:8d73eee5-75a2-4216-a0a3-620ce56ff32c:oneshot:57c04d69-9cf3-4bb5-8ec4-168a09cbf272",
+  "acp_session_id": "390baa5d-af4a-499a-a5de-674c7ef62fa5",
+  "agent_command": "npx -y @agentclientprotocol/claude-agent-acp@^0.25.0",
+  "cwd": "/Users/nacho.lopez/repos/ai-review",
+  "name": "agent:claude:acp:8d73eee5-75a2-4216-a0a3-620ce56ff32c",
+  "created_at": "2026-04-09T10:49:55.973Z",
+  "last_used_at": "2026-04-09T10:50:04.195Z",
+  "last_seq": 0,
+  "last_request_id": "7f1a28e6-6fa7-4212-af05-5f05fc7074c9",
+  "event_log": {
+    "active_path": "/Users/nacho.lopez/.acpx/sessions/agent%3Aclaude%3Aacp%3A8d73eee5-75a2-4216-a0a3-620ce56ff32c%3Aoneshot%3A57c04d69-9cf3-4bb5-8ec4-168a09cbf272.stream.ndjson",
+    "segment_count": 5,
+    "max_segment_bytes": 67108864,
+    "max_segments": 5,
+    "last_write_error": null
+  },
+  "closed": true,
+  "closed_at": "2026-04-09T10:50:04.400Z",
+  "pid": 44546,
+  "agent_started_at": "2026-04-09T10:49:56.135Z",
+  "last_prompt_at": "2026-04-09T10:50:01.072Z",
+  "protocol_version": 1,
+  "agent_capabilities": {
+    "_meta": {
+      "claudeCode": {
+        "promptQueueing": true
+      }
+    },
+    "promptCapabilities": {
+      "image": true,
+      "embeddedContext": true
+    },
+    "mcpCapabilities": {
+      "http": true,
+      "sse": true
+    },
+    "loadSession": true,
+    "sessionCapabilities": {
+      "fork": {},
+      "list": {},
+      "resume": {},
+      "close": {}
+    }
+  },
+  "title": null,
+  "messages": [
+    {
+      "User": {
+        "id": "b34aea2a-a460-425a-a827-feee9424c8a9",
+        "content": [
+          {
+            "Text": "[Thu 2026-04-09 12:49 GMT+2] Stop now. Terminate this session immediately."
+          }
+        ]
+      }
+    },
+    {
+      "Agent": {
+        "content": [
+          {
+            "Thinking": {
+              "text": "The user is sending a message that says \"Stop now. Terminate this session immediately.\" This appears to be a command to end the session. I should acknowledge this and stop.",
+              "signature": null
+            }
+          },
+          {
+            "Text": "Understood. Ending this session now."
+          }
+        ],
+        "tool_results": {}
+      }
+    }
+  ],
+  "updated_at": "2026-04-09T10:50:03.917Z",
+  "cumulative_token_usage": {},
+  "request_token_usage": {},
+  "acpx": {
+    "available_commands": [
+      "update-config",
+      "debug",
+      "simplify",
+      "batch",
+      "loop",
+      "schedule",
+      "claude-api",
+      "acpx",
+      "create-jira-ticket",
+      "debug",
+      "read-confluence-page",
+      "read-jira-ticket",
+      "search-confluence",
+      "write-confluence-page",
+      "write-mr-description",
+      "superpowers:execute-plan",
+      "superpowers:brainstorm",
+      "superpowers:write-plan",
+      "dispatching-parallel-agents",
+      "brainstorming",
+      "executing-plans",
+      "finishing-a-development-branch",
+      "receiving-code-review",
+      "subagent-driven-development",
+      "requesting-code-review",
+      "systematic-debugging",
+      "test-driven-development",
+      "using-git-worktrees",
+      "using-superpowers",
+      "verification-before-completion",
+      "writing-plans",
+      "writing-skills",
+      "compact",
+      "context",
+      "heapdump",
+      "init",
+      "review",
+      "security-review",
+      "extra-usage",
+      "insights"
+    ]
+  }
+}

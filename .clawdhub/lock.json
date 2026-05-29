@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "skills": {
+    "github": {
+      "version": "1.0.0",
+      "installedAt": 1769021034222
+    },
+    "sonarr": {
+      "version": "1.2.0",
+      "installedAt": 1769021549393
+    },
+    "radarr": {
+      "version": "1.0.1",
+      "installedAt": 1769021551055
+    },
+    "better-notion": {
+      "version": "1.1.0",
+      "installedAt": 1769022889739
+    },
+    "caldav-calendar": {
+      "version": "1.0.1",
+      "installedAt": 1769026899958
+    }
+  }
+}
