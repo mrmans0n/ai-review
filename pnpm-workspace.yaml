@@ -1,5 +1,6 @@
 allowBuilds:
   electron-winstaller: true
+minimumReleaseAge: 1080
 minimumReleaseAgeExclude:
   - '@vitest/expect@4.1.7'
   - '@vitest/mocker@4.1.7'
@@ -13,5 +14,14 @@ minimumReleaseAgeExclude:
   - vite@8.0.14
   - electron@42.3.0
   - concurrently@10.0.0
+  - '@vitest/expect@4.1.9'
+  - '@vitest/mocker@4.1.9'
+  - '@vitest/pretty-format@4.1.9'
+  - '@vitest/runner@4.1.9'
+  - '@vitest/snapshot@4.1.9'
+  - '@vitest/spy@4.1.9'
+  - '@vitest/ui@4.1.9'
+  - '@vitest/utils@4.1.9'
+  - vitest@4.1.9
 onlyBuiltDependencies:
   - electron-winstaller
