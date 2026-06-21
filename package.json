@@ -44,7 +44,7 @@
     "unidiff": "^1.0.4",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.1",
