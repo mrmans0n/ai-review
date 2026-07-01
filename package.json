@@ -57,7 +57,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/unist": "^3.0.3",
     "@types/uuid": "^11.0.0",
-    "@vitejs/plugin-react": "^6.0.2",
+    "@vitejs/plugin-react": "^6.0.3",
     "@vitest/ui": "^4.1.9",
     "concurrently": "^10.0.3",
     "cross-env": "^10.1.0",
