@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "CommonJS",
-    "moduleResolution": "Node",
+    "moduleResolution": "Node16",
     "ignoreDeprecations": "6.0",
     "outDir": "../dist-electron",
     "rootDir": ".",
