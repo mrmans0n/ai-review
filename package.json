@@ -68,7 +68,7 @@
     "postcss": "^8.5.16",
     "rehype-stringify": "^10.0.1",
     "tailwindcss": "^4.3.3",
-    "typescript": "~6.0.3",
+    "typescript": "~7.0.2",
     "vfile": "^6.0.3",
     "vite": "^8.1.5",
     "vitest": "^4.1.10",

@@ -2,9 +2,9 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from "electron";
 import * as path from "node:path";
 import * as fs from "node:fs";
 import * as os from "node:os";
-import { Sidecar } from "./sidecar";
-import { buildMenu } from "./menu";
-import { parseLaunchArgs, type LaunchArgs } from "./argv";
+import { Sidecar } from "./sidecar.js";
+import { buildMenu } from "./menu.js";
+import { parseLaunchArgs, type LaunchArgs } from "./argv.js";
 
 let mainWindow: BrowserWindow | null = null;
 const sidecar = new Sidecar();
