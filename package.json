@@ -65,7 +65,7 @@
     "electron-builder": "^26.15.3",
     "hast-util-to-html": "^9.0.5",
     "jsdom": "^29.1.1",
-    "postcss": "^8.5.16",
+    "postcss": "^8.5.19",
     "rehype-stringify": "^10.0.1",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3",
