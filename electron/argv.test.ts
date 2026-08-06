@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseLaunchArgs } from "./argv";
+import { parseLaunchArgs } from "./argv.js";
 
 describe("parseLaunchArgs", () => {
   it("returns defaults for an empty argv", () => {
