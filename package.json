@@ -59,7 +59,7 @@
     "@types/uuid": "^11.0.0",
     "@vitejs/plugin-react": "^6.0.5",
     "@vitest/ui": "^4.1.10",
-    "concurrently": "^10.0.4",
+    "concurrently": "^10.0.5",
     "cross-env": "^10.1.0",
     "electron": "^43.4.0",
     "electron-builder": "^26.15.3",
