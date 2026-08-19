@@ -23,5 +23,6 @@ minimumReleaseAgeExclude:
   - '@vitest/ui@4.1.9'
   - '@vitest/utils@4.1.9'
   - vitest@4.1.9
+  - uuid@14.0.2
 onlyBuiltDependencies:
   - electron-winstaller
