@@ -33,5 +33,6 @@ minimumReleaseAgeExclude:
   - '@vitest/ui@4.1.11'
   - '@vitest/utils@4.1.11'
   - vitest@4.1.11
+  - '@types/react-dom@19.2.5'
 onlyBuiltDependencies:
   - electron-winstaller
