@@ -16,6 +16,7 @@ minimumReleaseAgeExclude:
   - electron@44.1.0
   - electron@44.1.1
   - electron@44.2.0
+  - electron@44.3.0
   - concurrently@10.0.0
   - '@vitest/expect@4.1.9'
   - '@vitest/mocker@4.1.9'
