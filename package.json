@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.5.5",
   "type": "module",
-  "packageManager": "pnpm@12.3.4",
+  "packageManager": "pnpm@12.4.1",
   "bin": {
     "air": "./cli/air"
   },
