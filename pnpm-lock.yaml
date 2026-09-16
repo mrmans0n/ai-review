@@ -237,8 +237,8 @@ importers:
         specifier: ^4.0.4
         version: 4.0.4
       '@types/node':
-        specifier: ^24.13.4
-        version: 24.13.4
+        specifier: ^24.13.5
+        version: 24.13.5
       '@types/react':
         specifier: ^19.3.0
         version: 19.3.0
@@ -253,7 +253,7 @@ importers:
         version: 11.0.0
       '@vitejs/plugin-react':
         specifier: ^6.1.1
-        version: 6.1.1(vite@8.3.0(@types/node@24.13.4)(jiti@2.7.0))
+        version: 6.1.1(vite@8.3.0(@types/node@24.13.5)(jiti@2.7.0))
       '@vitest/ui':
         specifier: ^5.0.1
         version: 5.0.1(vitest@5.0.1)
@@ -292,10 +292,10 @@ importers:
         version: 6.0.3
       vite:
         specifier: ^8.3.0
-        version: 8.3.0(@types/node@24.13.4)(jiti@2.7.0)
+        version: 8.3.0(@types/node@24.13.5)(jiti@2.7.0)
       vitest:
         specifier: ^5.0.1
-        version: 5.0.1(@types/node@24.13.4)(@vitest/ui@5.0.1)(jsdom@30.0.1(@noble/hashes@2.2.0))(vite@8.3.0(@types/node@24.13.4)(jiti@2.7.0))
+        version: 5.0.1(@types/node@24.13.5)(@vitest/ui@5.0.1)(jsdom@30.0.1(@noble/hashes@2.2.0))(vite@8.3.0(@types/node@24.13.5)(jiti@2.7.0))
       wait-on:
         specifier: ^9.1.0
         version: 9.1.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
@@ -786,8 +786,8 @@ packages:
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
-  '@types/node@24.13.4':
-    resolution: {integrity: sha512-YJ7EqCstVTzIr0fMr7qul/977en+pQHrfmuKIo6Zr9i75Be21dr3MovcfvGtyvi2HAUrRerWps5sMO9I7WaxDw==}
+  '@types/node@24.13.5':
+    resolution: {integrity: sha512-TXyindR+lBr22aJIdMQzCFHPHR6cR4js838mRDCSz5hOKWZvZwsXSSiXDmjRj4iJmgl+sR9O+1mkoVBSMadNug==}
 
   '@types/react-dom@19.3.0':
     resolution: {integrity: sha512-ZI7bU42mZXXKHn/qNLEw2IrbiINU7X5+vfgdixBHkCNpYWXjKgfQ/P+uyGb5CjOLB9UcnTeg3rylQtV2hym44Q==}
@@ -3237,7 +3237,7 @@ snapshots:
       picocolors: 1.1.1
       redent: 3.0.0
     optionalDependencies:
-      vitest: 5.0.1(@types/node@24.13.4)(@vitest/ui@5.0.1)(jsdom@30.0.1(@noble/hashes@2.2.0))(vite@8.3.0(@types/node@24.13.4)(jiti@2.7.0))
+      vitest: 5.0.1(@types/node@24.13.5)(@vitest/ui@5.0.1)(jsdom@30.0.1(@noble/hashes@2.2.0))(vite@8.3.0(@types/node@24.13.5)(jiti@2.7.0))
 
   '@testing-library/react@16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
@@ -3259,7 +3259,7 @@ snapshots:
     dependencies:
       '@types/http-cache-semantics': 4.2.0
       '@types/keyv': 3.1.4
-      '@types/node': 24.13.4
+      '@types/node': 24.13.5
       '@types/responselike': 1.0.3
 
   '@types/chai@5.2.3':
@@ -3281,7 +3281,7 @@ snapshots:
 
   '@types/fs-extra@9.0.13':
     dependencies:
-      '@types/node': 24.13.4
+      '@types/node': 24.13.5
 
   '@types/hast@3.0.5':
     dependencies:
@@ -3291,7 +3291,7 @@ snapshots:
 
   '@types/keyv@3.1.4':
     dependencies:
-      '@types/node': 24.13.4
+      '@types/node': 24.13.5
 
   '@types/mdast@4.0.4':
     dependencies:
@@ -3299,7 +3299,7 @@ snapshots:
 
   '@types/ms@2.1.0': {}
 
-  '@types/node@24.13.4':
+  '@types/node@24.13.5':
     dependencies:
       undici-types: 7.18.2
 
@@ -3313,7 +3313,7 @@ snapshots:
 
   '@types/responselike@1.0.3':
     dependencies:
-      '@types/node': 24.13.4
+      '@types/node': 24.13.5
 
   '@types/unist@2.0.11': {}
 
@@ -3385,19 +3385,19 @@ snapshots:
 
   '@ungap/structured-clone@1.3.1': {}
 
-  '@vitejs/plugin-react@6.1.1(vite@8.3.0(@types/node@24.13.4)(jiti@2.7.0))':
+  '@vitejs/plugin-react@6.1.1(vite@8.3.0(@types/node@24.13.5)(jiti@2.7.0))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
-      vite: 8.3.0(@types/node@24.13.4)(jiti@2.7.0)
+      vite: 8.3.0(@types/node@24.13.5)(jiti@2.7.0)
 
-  '@vitest/mocker@5.0.1(vite@8.3.0(@types/node@24.13.4)(jiti@2.7.0))':
+  '@vitest/mocker@5.0.1(vite@8.3.0(@types/node@24.13.5)(jiti@2.7.0))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.1
       estree-walker: 3.0.3
       magic-string: 1.2.3
     optionalDependencies:
-      vite: 8.3.0(@types/node@24.13.4)(jiti@2.7.0)
+      vite: 8.3.0(@types/node@24.13.5)(jiti@2.7.0)
 
   '@vitest/pretty-format@5.0.1':
     dependencies:
@@ -3413,7 +3413,7 @@ snapshots:
       pathe: 2.0.3
       sirv: 3.0.2
       tinyrainbow: 3.1.1
-      vitest: 5.0.1(@types/node@24.13.4)(@vitest/ui@5.0.1)(jsdom@30.0.1(@noble/hashes@2.2.0))(vite@8.3.0(@types/node@24.13.4)(jiti@2.7.0))
+      vitest: 5.0.1(@types/node@24.13.5)(@vitest/ui@5.0.1)(jsdom@30.0.1(@noble/hashes@2.2.0))(vite@8.3.0(@types/node@24.13.5)(jiti@2.7.0))
 
   '@vitest/utils@5.0.1':
     dependencies:
@@ -3867,7 +3867,7 @@ snapshots:
     dependencies:
       '@electron-internal/extract-zip': 1.0.4
       '@electron/get': 5.0.0(supports-color@10.2.2)
-      '@types/node': 24.13.4
+      '@types/node': 24.13.5
     transitivePeerDependencies:
       - supports-color
 
@@ -5438,7 +5438,7 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite@8.3.0(@types/node@24.13.4)(jiti@2.7.0):
+  vite@8.3.0(@types/node@24.13.5)(jiti@2.7.0):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -5446,14 +5446,14 @@ snapshots:
       rolldown: 1.2.8
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 24.13.4
+      '@types/node': 24.13.5
       fsevents: 2.3.3
       jiti: 2.7.0
 
-  vitest@5.0.1(@types/node@24.13.4)(@vitest/ui@5.0.1)(jsdom@30.0.1(@noble/hashes@2.2.0))(vite@8.3.0(@types/node@24.13.4)(jiti@2.7.0)):
+  vitest@5.0.1(@types/node@24.13.5)(@vitest/ui@5.0.1)(jsdom@30.0.1(@noble/hashes@2.2.0))(vite@8.3.0(@types/node@24.13.5)(jiti@2.7.0)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.1(vite@8.3.0(@types/node@24.13.4)(jiti@2.7.0))
+      '@vitest/mocker': 5.0.1(vite@8.3.0(@types/node@24.13.5)(jiti@2.7.0))
       chai: 6.2.2
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -5464,10 +5464,10 @@ snapshots:
       tinybench: 6.1.4
       tinyexec: 1.3.0
       tinyglobby: 0.2.17
-      vite: 8.3.0(@types/node@24.13.4)(jiti@2.7.0)
+      vite: 8.3.0(@types/node@24.13.5)(jiti@2.7.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 24.13.4
+      '@types/node': 24.13.5
       '@vitest/ui': 5.0.1(vitest@5.0.1)
       jsdom: 30.0.1(@noble/hashes@2.2.0)
     transitivePeerDependencies:
