@@ -47,6 +47,15 @@ minimumReleaseAgeExclude:
   - '@vitest/ui@5.0.0'
   - '@vitest/utils@5.0.0'
   - vitest@5.0.0
+  - '@vitest/expect@5.0.1'
+  - '@vitest/mocker@5.0.1'
+  - '@vitest/pretty-format@5.0.1'
+  - '@vitest/runner@5.0.1'
+  - '@vitest/snapshot@5.0.1'
+  - '@vitest/spy@5.0.1'
+  - '@vitest/ui@5.0.1'
+  - '@vitest/utils@5.0.1'
+  - vitest@5.0.1
   - '@types/react-dom@19.2.5'
   - '@types/react-dom@19.2.7'
   - postcss@8.5.28
