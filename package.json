@@ -2,6 +2,9 @@
   "name": "ai-review",
   "private": true,
   "version": "0.5.5",
+  "description": "AI code review tool with diff UI, inline comments, and prompt generation",
+  "homepage": "https://github.com/mrmans0n/ai-review",
+  "desktopName": "ai-review.desktop",
   "type": "module",
   "packageManager": "pnpm@12.5.1",
   "bin": {
@@ -16,7 +19,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "electron:tsc": "tsc -p electron/tsconfig.json && cp electron/dist-package.json dist-electron/package.json",
+    "electron:tsc": "tsc -p electron/tsconfig.json && cp electron/package.json dist-electron/package.json",
     "electron:dev": "concurrently -k \"vite\" \"wait-on http://localhost:1420 && pnpm electron:tsc && cd core && cargo build -p core-sidecar -p core-launcher && cd .. && electron dist-electron/main.js\"",
     "electron:build": "tsc && vite build && pnpm electron:tsc && cd core && cargo build --release -p core-sidecar -p core-launcher && cd .. && electron-builder",
     "electron:build:dir": "tsc && vite build && pnpm electron:tsc && cd core && cargo build --release -p core-sidecar -p core-launcher && cd .. && electron-builder --dir"
