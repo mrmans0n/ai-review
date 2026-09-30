@@ -188,9 +188,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p artifacts
-          if [ -d release/linux-unpacked ]; then
-            cp -R release/linux-unpacked artifacts/
-          fi
+          cp release/*.AppImage artifacts/
           ls -la artifacts/
 
       - name: Upload build artifacts
