@@ -26,8 +26,14 @@ mac:
   artifactName: "${productName}-${version}-${arch}.${ext}"
 linux:
   target:
-    - dir
-  icon: icons/128x128.png
+    - target: AppImage
+      arch:
+        - x64
+  icon: icons/512x512.png
+  category: Development
+  syncDesktopName: true
+  synopsis: AI code review tool with diff UI, inline comments, and prompt generation
+  artifactName: "${productName}-${version}-${arch}.${ext}"
 win:
   target:
     - dir
